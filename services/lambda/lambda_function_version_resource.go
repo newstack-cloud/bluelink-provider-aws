@@ -15,6 +15,10 @@ func FunctionVersionResource(
 	lambdaServiceFactory pluginutils.ServiceFactory[*aws.Config, Service],
 	awsConfigStore pluginutils.ServiceConfigStore[*aws.Config],
 ) provider.Resource {
+	basicExample, _ := examples.ReadFile("examples/resources/lambda_function_version_basic.md")
+	jsoncExample, _ := examples.ReadFile("examples/resources/lambda_function_version_jsonc.md")
+	completeExample, _ := examples.ReadFile("examples/resources/lambda_function_version_complete.md")
+
 	lambdaFunctionVersionActions := &lambdaFunctionVersionResourceActions{
 		lambdaServiceFactory,
 		awsConfigStore,
@@ -32,7 +36,12 @@ func FunctionVersionResource(
 		// like event sources or API Gateway can link to the function version through the
 		// blueprint framework's linking mechanism, the version itself is typically the end
 		// point.
-		CommonTerminal:       true,
+		CommonTerminal: true,
+		FormattedExamples: []string{
+			string(basicExample),
+			string(jsoncExample),
+			string(completeExample),
+		},
 		GetExternalStateFunc: lambdaFunctionVersionActions.GetExternalState,
 		CreateFunc:           lambdaFunctionVersionActions.Create,
 		UpdateFunc:           lambdaFunctionVersionActions.Update,
