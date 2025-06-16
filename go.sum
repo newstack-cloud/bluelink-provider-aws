@@ -58,6 +58,8 @@ github.com/newstack-cloud/celerity/libs/plugin-framework v0.0.0-20250613163424-e
 github.com/newstack-cloud/celerity/libs/plugin-framework v0.0.0-20250613163424-ea78eb29c15a/go.mod h1:UXBPBLQ97uPepqyGNP2p2PAOnpJ8zj3gfbh6qbBiW2M=
 github.com/newstack-cloud/celerity/libs/plugin-framework v0.0.0-20250614125716-011952127e39 h1:KaMOCQhRpo6jmb5uTNyT9z5xq+xHhf3L5CLaRpdCi38=
 github.com/newstack-cloud/celerity/libs/plugin-framework v0.0.0-20250614125716-011952127e39/go.mod h1:UXBPBLQ97uPepqyGNP2p2PAOnpJ8zj3gfbh6qbBiW2M=
+github.com/newstack-cloud/celerity/libs/plugin-framework v0.0.0-20250615142107-cccf5f2a50be h1:l6Ss6UaKg9UWT3DPQiQ1MpC4ckPeHICOwq5PkkrUBss=
+github.com/newstack-cloud/celerity/libs/plugin-framework v0.0.0-20250615142107-cccf5f2a50be/go.mod h1:UXBPBLQ97uPepqyGNP2p2PAOnpJ8zj3gfbh6qbBiW2M=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/spf13/afero v1.11.0 h1:WJQKhtpdm3v2IzqG8VMqrr6Rf3UYpEF239Jy9wNepM8=

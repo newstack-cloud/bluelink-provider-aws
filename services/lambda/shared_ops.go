@@ -104,6 +104,47 @@ func changesToResourceTagUpdatesInput(
 	}, false
 }
 
+// Shared between function and function version resources.
+type functionRuntimeManagementConfigUpdate struct {
+	path                 string
+	fieldChangesPathRoot string
+	input                *lambda.PutRuntimeManagementConfigInput
+}
+
+func (u *functionRuntimeManagementConfigUpdate) Name() string {
+	return "runtime management config"
+}
+
+func (u *functionRuntimeManagementConfigUpdate) Prepare(
+	saveOpCtx pluginutils.SaveOperationContext,
+	specData *core.MappingNode,
+	changes *provider.Changes,
+) (bool, pluginutils.SaveOperationContext, error) {
+	runtimeMgmtConfigData, _ := pluginutils.GetValueByPath(
+		u.path,
+		specData,
+	)
+	functionARN, version := extractFunctionARNAndVersion(saveOpCtx)
+	input, hasUpdates := changesToPutRuntimeMgmtConfigInput(
+		functionARN,
+		version,
+		runtimeMgmtConfigData,
+		changes,
+		u.fieldChangesPathRoot,
+	)
+	u.input = input
+	return hasUpdates, saveOpCtx, nil
+}
+
+func (u *functionRuntimeManagementConfigUpdate) Execute(
+	ctx context.Context,
+	saveOpCtx pluginutils.SaveOperationContext,
+	lambdaService Service,
+) (pluginutils.SaveOperationContext, error) {
+	_, err := lambdaService.PutRuntimeManagementConfig(ctx, u.input)
+	return saveOpCtx, err
+}
+
 func getItems(node *core.MappingNode) []*core.MappingNode {
 	if node == nil {
 		return nil
@@ -219,4 +260,53 @@ func extractComputedFieldsFromFunctionConfig(
 		}
 	}
 	return fields
+}
+
+func changesToPutRuntimeMgmtConfigInput(
+	functionARN string,
+	version string,
+	putRuntimeMgmtConfigData *core.MappingNode,
+	changes *provider.Changes,
+	pathRoot string,
+) (*lambda.PutRuntimeManagementConfigInput, bool) {
+	modifiedFields := pluginutils.MergeFieldChanges(
+		changes.ModifiedFields,
+		changes.NewFields,
+	)
+
+	input := &lambda.PutRuntimeManagementConfigInput{
+		FunctionName: &functionARN,
+	}
+	if version != "" {
+		input.Qualifier = &version
+	}
+
+	valueSetters := []*pluginutils.ValueSetter[*lambda.PutRuntimeManagementConfigInput]{
+		pluginutils.NewValueSetter(
+			"$.runtimeVersionArn",
+			setUpdateFunctionConfigRuntimeVersionARN,
+			pluginutils.WithValueSetterCheckIfChanged[*lambda.PutRuntimeManagementConfigInput](true),
+			pluginutils.WithValueSetterModifiedFields[*lambda.PutRuntimeManagementConfigInput](
+				modifiedFields,
+				pathRoot,
+			),
+		),
+		pluginutils.NewValueSetter(
+			"$.updateRuntimeOn",
+			setUpdateFunctionConfigUpdateRuntimeOn,
+			pluginutils.WithValueSetterCheckIfChanged[*lambda.PutRuntimeManagementConfigInput](true),
+			pluginutils.WithValueSetterModifiedFields[*lambda.PutRuntimeManagementConfigInput](
+				modifiedFields,
+				pathRoot,
+			),
+		),
+	}
+
+	hasUpdates := false
+	for _, valueSetter := range valueSetters {
+		valueSetter.Set(putRuntimeMgmtConfigData, input)
+		hasUpdates = hasUpdates || valueSetter.DidSet()
+	}
+
+	return input, hasUpdates
 }

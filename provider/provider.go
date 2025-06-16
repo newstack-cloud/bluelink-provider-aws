@@ -25,6 +25,10 @@ func NewProvider(
 				lambdaServiceFactory,
 				awsConfigStore,
 			),
+			"aws/lambda/functionVersion": lambda.FunctionVersionResource(
+				lambdaServiceFactory,
+				awsConfigStore,
+			),
 		},
 		DataSources:         map[string]provider.DataSource{},
 		Links:               map[string]provider.Link{},

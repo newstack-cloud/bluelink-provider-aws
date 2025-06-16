@@ -49,6 +49,12 @@ type Service interface {
 		params *lambda.GetFunctionRecursionConfigInput,
 		optFns ...func(*lambda.Options),
 	) (*lambda.GetFunctionRecursionConfigOutput, error)
+	// Returns the provisioned concurrency configuration for a function's version.
+	GetProvisionedConcurrencyConfig(
+		ctx context.Context,
+		params *lambda.GetProvisionedConcurrencyConfigInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.GetProvisionedConcurrencyConfigOutput, error)
 	// Returns details about the reserved concurrency configuration for a function. To
 	// set a concurrency limit for a function, use PutFunctionConcurrency.
 	GetFunctionConcurrency(
@@ -245,6 +251,28 @@ type Service interface {
 		params *lambda.CreateFunctionInput,
 		optFns ...func(*lambda.Options),
 	) (*lambda.CreateFunctionOutput, error)
+	// Creates a [version] from the current code and configuration of a function. Use versions
+	// to create a snapshot of your function code and configuration that doesn't
+	// change.
+	//
+	// Lambda doesn't publish a version if the function's configuration and code
+	// haven't changed since the last version. Use UpdateFunctionCodeor UpdateFunctionConfiguration to update the function before
+	// publishing a version.
+	//
+	// Clients can invoke versions directly or with an alias. To create an alias, use CreateAlias.
+	//
+	// [version]: https://docs.aws.amazon.com/lambda/latest/dg/versioning-aliases.html
+	PublishVersion(
+		ctx context.Context,
+		params *lambda.PublishVersionInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.PublishVersionOutput, error)
+	// Adds a provisioned concurrency configuration to a function's alias or version.
+	PutProvisionedConcurrencyConfig(
+		ctx context.Context,
+		params *lambda.PutProvisionedConcurrencyConfigInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.PutProvisionedConcurrencyConfigOutput, error)
 }
 
 // NewService creates a new instance of the AWS Lambda service

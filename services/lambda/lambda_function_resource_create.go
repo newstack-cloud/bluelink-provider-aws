@@ -25,7 +25,10 @@ func (l *lambdaFunctionResourceActions) Create(
 		&functionCreate{},
 		&functionConcurrencyUpdate{},
 		&functionRecursionConfigUpdate{},
-		&functionRuntimeManagementConfigUpdate{},
+		&functionRuntimeManagementConfigUpdate{
+			path:                 "$.runtimeManagementConfig",
+			fieldChangesPathRoot: "spec.runtimeManagementConfig",
+		},
 	}
 
 	hasUpdates, saveOpCtx, err := pluginutils.RunSaveOperations(

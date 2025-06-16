@@ -51,6 +51,7 @@ func (u *functionCreate) Execute(
 		createFunctionOutput.FunctionArn,
 	)
 	newSaveOpCtx.Data["createFunctionOutput"] = createFunctionOutput
+	newSaveOpCtx.Data["functionARN"] = aws.ToString(createFunctionOutput.FunctionArn)
 
 	return newSaveOpCtx, err
 }

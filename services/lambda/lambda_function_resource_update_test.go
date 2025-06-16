@@ -35,10 +35,10 @@ func (s *LambdaFunctionResourceUpdateSuite) Test_update_lambda_function() {
 
 	testCases := []plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
 		createBasicFunctionUpdateTestCase(providerCtx, loader),
-		createNoUpdatesTestCase(providerCtx, loader),
+		createFunctionNoUpdatesTestCase(providerCtx, loader),
 		createFunctionConfigAndCodeUpdateTestCase(providerCtx, loader),
-		createMultipleConfigsUpdateTestCase(providerCtx, loader),
-		createUpdateFailureTestCase(providerCtx, loader),
+		createFunctionMultipleConfigsUpdateTestCase(providerCtx, loader),
+		createFunctionUpdateFailureTestCase(providerCtx, loader),
 	}
 
 	plugintestutils.RunResourceDeployTestCases(
@@ -297,7 +297,7 @@ func createBasicFunctionUpdateTestCase(
 	}
 }
 
-func createNoUpdatesTestCase(
+func createFunctionNoUpdatesTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
 ) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
@@ -505,7 +505,7 @@ func createFunctionConfigAndCodeUpdateTestCase(
 	}
 }
 
-func createMultipleConfigsUpdateTestCase(
+func createFunctionMultipleConfigsUpdateTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
 ) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
@@ -664,7 +664,7 @@ func createMultipleConfigsUpdateTestCase(
 	}
 }
 
-func createUpdateFailureTestCase(
+func createFunctionUpdateFailureTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
 ) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {

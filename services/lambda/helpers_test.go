@@ -18,10 +18,12 @@ type lambdaServiceMock struct {
 	getFunctionCodeSigningOutput       *lambda.GetFunctionCodeSigningConfigOutput
 	getFunctionRecursionOutput         *lambda.GetFunctionRecursionConfigOutput
 	getFunctionConcurrencyOutput       *lambda.GetFunctionConcurrencyOutput
+	getProvisionedConcurrencyOutput    *lambda.GetProvisionedConcurrencyConfigOutput
 	getFunctionError                   error
 	getFunctionCodeSigningError        error
 	getFunctionRecursionError          error
 	getFunctionConcurrencyError        error
+	getProvisionedConcurrencyError     error
 	deleteFunctionOutput               *lambda.DeleteFunctionOutput
 	deleteFunctionError                error
 	updateFunctionConfigurationOutput  *lambda.UpdateFunctionConfigurationOutput
@@ -42,6 +44,10 @@ type lambdaServiceMock struct {
 	untagResourceError                 error
 	createFunctionOutput               *lambda.CreateFunctionOutput
 	createFunctionError                error
+	publishVersionOutput               *lambda.PublishVersionOutput
+	publishVersionError                error
+	putProvisionedConcurrencyOutput    *lambda.PutProvisionedConcurrencyConfigOutput
+	putProvisionedConcurrencyError     error
 }
 
 type lambdaServiceMockOption func(*lambdaServiceMock)
@@ -120,6 +126,20 @@ func WithGetFunctionConcurrencyOutput(
 func WithGetFunctionConcurrencyError(err error) lambdaServiceMockOption {
 	return func(m *lambdaServiceMock) {
 		m.getFunctionConcurrencyError = err
+	}
+}
+
+func WithGetProvisionedConcurrencyOutput(
+	output *lambda.GetProvisionedConcurrencyConfigOutput,
+) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.getProvisionedConcurrencyOutput = output
+	}
+}
+
+func WithGetProvisionedConcurrencyError(err error) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.getProvisionedConcurrencyError = err
 	}
 }
 
@@ -253,6 +273,30 @@ func WithCreateFunctionError(err error) lambdaServiceMockOption {
 	}
 }
 
+func WithPublishVersionOutput(output *lambda.PublishVersionOutput) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.publishVersionOutput = output
+	}
+}
+
+func WithPublishVersionError(err error) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.publishVersionError = err
+	}
+}
+
+func WithPutProvisionedConcurrencyConfigOutput(output *lambda.PutProvisionedConcurrencyConfigOutput) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.putProvisionedConcurrencyOutput = output
+	}
+}
+
+func WithPutProvisionedConcurrencyConfigError(err error) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.putProvisionedConcurrencyError = err
+	}
+}
+
 func (m *lambdaServiceMock) GetFunction(
 	ctx context.Context,
 	params *lambda.GetFunctionInput,
@@ -287,6 +331,20 @@ func (m *lambdaServiceMock) GetFunctionConcurrency(
 ) (*lambda.GetFunctionConcurrencyOutput, error) {
 	m.RegisterCall(ctx, params)
 	return m.getFunctionConcurrencyOutput, m.getFunctionConcurrencyError
+}
+
+func (m *lambdaServiceMock) GetProvisionedConcurrencyConfig(
+	ctx context.Context,
+	params *lambda.GetProvisionedConcurrencyConfigInput,
+	optFns ...func(*lambda.Options),
+) (*lambda.GetProvisionedConcurrencyConfigOutput, error) {
+	m.RegisterCall(ctx, params)
+
+	if m.getProvisionedConcurrencyError != nil {
+		return nil, m.getProvisionedConcurrencyError
+	}
+
+	return m.getProvisionedConcurrencyOutput, nil
 }
 
 func (m *lambdaServiceMock) DeleteFunction(
@@ -377,6 +435,24 @@ func (m *lambdaServiceMock) CreateFunction(
 ) (*lambda.CreateFunctionOutput, error) {
 	m.RegisterCall(ctx, params)
 	return m.createFunctionOutput, m.createFunctionError
+}
+
+func (m *lambdaServiceMock) PublishVersion(
+	ctx context.Context,
+	params *lambda.PublishVersionInput,
+	optFns ...func(*lambda.Options),
+) (*lambda.PublishVersionOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.publishVersionOutput, m.publishVersionError
+}
+
+func (m *lambdaServiceMock) PutProvisionedConcurrencyConfig(
+	ctx context.Context,
+	params *lambda.PutProvisionedConcurrencyConfigInput,
+	optFns ...func(*lambda.Options),
+) (*lambda.PutProvisionedConcurrencyConfigOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.putProvisionedConcurrencyOutput, m.putProvisionedConcurrencyError
 }
 
 func createBaseTestFunctionConfig(

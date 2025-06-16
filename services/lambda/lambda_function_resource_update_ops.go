@@ -163,38 +163,3 @@ func (u *functionRecursionConfigUpdate) Execute(
 	_, err := lambdaService.PutFunctionRecursionConfig(ctx, u.input)
 	return saveOpCtx, err
 }
-
-type functionRuntimeManagementConfigUpdate struct {
-	input *lambda.PutRuntimeManagementConfigInput
-}
-
-func (u *functionRuntimeManagementConfigUpdate) Name() string {
-	return "runtime management config"
-}
-
-func (u *functionRuntimeManagementConfigUpdate) Prepare(
-	saveOpCtx pluginutils.SaveOperationContext,
-	specData *core.MappingNode,
-	changes *provider.Changes,
-) (bool, pluginutils.SaveOperationContext, error) {
-	runtimeMgmtConfigData, _ := pluginutils.GetValueByPath(
-		"$.runtimeManagementConfig",
-		specData,
-	)
-	input, hasUpdates := changesToPutRuntimeMgmtConfigInput(
-		saveOpCtx.ProviderUpstreamID,
-		runtimeMgmtConfigData,
-		changes,
-	)
-	u.input = input
-	return hasUpdates, saveOpCtx, nil
-}
-
-func (u *functionRuntimeManagementConfigUpdate) Execute(
-	ctx context.Context,
-	saveOpCtx pluginutils.SaveOperationContext,
-	lambdaService Service,
-) (pluginutils.SaveOperationContext, error) {
-	_, err := lambdaService.PutRuntimeManagementConfig(ctx, u.input)
-	return saveOpCtx, err
-}

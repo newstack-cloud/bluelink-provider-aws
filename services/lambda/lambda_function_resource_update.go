@@ -42,7 +42,10 @@ func (l *lambdaFunctionResourceActions) Update(
 		&functionCodeSigningConfigUpdate{},
 		&functionConcurrencyUpdate{},
 		&functionRecursionConfigUpdate{},
-		&functionRuntimeManagementConfigUpdate{},
+		&functionRuntimeManagementConfigUpdate{
+			path:                 "$.runtimeManagementConfig",
+			fieldChangesPathRoot: "spec.runtimeManagementConfig",
+		},
 		&tagsUpdate{
 			pathRoot: "$.tags",
 		},
@@ -52,7 +55,9 @@ func (l *lambdaFunctionResourceActions) Update(
 		ctx,
 		pluginutils.SaveOperationContext{
 			ProviderUpstreamID: arn,
-			Data:               map[string]any{},
+			Data: map[string]any{
+				"functionARN": arn,
+			},
 		},
 		updateOperations,
 		input,
@@ -837,48 +842,6 @@ func changesToPutFunctionRecursionConfigInput(
 		FunctionName:  &arn,
 		RecursiveLoop: types.RecursiveLoop(core.StringValue(recursiveLoop)),
 	}, true
-}
-
-func changesToPutRuntimeMgmtConfigInput(
-	arn string,
-	putRuntimeMgmtConfigData *core.MappingNode,
-	changes *provider.Changes,
-) (*lambda.PutRuntimeManagementConfigInput, bool) {
-	modifiedFields := pluginutils.MergeFieldChanges(changes.ModifiedFields, changes.NewFields)
-
-	pathRoot := "spec.runtimeManagementConfig"
-	input := &lambda.PutRuntimeManagementConfigInput{
-		FunctionName: &arn,
-	}
-
-	valueSetters := []*pluginutils.ValueSetter[*lambda.PutRuntimeManagementConfigInput]{
-		pluginutils.NewValueSetter(
-			"$.runtimeVersionArn",
-			setUpdateFunctionConfigRuntimeVersionARN,
-			pluginutils.WithValueSetterCheckIfChanged[*lambda.PutRuntimeManagementConfigInput](true),
-			pluginutils.WithValueSetterModifiedFields[*lambda.PutRuntimeManagementConfigInput](
-				modifiedFields,
-				pathRoot,
-			),
-		),
-		pluginutils.NewValueSetter(
-			"$.updateRuntimeOn",
-			setUpdateFunctionConfigUpdateRuntimeOn,
-			pluginutils.WithValueSetterCheckIfChanged[*lambda.PutRuntimeManagementConfigInput](true),
-			pluginutils.WithValueSetterModifiedFields[*lambda.PutRuntimeManagementConfigInput](
-				modifiedFields,
-				pathRoot,
-			),
-		),
-	}
-
-	hasUpdates := false
-	for _, valueSetter := range valueSetters {
-		valueSetter.Set(putRuntimeMgmtConfigData, input)
-		hasUpdates = hasUpdates || valueSetter.DidSet()
-	}
-
-	return input, hasUpdates
 }
 
 func setUpdateFunctionConfigRuntimeVersionARN(
