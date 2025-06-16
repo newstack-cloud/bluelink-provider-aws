@@ -2,7 +2,7 @@
 
 This example demonstrates how to create a Lambda function version using JSONC format.
 
-```jsonc
+```javascript
 {
   "resources": {
     "version1": {

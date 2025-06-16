@@ -1,6 +1,6 @@
 # Lambda Code Signing Config JSONC Example
 
-```jsonc
+```javascript
 {
   "resources": {
     "codeSigningConfig": {

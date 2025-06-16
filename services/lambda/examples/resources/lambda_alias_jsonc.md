@@ -2,7 +2,7 @@
 
 This example demonstrates how to create a Lambda alias using JSONC format.
 
-```jsonc
+```javascript
 {
   "resources": {
     "productionAlias": {
