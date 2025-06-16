@@ -299,6 +299,36 @@ type Service interface {
 		params *lambda.DeleteAliasInput,
 		optFns ...func(*lambda.Options),
 	) (*lambda.DeleteAliasOutput, error)
+	// Creates a code signing configuration. A code signing configuration defines a list of allowed signing profiles and defines the code-signing validation policy (action to be taken if deployment validation checks fail).
+	CreateCodeSigningConfig(
+		ctx context.Context,
+		params *lambda.CreateCodeSigningConfigInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.CreateCodeSigningConfigOutput, error)
+	// Returns information about the specified code signing configuration.
+	GetCodeSigningConfig(
+		ctx context.Context,
+		params *lambda.GetCodeSigningConfigInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.GetCodeSigningConfigOutput, error)
+	// Update the code signing configuration. Changes to the code signing configuration take effect the next time a user tries to deploy a code package to the function.
+	UpdateCodeSigningConfig(
+		ctx context.Context,
+		params *lambda.UpdateCodeSigningConfigInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.UpdateCodeSigningConfigOutput, error)
+	// Deletes the code signing configuration. You can delete the code signing configuration only if no function is using it.
+	DeleteCodeSigningConfig(
+		ctx context.Context,
+		params *lambda.DeleteCodeSigningConfigInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.DeleteCodeSigningConfigOutput, error)
+	// Lists tags for a Lambda function.
+	ListTags(
+		ctx context.Context,
+		params *lambda.ListTagsInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.ListTagsOutput, error)
 }
 
 // NewService creates a new instance of the AWS Lambda service

@@ -92,6 +92,8 @@ func changesToResourceTagUpdatesInput(
 		}
 	}
 
+	hasUpdates := len(addTags) > 0 || len(removedTags) > 0
+
 	return &tagUpdatesInput{
 		saveTagsInput: &lambda.TagResourceInput{
 			Resource: aws.String(arn),
@@ -101,7 +103,7 @@ func changesToResourceTagUpdatesInput(
 			Resource: aws.String(arn),
 			TagKeys:  removedTags,
 		},
-	}, false
+	}, hasUpdates
 }
 
 // Shared between function and function version resources.

@@ -42,6 +42,8 @@ type lambdaServiceMock struct {
 	tagResourceError                   error
 	untagResourceOutput                *lambda.UntagResourceOutput
 	untagResourceError                 error
+	listTagsOutput                     *lambda.ListTagsOutput
+	listTagsError                      error
 	createFunctionOutput               *lambda.CreateFunctionOutput
 	createFunctionError                error
 	publishVersionOutput               *lambda.PublishVersionOutput
@@ -57,6 +59,15 @@ type lambdaServiceMock struct {
 	updateAliasError  error
 	deleteAliasOutput *lambda.DeleteAliasOutput
 	deleteAliasError  error
+	// Code signing config-related mock fields
+	createCodeSigningConfigOutput *lambda.CreateCodeSigningConfigOutput
+	createCodeSigningConfigError  error
+	getCodeSigningConfigOutput    *lambda.GetCodeSigningConfigOutput
+	getCodeSigningConfigError     error
+	updateCodeSigningConfigOutput *lambda.UpdateCodeSigningConfigOutput
+	updateCodeSigningConfigError  error
+	deleteCodeSigningConfigOutput *lambda.DeleteCodeSigningConfigOutput
+	deleteCodeSigningConfigError  error
 }
 
 type lambdaServiceMockOption func(*lambdaServiceMock)
@@ -270,6 +281,18 @@ func WithUntagResourceError(err error) lambdaServiceMockOption {
 	}
 }
 
+func WithListTagsOutput(output *lambda.ListTagsOutput) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.listTagsOutput = output
+	}
+}
+
+func WithListTagsError(err error) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.listTagsError = err
+	}
+}
+
 func WithCreateFunctionOutput(output *lambda.CreateFunctionOutput) lambdaServiceMockOption {
 	return func(m *lambdaServiceMock) {
 		m.createFunctionOutput = output
@@ -353,6 +376,56 @@ func WithDeleteAliasOutput(output *lambda.DeleteAliasOutput) lambdaServiceMockOp
 func WithDeleteAliasError(err error) lambdaServiceMockOption {
 	return func(m *lambdaServiceMock) {
 		m.deleteAliasError = err
+	}
+}
+
+// Code signing config mock options
+
+func WithCreateCodeSigningConfigOutput(output *lambda.CreateCodeSigningConfigOutput) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.createCodeSigningConfigOutput = output
+	}
+}
+
+func WithCreateCodeSigningConfigError(err error) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.createCodeSigningConfigError = err
+	}
+}
+
+func WithGetCodeSigningConfigOutput(output *lambda.GetCodeSigningConfigOutput) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.getCodeSigningConfigOutput = output
+	}
+}
+
+func WithGetCodeSigningConfigError(err error) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.getCodeSigningConfigError = err
+	}
+}
+
+func WithUpdateCodeSigningConfigOutput(output *lambda.UpdateCodeSigningConfigOutput) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.updateCodeSigningConfigOutput = output
+	}
+}
+
+func WithUpdateCodeSigningConfigError(err error) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.updateCodeSigningConfigError = err
+	}
+}
+
+func WithDeleteCodeSigningConfigOutput(output *lambda.DeleteCodeSigningConfigOutput) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.deleteCodeSigningConfigOutput = output
+	}
+}
+
+func WithDeleteCodeSigningConfigError(err error) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.deleteCodeSigningConfigError = err
 	}
 }
 
@@ -550,6 +623,53 @@ func (m *lambdaServiceMock) DeleteAlias(
 ) (*lambda.DeleteAliasOutput, error) {
 	m.RegisterCall(ctx, params)
 	return m.deleteAliasOutput, m.deleteAliasError
+}
+
+// Code signing config mock methods
+
+func (m *lambdaServiceMock) CreateCodeSigningConfig(
+	ctx context.Context,
+	params *lambda.CreateCodeSigningConfigInput,
+	optFns ...func(*lambda.Options),
+) (*lambda.CreateCodeSigningConfigOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.createCodeSigningConfigOutput, m.createCodeSigningConfigError
+}
+
+func (m *lambdaServiceMock) GetCodeSigningConfig(
+	ctx context.Context,
+	params *lambda.GetCodeSigningConfigInput,
+	optFns ...func(*lambda.Options),
+) (*lambda.GetCodeSigningConfigOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.getCodeSigningConfigOutput, m.getCodeSigningConfigError
+}
+
+func (m *lambdaServiceMock) UpdateCodeSigningConfig(
+	ctx context.Context,
+	params *lambda.UpdateCodeSigningConfigInput,
+	optFns ...func(*lambda.Options),
+) (*lambda.UpdateCodeSigningConfigOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.updateCodeSigningConfigOutput, m.updateCodeSigningConfigError
+}
+
+func (m *lambdaServiceMock) DeleteCodeSigningConfig(
+	ctx context.Context,
+	params *lambda.DeleteCodeSigningConfigInput,
+	optFns ...func(*lambda.Options),
+) (*lambda.DeleteCodeSigningConfigOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.deleteCodeSigningConfigOutput, m.deleteCodeSigningConfigError
+}
+
+func (m *lambdaServiceMock) ListTags(
+	ctx context.Context,
+	params *lambda.ListTagsInput,
+	optFns ...func(*lambda.Options),
+) (*lambda.ListTagsOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.listTagsOutput, m.listTagsError
 }
 
 func createBaseTestFunctionConfig(
