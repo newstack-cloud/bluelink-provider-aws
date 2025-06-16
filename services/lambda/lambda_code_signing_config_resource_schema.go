@@ -53,33 +53,8 @@ func lambdaCodeSigningConfigResourceSchema() *provider.ResourceDefinitionsSchema
 				MinLength:   0,
 				MaxLength:   256,
 			},
-			"tags": {
-				Type:        provider.ResourceDefinitionsSchemaTypeArray,
-				Description: "A list of tags to apply to the code signing configuration.",
-				FormattedDescription: "A list of [tags](https://docs.aws.amazon.com/lambda/latest/dg/tagging.html) " +
-					"to apply to the code signing configuration.",
-				Items: &provider.ResourceDefinitionsSchema{
-					Type:                 provider.ResourceDefinitionsSchemaTypeObject,
-					Label:                "Tag",
-					Description:          "A tag to apply to the code signing configuration.",
-					FormattedDescription: "A [tag](https://docs.aws.amazon.com/lambda/latest/dg/tagging.html) to apply to the code signing configuration.",
-					Required:             []string{"key", "value"},
-					Attributes: map[string]*provider.ResourceDefinitionsSchema{
-						"key": {
-							Type:        provider.ResourceDefinitionsSchemaTypeString,
-							Description: "The key of the tag.",
-							MinLength:   1,
-							MaxLength:   128,
-						},
-						"value": {
-							Type:        provider.ResourceDefinitionsSchemaTypeString,
-							Description: "The value of the tag.",
-							MinLength:   0,
-							MaxLength:   256,
-						},
-					},
-				},
-			},
+			"tags": lambdaSchemaTags("code signing configuration"),
+
 			// Computed fields returned by AWS
 			"codeSigningConfigArn": {
 				Type:        provider.ResourceDefinitionsSchemaTypeString,
