@@ -29,6 +29,10 @@ func NewProvider(
 				lambdaServiceFactory,
 				awsConfigStore,
 			),
+			"aws/lambda/alias": lambda.AliasResource(
+				lambdaServiceFactory,
+				awsConfigStore,
+			),
 		},
 		DataSources:         map[string]provider.DataSource{},
 		Links:               map[string]provider.Link{},

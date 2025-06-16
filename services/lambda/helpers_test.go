@@ -48,6 +48,15 @@ type lambdaServiceMock struct {
 	publishVersionError                error
 	putProvisionedConcurrencyOutput    *lambda.PutProvisionedConcurrencyConfigOutput
 	putProvisionedConcurrencyError     error
+	// Alias-related mock fields
+	createAliasOutput *lambda.CreateAliasOutput
+	createAliasError  error
+	getAliasOutput    *lambda.GetAliasOutput
+	getAliasError     error
+	updateAliasOutput *lambda.UpdateAliasOutput
+	updateAliasError  error
+	deleteAliasOutput *lambda.DeleteAliasOutput
+	deleteAliasError  error
 }
 
 type lambdaServiceMockOption func(*lambdaServiceMock)
@@ -297,6 +306,56 @@ func WithPutProvisionedConcurrencyConfigError(err error) lambdaServiceMockOption
 	}
 }
 
+// Alias mock options
+
+func WithCreateAliasOutput(output *lambda.CreateAliasOutput) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.createAliasOutput = output
+	}
+}
+
+func WithCreateAliasError(err error) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.createAliasError = err
+	}
+}
+
+func WithGetAliasOutput(output *lambda.GetAliasOutput) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.getAliasOutput = output
+	}
+}
+
+func WithGetAliasError(err error) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.getAliasError = err
+	}
+}
+
+func WithUpdateAliasOutput(output *lambda.UpdateAliasOutput) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.updateAliasOutput = output
+	}
+}
+
+func WithUpdateAliasError(err error) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.updateAliasError = err
+	}
+}
+
+func WithDeleteAliasOutput(output *lambda.DeleteAliasOutput) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.deleteAliasOutput = output
+	}
+}
+
+func WithDeleteAliasError(err error) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.deleteAliasError = err
+	}
+}
+
 func (m *lambdaServiceMock) GetFunction(
 	ctx context.Context,
 	params *lambda.GetFunctionInput,
@@ -453,6 +512,44 @@ func (m *lambdaServiceMock) PutProvisionedConcurrencyConfig(
 ) (*lambda.PutProvisionedConcurrencyConfigOutput, error) {
 	m.RegisterCall(ctx, params)
 	return m.putProvisionedConcurrencyOutput, m.putProvisionedConcurrencyError
+}
+
+// Alias mock methods
+
+func (m *lambdaServiceMock) CreateAlias(
+	ctx context.Context,
+	params *lambda.CreateAliasInput,
+	optFns ...func(*lambda.Options),
+) (*lambda.CreateAliasOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.createAliasOutput, m.createAliasError
+}
+
+func (m *lambdaServiceMock) GetAlias(
+	ctx context.Context,
+	params *lambda.GetAliasInput,
+	optFns ...func(*lambda.Options),
+) (*lambda.GetAliasOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.getAliasOutput, m.getAliasError
+}
+
+func (m *lambdaServiceMock) UpdateAlias(
+	ctx context.Context,
+	params *lambda.UpdateAliasInput,
+	optFns ...func(*lambda.Options),
+) (*lambda.UpdateAliasOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.updateAliasOutput, m.updateAliasError
+}
+
+func (m *lambdaServiceMock) DeleteAlias(
+	ctx context.Context,
+	params *lambda.DeleteAliasInput,
+	optFns ...func(*lambda.Options),
+) (*lambda.DeleteAliasOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.deleteAliasOutput, m.deleteAliasError
 }
 
 func createBaseTestFunctionConfig(

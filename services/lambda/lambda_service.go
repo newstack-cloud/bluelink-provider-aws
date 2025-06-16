@@ -273,6 +273,32 @@ type Service interface {
 		params *lambda.PutProvisionedConcurrencyConfigInput,
 		optFns ...func(*lambda.Options),
 	) (*lambda.PutProvisionedConcurrencyConfigOutput, error)
+	// Creates an alias for a Lambda function version. Use aliases to provide clients
+	// with a function identifier that you can update to invoke a different version.
+	// You can also map an alias to split invocation requests between two versions.
+	CreateAlias(
+		ctx context.Context,
+		params *lambda.CreateAliasInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.CreateAliasOutput, error)
+	// Returns details about a Lambda function alias.
+	GetAlias(
+		ctx context.Context,
+		params *lambda.GetAliasInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.GetAliasOutput, error)
+	// Updates the configuration of a Lambda function alias.
+	UpdateAlias(
+		ctx context.Context,
+		params *lambda.UpdateAliasInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.UpdateAliasOutput, error)
+	// Deletes a Lambda function alias.
+	DeleteAlias(
+		ctx context.Context,
+		params *lambda.DeleteAliasInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.DeleteAliasOutput, error)
 }
 
 // NewService creates a new instance of the AWS Lambda service
