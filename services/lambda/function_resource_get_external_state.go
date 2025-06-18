@@ -155,18 +155,7 @@ func (l *lambdaFunctionResourceActions) addOptionalConfigurationsToSpec(
 				}, nil
 			},
 		},
-		{
-			Name: "handler",
-			Condition: func(output *lambda.GetFunctionOutput) bool {
-				return output.Configuration.Handler != nil
-			},
-			Fields: []string{"handler"},
-			Values: func(output *lambda.GetFunctionOutput) ([]*core.MappingNode, error) {
-				return []*core.MappingNode{
-					core.MappingNodeFromString(aws.ToString(output.Configuration.Handler)),
-				}, nil
-			},
-		},
+		functionHandlerValueExtractor(),
 		{
 			Name: "imageConfig",
 			Condition: func(output *lambda.GetFunctionOutput) bool {
@@ -179,18 +168,7 @@ func (l *lambdaFunctionResourceActions) addOptionalConfigurationsToSpec(
 				}, nil
 			},
 		},
-		{
-			Name: "kmsKeyArn",
-			Condition: func(output *lambda.GetFunctionOutput) bool {
-				return output.Configuration.KMSKeyArn != nil
-			},
-			Fields: []string{"kmsKeyArn"},
-			Values: func(output *lambda.GetFunctionOutput) ([]*core.MappingNode, error) {
-				return []*core.MappingNode{
-					core.MappingNodeFromString(aws.ToString(output.Configuration.KMSKeyArn)),
-				}, nil
-			},
-		},
+		functionKMSKeyArnValueExtractor(),
 		{
 			Name: "layers",
 			Condition: func(output *lambda.GetFunctionOutput) bool {
