@@ -45,6 +45,7 @@ func (s *LambdaFunctionResourceStabilisedSuite) Test_stabilised() {
 				[]string{},
 				utils.AWSConfigFromProviderContext,
 				loader,
+				utils.AWSConfigCacheKey,
 			),
 			Input: &provider.ResourceHasStabilisedInput{
 				ProviderContext: providerCtx,
@@ -74,6 +75,7 @@ func (s *LambdaFunctionResourceStabilisedSuite) Test_stabilised() {
 				[]string{},
 				utils.AWSConfigFromProviderContext,
 				loader,
+				utils.AWSConfigCacheKey,
 			),
 			Input: &provider.ResourceHasStabilisedInput{
 				ProviderContext: providerCtx,
@@ -99,6 +101,7 @@ func (s *LambdaFunctionResourceStabilisedSuite) Test_stabilised() {
 				[]string{},
 				utils.AWSConfigFromProviderContext,
 				loader,
+				utils.AWSConfigCacheKey,
 			),
 			Input: &provider.ResourceHasStabilisedInput{
 				ProviderContext: providerCtx,

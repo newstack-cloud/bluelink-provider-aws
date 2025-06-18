@@ -56,6 +56,7 @@ func (s *ProviderSuite) Test_loads_provider_and_applies_duration_validation() {
 		[]string{},
 		utils.AWSConfigFromProviderContext,
 		&utils.DefaultAWSConfigLoader{},
+		utils.AWSConfigCacheKey,
 	)
 	provider := NewProvider(lambda.NewService, configStore)
 	configDef, err := provider.ConfigDefinition(context.Background())
@@ -134,6 +135,7 @@ func (s *ProviderSuite) Test_loads_provider_and_applies_role_arn_validation() {
 		[]string{},
 		utils.AWSConfigFromProviderContext,
 		&utils.DefaultAWSConfigLoader{},
+		utils.AWSConfigCacheKey,
 	)
 	provider := NewProvider(lambda.NewService, configStore)
 	configDef, err := provider.ConfigDefinition(context.Background())

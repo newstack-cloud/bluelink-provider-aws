@@ -68,6 +68,36 @@ type lambdaServiceMock struct {
 	updateCodeSigningConfigError  error
 	deleteCodeSigningConfigOutput *lambda.DeleteCodeSigningConfigOutput
 	deleteCodeSigningConfigError  error
+
+	// Event Source Mapping fields
+	createEventSourceMappingOutput *lambda.CreateEventSourceMappingOutput
+	createEventSourceMappingError  error
+	getEventSourceMappingOutput    *lambda.GetEventSourceMappingOutput
+	getEventSourceMappingError     error
+	updateEventSourceMappingOutput *lambda.UpdateEventSourceMappingOutput
+	updateEventSourceMappingError  error
+	deleteEventSourceMappingOutput *lambda.DeleteEventSourceMappingOutput
+	deleteEventSourceMappingError  error
+
+	// Event Source Mapping mock methods
+	MockCreateEventSourceMapping func(ctx context.Context, input *lambda.CreateEventSourceMappingInput) (*lambda.CreateEventSourceMappingOutput, error)
+	MockGetEventSourceMapping    func(ctx context.Context, input *lambda.GetEventSourceMappingInput) (*lambda.GetEventSourceMappingOutput, error)
+	MockUpdateEventSourceMapping func(ctx context.Context, input *lambda.UpdateEventSourceMappingInput) (*lambda.UpdateEventSourceMappingOutput, error)
+	MockDeleteEventSourceMapping func(ctx context.Context, input *lambda.DeleteEventSourceMappingInput) (*lambda.DeleteEventSourceMappingOutput, error)
+
+	// Expected function calls during tests
+	ExpectedCodeSigningConfigCreateCalls []lambda.CreateCodeSigningConfigInput
+	ExpectedCodeSigningConfigGetCalls    []lambda.GetCodeSigningConfigInput
+	ExpectedCodeSigningConfigUpdateCalls []lambda.UpdateCodeSigningConfigInput
+	ExpectedCodeSigningConfigDeleteCalls []lambda.DeleteCodeSigningConfigInput
+	ExpectedTagResourceCalls             []lambda.TagResourceInput
+	ExpectedUntagResourceCalls           []lambda.UntagResourceInput
+
+	// Event Source Mapping expected calls
+	ExpectedEventSourceMappingCreateCalls []lambda.CreateEventSourceMappingInput
+	ExpectedEventSourceMappingGetCalls    []lambda.GetEventSourceMappingInput
+	ExpectedEventSourceMappingUpdateCalls []lambda.UpdateEventSourceMappingInput
+	ExpectedEventSourceMappingDeleteCalls []lambda.DeleteEventSourceMappingInput
 }
 
 type lambdaServiceMockOption func(*lambdaServiceMock)
@@ -429,6 +459,43 @@ func WithDeleteCodeSigningConfigError(err error) lambdaServiceMockOption {
 	}
 }
 
+// Event Source Mapping mock helpers.
+func WithCreateEventSourceMappingOutput(output *lambda.CreateEventSourceMappingOutput) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.createEventSourceMappingOutput = output
+	}
+}
+
+func WithGetEventSourceMappingOutput(output *lambda.GetEventSourceMappingOutput) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.getEventSourceMappingOutput = output
+	}
+}
+
+func WithGetEventSourceMappingError(err error) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.getEventSourceMappingError = err
+	}
+}
+
+func WithUpdateEventSourceMappingOutput(output *lambda.UpdateEventSourceMappingOutput) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.updateEventSourceMappingOutput = output
+	}
+}
+
+func WithDeleteEventSourceMappingOutput(output *lambda.DeleteEventSourceMappingOutput) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.deleteEventSourceMappingOutput = output
+	}
+}
+
+func WithDeleteEventSourceMappingError(err error) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.deleteEventSourceMappingError = err
+	}
+}
+
 func (m *lambdaServiceMock) GetFunction(
 	ctx context.Context,
 	params *lambda.GetFunctionInput,
@@ -670,6 +737,43 @@ func (m *lambdaServiceMock) ListTags(
 ) (*lambda.ListTagsOutput, error) {
 	m.RegisterCall(ctx, params)
 	return m.listTagsOutput, m.listTagsError
+}
+
+// Event Source Mapping mock implementations.
+func (m *lambdaServiceMock) CreateEventSourceMapping(ctx context.Context, input *lambda.CreateEventSourceMappingInput, optFns ...func(*lambda.Options)) (*lambda.CreateEventSourceMappingOutput, error) {
+	m.RegisterCall(ctx, input)
+	m.ExpectedEventSourceMappingCreateCalls = append(m.ExpectedEventSourceMappingCreateCalls, *input)
+	if m.MockCreateEventSourceMapping != nil {
+		return m.MockCreateEventSourceMapping(ctx, input)
+	}
+	return m.createEventSourceMappingOutput, m.createEventSourceMappingError
+}
+
+func (m *lambdaServiceMock) GetEventSourceMapping(ctx context.Context, input *lambda.GetEventSourceMappingInput, optFns ...func(*lambda.Options)) (*lambda.GetEventSourceMappingOutput, error) {
+	m.RegisterCall(ctx, input)
+	m.ExpectedEventSourceMappingGetCalls = append(m.ExpectedEventSourceMappingGetCalls, *input)
+	if m.MockGetEventSourceMapping != nil {
+		return m.MockGetEventSourceMapping(ctx, input)
+	}
+	return m.getEventSourceMappingOutput, m.getEventSourceMappingError
+}
+
+func (m *lambdaServiceMock) UpdateEventSourceMapping(ctx context.Context, input *lambda.UpdateEventSourceMappingInput, optFns ...func(*lambda.Options)) (*lambda.UpdateEventSourceMappingOutput, error) {
+	m.RegisterCall(ctx, input)
+	m.ExpectedEventSourceMappingUpdateCalls = append(m.ExpectedEventSourceMappingUpdateCalls, *input)
+	if m.MockUpdateEventSourceMapping != nil {
+		return m.MockUpdateEventSourceMapping(ctx, input)
+	}
+	return m.updateEventSourceMappingOutput, m.updateEventSourceMappingError
+}
+
+func (m *lambdaServiceMock) DeleteEventSourceMapping(ctx context.Context, input *lambda.DeleteEventSourceMappingInput, optFns ...func(*lambda.Options)) (*lambda.DeleteEventSourceMappingOutput, error) {
+	m.RegisterCall(ctx, input)
+	m.ExpectedEventSourceMappingDeleteCalls = append(m.ExpectedEventSourceMappingDeleteCalls, *input)
+	if m.MockDeleteEventSourceMapping != nil {
+		return m.MockDeleteEventSourceMapping(ctx, input)
+	}
+	return m.deleteEventSourceMappingOutput, m.deleteEventSourceMappingError
 }
 
 func createBaseTestFunctionConfig(

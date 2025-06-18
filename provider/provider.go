@@ -37,6 +37,10 @@ func NewProvider(
 				lambdaServiceFactory,
 				awsConfigStore,
 			),
+			"aws/lambda/eventSourceMapping": lambda.EventSourceMappingResource(
+				lambdaServiceFactory,
+				awsConfigStore,
+			),
 		},
 		DataSources:         map[string]provider.DataSource{},
 		Links:               map[string]provider.Link{},

@@ -10,8 +10,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.71.2
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.20
 	github.com/aws/smithy-go v1.22.2
-	github.com/newstack-cloud/celerity/libs/blueprint v0.18.0
-	github.com/newstack-cloud/celerity/libs/plugin-framework v0.0.0-20250615142107-cccf5f2a50be
+	github.com/newstack-cloud/celerity/libs/blueprint v0.22.0
+	github.com/newstack-cloud/celerity/libs/plugin-framework v0.0.0-20250618175550-aa5721e803ca
 	github.com/stretchr/testify v1.10.0
 )
 
@@ -31,7 +31,6 @@ require (
 	github.com/newstack-cloud/celerity/libs/common v0.3.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
-	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/tailscale/hujson v0.0.0-20250226034555-ec1d1c113d33 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect

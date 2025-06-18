@@ -25,6 +25,7 @@ func (s *AWSConfigStoreTestSuite) SetupTest() {
 	s.mockConfigCreator = func(
 		ctx context.Context,
 		providerContext provider.Context,
+		meta map[string]*core.MappingNode,
 		env map[string]string,
 		loader AWSConfigLoader,
 	) (*aws.Config, error) {
@@ -61,19 +62,24 @@ func (s *AWSConfigStoreTestSuite) Test_from_provider_context() {
 	}
 	sessionID := "test-session-1"
 
-	store := NewAWSConfigStore(env, s.mockConfigCreator, &testutils.MockAWSConfigLoader{})
+	store := NewAWSConfigStore(
+		env,
+		s.mockConfigCreator,
+		&testutils.MockAWSConfigLoader{},
+		AWSConfigCacheKey,
+	)
 	providerContext := plugintestutils.NewTestProviderContext("aws", providerConfig, nil)
 
 	// Create a context with the session ID
 	ctx := context.WithValue(context.Background(), pluginutils.ContextSessionIDKey, sessionID)
 
 	// First call should not be cached
-	cfg, err := store.FromProviderContext(ctx, providerContext)
+	cfg, err := store.FromProviderContext(ctx, providerContext, nil)
 	s.NoError(err)
 	s.NotNil(cfg)
 
 	// Second call should be cached
-	cachedCfg, err := store.FromProviderContext(ctx, providerContext)
+	cachedCfg, err := store.FromProviderContext(ctx, providerContext, nil)
 	s.NoError(err)
 	s.NotNil(cachedCfg)
 	s.Equal(cfg, cachedCfg, "Cached config should be identical to original config")
@@ -84,14 +90,14 @@ func (s *AWSConfigStoreTestSuite) Test_from_provider_context() {
 		pluginutils.ContextSessionIDKey,
 		sessionID+"-other",
 	)
-	otherCfg, err := store.FromProviderContext(otherSessionCtx, providerContext)
+	otherCfg, err := store.FromProviderContext(otherSessionCtx, providerContext, nil)
 	s.NoError(err)
 	s.NotNil(otherCfg)
 	s.NotEqual(cfg, otherCfg, "Configs for different sessions should be different")
 }
 
 func (s *AWSConfigStoreTestSuite) Test_from_provider_context_no_session_id() {
-	store := NewAWSConfigStore([]string{}, s.mockConfigCreator, &testutils.MockAWSConfigLoader{})
+	store := NewAWSConfigStore([]string{}, s.mockConfigCreator, &testutils.MockAWSConfigLoader{}, nil)
 	providerContext := plugintestutils.NewTestProviderContext(
 		"aws",
 		map[string]*core.ScalarValue{
@@ -101,12 +107,12 @@ func (s *AWSConfigStoreTestSuite) Test_from_provider_context_no_session_id() {
 	)
 
 	// Call without session ID in context
-	cfg, err := store.FromProviderContext(context.Background(), providerContext)
+	cfg, err := store.FromProviderContext(context.Background(), providerContext, nil)
 	s.NoError(err)
 	s.NotNil(cfg)
 
 	// Second call should still work but won't use cache
-	cfg2, err := store.FromProviderContext(context.Background(), providerContext)
+	cfg2, err := store.FromProviderContext(context.Background(), providerContext, nil)
 	s.NoError(err)
 	s.NotNil(cfg2)
 	s.NotEqual(cfg, cfg2, "Configs without session ID should not be cached")

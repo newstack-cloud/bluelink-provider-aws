@@ -58,7 +58,11 @@ func (l *lambdaFunctionResourceActions) getLambdaService(
 	ctx context.Context,
 	providerContext provider.Context,
 ) (Service, error) {
-	awsConfig, err := l.awsConfigStore.FromProviderContext(ctx, providerContext)
+	awsConfig, err := l.awsConfigStore.FromProviderContext(
+		ctx,
+		providerContext,
+		nil,
+	)
 	if err != nil {
 		return nil, err
 	}

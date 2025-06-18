@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
@@ -45,6 +46,7 @@ func (l *DefaultAWSConfigLoader) LoadDefaultConfig(
 func AWSConfigFromProviderContext(
 	ctx context.Context,
 	providerContext provider.Context,
+	meta map[string]*core.MappingNode,
 	env map[string]string,
 	loader AWSConfigLoader,
 ) (*aws.Config, error) {
@@ -53,7 +55,7 @@ func AWSConfigFromProviderContext(
 	}
 
 	opts := []func(*config.LoadOptions) error{}
-	opts = append(opts, RegionOptions(providerContext)...)
+	opts = append(opts, RegionOptions(providerContext, meta)...)
 	opts = append(opts, RetryConfigOptions(providerContext, env)...)
 	opts = append(opts, CredentialOptions(providerContext)...)
 	opts = append(opts, SharedEndpointOptions(providerContext)...)
@@ -79,12 +81,19 @@ func AWSConfigFromProviderContext(
 // RegionOptions returns the region options derived from the given provider context.
 func RegionOptions(
 	providerContext provider.Context,
+	meta map[string]*core.MappingNode,
 ) []func(*config.LoadOptions) error {
 	opts := []func(*config.LoadOptions) error{}
 
 	region, hasRegion := providerContext.ProviderConfigVariable("region")
 	if hasRegion && !core.IsScalarNil(region) {
 		opts = append(opts, config.WithRegion(core.StringValueFromScalar(region)))
+	}
+
+	if len(meta) > 0 {
+		if region, hasRegion := meta["region"]; hasRegion {
+			opts = append(opts, config.WithRegion(core.StringValue(region)))
+		}
 	}
 
 	return opts
@@ -571,4 +580,21 @@ type staticTokenRetriever string
 
 func (s staticTokenRetriever) GetIdentityToken() ([]byte, error) {
 	return []byte(s), nil
+}
+
+// AWSConfigCacheKey creates a cache key for the given session ID and metadata
+// specific to a specific request for an action on a resource, data source, or link.
+func AWSConfigCacheKey(
+	sessionID string,
+	meta map[string]*core.MappingNode,
+) string {
+	if len(meta) == 0 {
+		return sessionID
+	}
+
+	if region, hasRegion := meta["region"]; hasRegion {
+		return fmt.Sprintf("%s--region-%s", sessionID, core.StringValue(region))
+	}
+
+	return sessionID
 }

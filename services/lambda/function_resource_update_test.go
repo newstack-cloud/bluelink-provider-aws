@@ -167,6 +167,7 @@ func createBasicFunctionUpdateTestCase(
 			[]string{},
 			utils.AWSConfigFromProviderContext,
 			loader,
+			utils.AWSConfigCacheKey,
 		),
 		Input: &provider.ResourceDeployInput{
 			InstanceID: "test-instance-id",
@@ -333,6 +334,7 @@ func createFunctionNoUpdatesTestCase(
 			[]string{},
 			utils.AWSConfigFromProviderContext,
 			loader,
+			utils.AWSConfigCacheKey,
 		),
 		Input: &provider.ResourceDeployInput{
 			InstanceID: "test-instance-id",
@@ -436,6 +438,7 @@ func createFunctionConfigAndCodeUpdateTestCase(
 			[]string{},
 			utils.AWSConfigFromProviderContext,
 			loader,
+			utils.AWSConfigCacheKey,
 		),
 		Input: &provider.ResourceDeployInput{
 			InstanceID: "test-instance-id",
@@ -582,6 +585,7 @@ func createFunctionMultipleConfigsUpdateTestCase(
 			[]string{},
 			utils.AWSConfigFromProviderContext,
 			loader,
+			utils.AWSConfigCacheKey,
 		),
 		Input: &provider.ResourceDeployInput{
 			InstanceID: "test-instance-id",
@@ -705,6 +709,7 @@ func createFunctionUpdateFailureTestCase(
 			[]string{},
 			utils.AWSConfigFromProviderContext,
 			loader,
+			utils.AWSConfigCacheKey,
 		),
 		Input: &provider.ResourceDeployInput{
 			InstanceID: "test-instance-id",

@@ -329,6 +329,30 @@ type Service interface {
 		params *lambda.ListTagsInput,
 		optFns ...func(*lambda.Options),
 	) (*lambda.ListTagsOutput, error)
+	// Creates a mapping between an event source and an AWS Lambda function. Lambda reads items from the event source and invokes the function.
+	CreateEventSourceMapping(
+		ctx context.Context,
+		params *lambda.CreateEventSourceMappingInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.CreateEventSourceMappingOutput, error)
+	// Returns details about an event source mapping. You can get the identifier of a mapping from the output of ListEventSourceMappings.
+	GetEventSourceMapping(
+		ctx context.Context,
+		params *lambda.GetEventSourceMappingInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.GetEventSourceMappingOutput, error)
+	// Updates an event source mapping. You can change the function that AWS Lambda invokes, or pause invocation and resume later from the same location.
+	UpdateEventSourceMapping(
+		ctx context.Context,
+		params *lambda.UpdateEventSourceMappingInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.UpdateEventSourceMappingOutput, error)
+	// Deletes an event source mapping. You can get the identifier of a mapping from the output of ListEventSourceMappings.
+	DeleteEventSourceMapping(
+		ctx context.Context,
+		params *lambda.DeleteEventSourceMappingInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.DeleteEventSourceMappingOutput, error)
 }
 
 // NewService creates a new instance of the AWS Lambda service

@@ -89,6 +89,7 @@ func createBasicFunctionCreateTestCase(
 			[]string{},
 			utils.AWSConfigFromProviderContext,
 			loader,
+			utils.AWSConfigCacheKey,
 		),
 		Input: &provider.ResourceDeployInput{
 			InstanceID: "test-instance-id",
@@ -212,6 +213,7 @@ func createFunctionWithTagsTestCase(
 			[]string{},
 			utils.AWSConfigFromProviderContext,
 			loader,
+			utils.AWSConfigCacheKey,
 		),
 		Input: &provider.ResourceDeployInput{
 			InstanceID: "test-instance-id",
@@ -335,6 +337,7 @@ func createFunctionWithSnapStartTestCase(
 			[]string{},
 			utils.AWSConfigFromProviderContext,
 			loader,
+			utils.AWSConfigCacheKey,
 		),
 		Input: &provider.ResourceDeployInput{
 			InstanceID: "test-instance-id",
@@ -450,6 +453,7 @@ func createFunctionFailureTestCase(
 			[]string{},
 			utils.AWSConfigFromProviderContext,
 			loader,
+			utils.AWSConfigCacheKey,
 		),
 		Input: &provider.ResourceDeployInput{
 			InstanceID: "test-instance-id",
@@ -568,6 +572,7 @@ func createFunctionWithMultipleConfigsTestCase(
 			[]string{},
 			utils.AWSConfigFromProviderContext,
 			loader,
+			utils.AWSConfigCacheKey,
 		),
 		Input: &provider.ResourceDeployInput{
 			InstanceID: "test-instance-id",
@@ -768,6 +773,7 @@ func createFunctionWithAdvancedConfigsTestCase(
 			[]string{},
 			utils.AWSConfigFromProviderContext,
 			loader,
+			utils.AWSConfigCacheKey,
 		),
 		Input: &provider.ResourceDeployInput{
 			InstanceID: "test-instance-id",
@@ -896,6 +902,7 @@ func createFunctionWithAllCodeSourceFieldsTestCase(
 			[]string{},
 			utils.AWSConfigFromProviderContext,
 			loader,
+			utils.AWSConfigCacheKey,
 		),
 		Input: &provider.ResourceDeployInput{
 			InstanceID: "test-instance-id",

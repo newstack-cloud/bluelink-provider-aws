@@ -24,6 +24,7 @@ func (s *AWSConfigTestSuite) TestAWSConfigFromProviderContext() {
 	tests := []struct {
 		name        string
 		providerCtx provider.Context
+		meta        map[string]*core.MappingNode
 		env         map[string]string
 		mockLoader  *testutils.MockAWSConfigLoader
 		expectError bool
@@ -37,7 +38,8 @@ func (s *AWSConfigTestSuite) TestAWSConfigFromProviderContext() {
 				},
 				nil,
 			),
-			env: map[string]string{},
+			meta: map[string]*core.MappingNode{},
+			env:  map[string]string{},
 			mockLoader: &testutils.MockAWSConfigLoader{
 				LoadDefaultConfigFunc: func(
 					ctx context.Context,
@@ -77,7 +79,13 @@ func (s *AWSConfigTestSuite) TestAWSConfigFromProviderContext() {
 
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
-			cfg, err := AWSConfigFromProviderContext(context.Background(), tt.providerCtx, tt.env, tt.mockLoader)
+			cfg, err := AWSConfigFromProviderContext(
+				context.Background(),
+				tt.providerCtx,
+				tt.meta,
+				tt.env,
+				tt.mockLoader,
+			)
 
 			if tt.expectError {
 				s.Error(err)
@@ -95,6 +103,7 @@ func (s *AWSConfigTestSuite) TestRegionOptions() {
 		name           string
 		providerCtx    provider.Context
 		expectedRegion string
+		meta           map[string]*core.MappingNode
 	}{
 		{
 			name: "region from provider config",
@@ -106,6 +115,7 @@ func (s *AWSConfigTestSuite) TestRegionOptions() {
 				nil,
 			),
 			expectedRegion: "us-east-1",
+			meta:           map[string]*core.MappingNode{},
 		},
 		{
 			name: "no region in provider config",
@@ -115,12 +125,13 @@ func (s *AWSConfigTestSuite) TestRegionOptions() {
 				nil,
 			),
 			expectedRegion: "",
+			meta:           map[string]*core.MappingNode{},
 		},
 	}
 
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
-			opts := RegionOptions(tt.providerCtx)
+			opts := RegionOptions(tt.providerCtx, tt.meta)
 
 			if tt.expectedRegion == "" {
 				s.Empty(opts)
@@ -652,6 +663,43 @@ func (s *AWSConfigTestSuite) TestAssumeRoleWithWebIdentityOptions() {
 			// Note: We can't easily test the actual assume role with web identity configuration
 			// as it involves AWS STS. The test just verifies that
 			// the option functions don't error.
+		})
+	}
+}
+
+func (s *AWSConfigTestSuite) TestAWSConfigCacheKey() {
+	tests := []struct {
+		name      string
+		sessionID string
+		meta      map[string]*core.MappingNode
+		expected  string
+	}{
+		{
+			name:      "no meta",
+			sessionID: "test-session-id",
+			meta:      map[string]*core.MappingNode{},
+			expected:  "test-session-id",
+		},
+		{
+			name:      "with meta",
+			sessionID: "test-session-id",
+			meta: map[string]*core.MappingNode{
+				"region": core.MappingNodeFromString("us-east-1"),
+			},
+			expected: "test-session-id--region-us-east-1",
+		},
+		{
+			name:      "nil meta",
+			sessionID: "test-session-id",
+			meta:      nil,
+			expected:  "test-session-id",
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			actual := AWSConfigCacheKey(tt.sessionID, tt.meta)
+			s.Equal(tt.expected, actual)
 		})
 	}
 }

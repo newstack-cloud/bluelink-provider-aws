@@ -16,19 +16,28 @@ import (
 type AWSConfigCreator func(
 	ctx context.Context,
 	providerContext provider.Context,
+	meta map[string]*core.MappingNode,
 	env map[string]string,
 	loader AWSConfigLoader,
 ) (*aws.Config, error)
+
+// CacheKeyCreator is a function that creates a cache key
+// from the given session ID and metadata.
+type CacheKeyCreator func(
+	sessionID string,
+	meta map[string]*core.MappingNode,
+) string
 
 // AWSConfigStore is a store for AWS config that is used to derive and cache
 // AWS config on a per-session basis.
 type AWSConfigStore struct {
 	// A copy of the environment variables for the current AWS provider process.
-	env             map[string]string
-	createAWSConfig AWSConfigCreator
-	loader          AWSConfigLoader
-	cache           map[string]*aws.Config
-	mu              sync.RWMutex
+	env                 map[string]string
+	createAWSConfig     AWSConfigCreator
+	configStoreCacheKey CacheKeyCreator
+	loader              AWSConfigLoader
+	cache               map[string]*aws.Config
+	mu                  sync.RWMutex
 }
 
 // NewAWSConfigStore creates a new store for deriving and caching AWS config.
@@ -36,13 +45,15 @@ func NewAWSConfigStore(
 	env []string,
 	createAWSConfig AWSConfigCreator,
 	loader AWSConfigLoader,
+	configStoreCacheKey CacheKeyCreator,
 ) *AWSConfigStore {
 	envMap := envMapFromStrings(env)
 	return &AWSConfigStore{
-		env:             envMap,
-		createAWSConfig: createAWSConfig,
-		cache:           make(map[string]*aws.Config),
-		mu:              sync.RWMutex{},
+		env:                 envMap,
+		createAWSConfig:     createAWSConfig,
+		configStoreCacheKey: configStoreCacheKey,
+		cache:               make(map[string]*aws.Config),
+		mu:                  sync.RWMutex{},
 	}
 }
 
@@ -50,23 +61,30 @@ func NewAWSConfigStore(
 func (s *AWSConfigStore) FromProviderContext(
 	ctx context.Context,
 	providerContext provider.Context,
+	meta map[string]*core.MappingNode,
 ) (*aws.Config, error) {
 	// A session ID is passed from the client (e.g. Celerity CLI) to the host
 	// and then to plugins through the context variables.
 	// In the AWS provider, we use the session ID to cache AWS config
 	// to avoid having to rebuild the config for each request to a plugin
-	// action.
+	// action when the configuration is the same.
+	//
+	// The session ID is augmented with metadata specific to the current request
+	// to ensure that different configurations can be used in the same session
+	// when a specific request provides different metadata (e.g. a different region).
 	sessionID, hasSessionID := getSessionID(ctx, providerContext)
+	var cacheKey string
 	if hasSessionID {
-		awsConfig, inCache := s.getFromCache(sessionID)
+		cacheKey = s.configStoreCacheKey(sessionID, meta)
+		awsConfig, inCache := s.getFromCache(cacheKey)
 		if inCache {
 			return awsConfig, nil
 		}
 	}
 
-	awsConf, err := s.createAWSConfig(ctx, providerContext, s.env, s.loader)
+	awsConf, err := s.createAWSConfig(ctx, providerContext, meta, s.env, s.loader)
 
-	s.setInCache(sessionID, awsConf)
+	s.setInCache(cacheKey, awsConf)
 	return awsConf, err
 }
 

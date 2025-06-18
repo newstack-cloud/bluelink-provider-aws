@@ -88,7 +88,7 @@ func (l *lambdaAliasResourceActions) addOptionalConfigurationsToSpec(
 			Fields: []string{"routingConfig"},
 			Values: func(output *lambda.GetAliasOutput) ([]*core.MappingNode, error) {
 				return []*core.MappingNode{
-					&core.MappingNode{
+					{
 						Fields: map[string]*core.MappingNode{
 							"additionalVersionWeights": buildAdditionalVersionWeightsNode(output.RoutingConfig.AdditionalVersionWeights),
 						},

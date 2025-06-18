@@ -34,6 +34,7 @@ func main() {
 				os.Environ(),
 				utils.AWSConfigFromProviderContext,
 				&utils.DefaultAWSConfigLoader{},
+				utils.AWSConfigCacheKey,
 			),
 		),
 		hostInfoContainer,

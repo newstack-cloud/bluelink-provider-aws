@@ -76,6 +76,7 @@ func createBasicFunctionStateTestCase(
 			[]string{},
 			utils.AWSConfigFromProviderContext,
 			loader,
+			utils.AWSConfigCacheKey,
 		),
 		Input: &provider.ResourceGetExternalStateInput{
 			ProviderContext: providerCtx,
@@ -289,6 +290,7 @@ func createAllOptionalConfigsTestCase(
 			[]string{},
 			utils.AWSConfigFromProviderContext,
 			loader,
+			utils.AWSConfigCacheKey,
 		),
 		Input: &provider.ResourceGetExternalStateInput{
 			ProviderContext: providerCtx,
@@ -323,6 +325,7 @@ func createGetFunctionErrorTestCase(
 			[]string{},
 			utils.AWSConfigFromProviderContext,
 			loader,
+			utils.AWSConfigCacheKey,
 		),
 		Input: &provider.ResourceGetExternalStateInput{
 			ProviderContext: providerCtx,
@@ -355,6 +358,7 @@ func createGetFunctionCodeSigningErrorTestCase(
 			[]string{},
 			utils.AWSConfigFromProviderContext,
 			loader,
+			utils.AWSConfigCacheKey,
 		),
 		Input: &provider.ResourceGetExternalStateInput{
 			ProviderContext: providerCtx,
@@ -401,6 +405,7 @@ func createEphemeralStorageTestCase(
 			[]string{},
 			utils.AWSConfigFromProviderContext,
 			loader,
+			utils.AWSConfigCacheKey,
 		),
 		Input: &provider.ResourceGetExternalStateInput{
 			ProviderContext: providerCtx,
@@ -486,6 +491,7 @@ func createImageConfigTestCase(
 			[]string{},
 			utils.AWSConfigFromProviderContext,
 			loader,
+			utils.AWSConfigCacheKey,
 		),
 		Input: &provider.ResourceGetExternalStateInput{
 			ProviderContext: providerCtx,
@@ -576,6 +582,7 @@ func createTracingAndRuntimeVersionTestCase(
 			[]string{},
 			utils.AWSConfigFromProviderContext,
 			loader,
+			utils.AWSConfigCacheKey,
 		),
 		Input: &provider.ResourceGetExternalStateInput{
 			ProviderContext: providerCtx,

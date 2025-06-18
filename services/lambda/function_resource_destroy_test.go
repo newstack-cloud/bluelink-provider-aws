@@ -15,11 +15,11 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type LambdaFunctionVersionResourceDestroySuite struct {
+type LambdaFunctionResourceDestroySuite struct {
 	suite.Suite
 }
 
-func (s *LambdaFunctionVersionResourceDestroySuite) Test_destroy() {
+func (s *LambdaFunctionResourceDestroySuite) Test_destroy() {
 	loader := &testutils.MockAWSConfigLoader{}
 	providerCtx := plugintestutils.NewTestProviderContext(
 		"aws",
@@ -32,18 +32,18 @@ func (s *LambdaFunctionVersionResourceDestroySuite) Test_destroy() {
 	)
 
 	testCases := []plugintestutils.ResourceDestroyTestCase[*aws.Config, Service]{
-		createSuccessfulFunctionVersionDestroyTestCase(providerCtx, loader),
-		createFailingFunctionVersionDestroyTestCase(providerCtx, loader),
+		createSuccesfulDestroyTestCase(providerCtx, loader),
+		createFailingDestroyTestCase(providerCtx, loader),
 	}
 
 	plugintestutils.RunResourceDestroyTestCases(
 		testCases,
-		FunctionVersionResource,
+		FunctionResource,
 		&s.Suite,
 	)
 }
 
-func createSuccessfulFunctionVersionDestroyTestCase(
+func createSuccesfulDestroyTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
 ) plugintestutils.ResourceDestroyTestCase[*aws.Config, Service] {
@@ -52,10 +52,9 @@ func createSuccessfulFunctionVersionDestroyTestCase(
 	)
 
 	expectedFunctionARN := "arn:aws:lambda:us-east-1:123456789012:function:test-function"
-	expectedVersion := "1"
 
 	return plugintestutils.ResourceDestroyTestCase[*aws.Config, Service]{
-		Name: "successfully deletes function version",
+		Name: "successfully deletes function",
 		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
 			return service
 		},
@@ -64,14 +63,14 @@ func createSuccessfulFunctionVersionDestroyTestCase(
 			[]string{},
 			utils.AWSConfigFromProviderContext,
 			loader,
+			utils.AWSConfigCacheKey,
 		),
 		Input: &provider.ResourceDestroyInput{
 			ProviderContext: providerCtx,
 			ResourceState: &state.ResourceState{
 				SpecData: &core.MappingNode{
 					Fields: map[string]*core.MappingNode{
-						"functionArn": core.MappingNodeFromString(expectedFunctionARN),
-						"version":     core.MappingNodeFromString(expectedVersion),
+						"arn": core.MappingNodeFromString(expectedFunctionARN),
 					},
 				},
 			},
@@ -80,25 +79,23 @@ func createSuccessfulFunctionVersionDestroyTestCase(
 		DestroyActionsCalled: map[string]any{
 			"DeleteFunction": &lambda.DeleteFunctionInput{
 				FunctionName: aws.String(expectedFunctionARN),
-				Qualifier:    aws.String(expectedVersion),
 			},
 		},
 	}
 }
 
-func createFailingFunctionVersionDestroyTestCase(
+func createFailingDestroyTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
 ) plugintestutils.ResourceDestroyTestCase[*aws.Config, Service] {
 	service := createLambdaServiceMock(
-		WithDeleteFunctionError(errors.New("failed to delete function version")),
+		WithDeleteFunctionError(errors.New("failed to delete function")),
 	)
 
 	expectedFunctionARN := "arn:aws:lambda:us-east-1:123456789012:function:test-function"
-	expectedVersion := "1"
 
 	return plugintestutils.ResourceDestroyTestCase[*aws.Config, Service]{
-		Name: "fails to delete function version",
+		Name: "fails to delete function",
 		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
 			return service
 		},
@@ -107,14 +104,14 @@ func createFailingFunctionVersionDestroyTestCase(
 			[]string{},
 			utils.AWSConfigFromProviderContext,
 			loader,
+			utils.AWSConfigCacheKey,
 		),
 		Input: &provider.ResourceDestroyInput{
 			ProviderContext: providerCtx,
 			ResourceState: &state.ResourceState{
 				SpecData: &core.MappingNode{
 					Fields: map[string]*core.MappingNode{
-						"functionArn": core.MappingNodeFromString(expectedFunctionARN),
-						"version":     core.MappingNodeFromString(expectedVersion),
+						"arn": core.MappingNodeFromString(expectedFunctionARN),
 					},
 				},
 			},
@@ -123,12 +120,11 @@ func createFailingFunctionVersionDestroyTestCase(
 		DestroyActionsCalled: map[string]any{
 			"DeleteFunction": &lambda.DeleteFunctionInput{
 				FunctionName: aws.String(expectedFunctionARN),
-				Qualifier:    aws.String(expectedVersion),
 			},
 		},
 	}
 }
 
-func TestLambdaFunctionVersionResourceDestroySuite(t *testing.T) {
-	suite.Run(t, new(LambdaFunctionVersionResourceDestroySuite))
+func TestLambdaFunctionResourceDestroySuite(t *testing.T) {
+	suite.Run(t, new(LambdaFunctionResourceDestroySuite))
 }
