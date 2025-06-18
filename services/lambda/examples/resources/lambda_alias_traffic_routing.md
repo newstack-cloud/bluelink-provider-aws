@@ -6,11 +6,12 @@ This example demonstrates how to create a Lambda alias with traffic routing conf
 resources:
   canaryAlias:
     type: aws/lambda/alias
-    functionName: my-lambda-function
-    name: CANARY
-    functionVersion: "2"
-    description: "Canary deployment with traffic splitting"
-    routingConfig:
-      additionalVersionWeights:
-        "1": 0.1  # Route 10% traffic to version 1
+    spec:
+      functionName: my-lambda-function
+      name: CANARY
+      functionVersion: "2"
+      description: "Canary deployment with traffic splitting"
+      routingConfig:
+        additionalVersionWeights:
+          "1": 0.1  # Route 10% traffic to version 1
 ``` 
