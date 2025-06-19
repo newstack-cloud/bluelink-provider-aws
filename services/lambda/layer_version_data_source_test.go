@@ -188,7 +188,7 @@ func createMinimalLayerVersionTestCase(
 			Data: map[string]*core.MappingNode{
 				"arn":     core.MappingNodeFromString("arn:aws:lambda:us-west-2:123456789012:layer:minimal-layer"),
 				"version": core.MappingNodeFromInt(2),
-				"content": &core.MappingNode{
+				"content": {
 					Fields: map[string]*core.MappingNode{
 						"codeSize": core.MappingNodeFromInt(512),
 					},
@@ -255,9 +255,9 @@ func createLayerVersionWithAllOptionalFieldsTestCase(
 				"description":             core.MappingNodeFromString("Full layer with all fields"),
 				"licenseInfo":             core.MappingNodeFromString("Apache-2.0"),
 				"createdDate":             core.MappingNodeFromString("2023-06-15T12:30:00.000Z"),
-				"compatibleRuntimes":      &core.MappingNode{Items: []*core.MappingNode{core.MappingNodeFromString("nodejs18.x"), core.MappingNodeFromString("python3.9")}},
-				"compatibleArchitectures": &core.MappingNode{Items: []*core.MappingNode{core.MappingNodeFromString("x86_64"), core.MappingNodeFromString("arm64")}},
-				"content": &core.MappingNode{
+				"compatibleRuntimes":      {Items: []*core.MappingNode{core.MappingNodeFromString("nodejs18.x"), core.MappingNodeFromString("python3.9")}},
+				"compatibleArchitectures": {Items: []*core.MappingNode{core.MappingNodeFromString("x86_64"), core.MappingNodeFromString("arm64")}},
+				"content": {
 					Fields: map[string]*core.MappingNode{
 						"codeSha256":               core.MappingNodeFromString("def456"),
 						"codeSize":                 core.MappingNodeFromInt(2048),
@@ -311,7 +311,7 @@ func createLayerVersionWithLayerARNTestCase(
 				"arn":             core.MappingNodeFromString(layerARN),
 				"version":         core.MappingNodeFromInt(5),
 				"layerVersionArn": core.MappingNodeFromString(layerARN + ":5"),
-				"content": &core.MappingNode{
+				"content": {
 					Fields: map[string]*core.MappingNode{
 						"codeSize": core.MappingNodeFromInt(3072),
 					},
