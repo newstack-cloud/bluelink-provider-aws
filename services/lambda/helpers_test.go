@@ -89,6 +89,14 @@ type lambdaServiceMock struct {
 	deleteFunctionUrlConfigOutput *lambda.DeleteFunctionUrlConfigOutput
 	deleteFunctionUrlConfigError  error
 
+	// Layer Version fields
+	publishLayerVersionOutput *lambda.PublishLayerVersionOutput
+	publishLayerVersionError  error
+	getLayerVersionOutput     *lambda.GetLayerVersionOutput
+	getLayerVersionError      error
+	deleteLayerVersionOutput  *lambda.DeleteLayerVersionOutput
+	deleteLayerVersionError   error
+
 	// Event Source Mapping mock methods
 	MockCreateEventSourceMapping func(ctx context.Context, input *lambda.CreateEventSourceMappingInput) (*lambda.CreateEventSourceMappingOutput, error)
 	MockGetEventSourceMapping    func(ctx context.Context, input *lambda.GetEventSourceMappingInput) (*lambda.GetEventSourceMappingOutput, error)
@@ -823,6 +831,35 @@ func (m *lambdaServiceMock) UpdateEventSourceMapping(ctx context.Context, input 
 	return m.updateEventSourceMappingOutput, m.updateEventSourceMappingError
 }
 
+// Layer Version mock methods
+
+func (m *lambdaServiceMock) PublishLayerVersion(
+	ctx context.Context,
+	params *lambda.PublishLayerVersionInput,
+	optFns ...func(*lambda.Options),
+) (*lambda.PublishLayerVersionOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.publishLayerVersionOutput, m.publishLayerVersionError
+}
+
+func (m *lambdaServiceMock) GetLayerVersion(
+	ctx context.Context,
+	params *lambda.GetLayerVersionInput,
+	optFns ...func(*lambda.Options),
+) (*lambda.GetLayerVersionOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.getLayerVersionOutput, m.getLayerVersionError
+}
+
+func (m *lambdaServiceMock) DeleteLayerVersion(
+	ctx context.Context,
+	params *lambda.DeleteLayerVersionInput,
+	optFns ...func(*lambda.Options),
+) (*lambda.DeleteLayerVersionOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.deleteLayerVersionOutput, m.deleteLayerVersionError
+}
+
 func createBaseTestFunctionConfig(
 	functionName string,
 	runtime types.Runtime,
@@ -846,51 +883,90 @@ func createBaseTestFunctionConfig(
 	}
 }
 
-// Function URL mock options.
-func WithCreateFunctionUrlConfigOutput(output *lambda.CreateFunctionUrlConfigOutput) lambdaServiceMockOption {
+// Function URL helper functions
+
+func WithCreateFunctionUrlConfigOutput(output *lambda.CreateFunctionUrlConfigOutput) func(*lambdaServiceMock) {
 	return func(m *lambdaServiceMock) {
 		m.createFunctionUrlConfigOutput = output
 	}
 }
 
-func WithCreateFunctionUrlConfigError(err error) lambdaServiceMockOption {
+func WithCreateFunctionUrlConfigError(err error) func(*lambdaServiceMock) {
 	return func(m *lambdaServiceMock) {
 		m.createFunctionUrlConfigError = err
 	}
 }
 
-func WithGetFunctionUrlConfigOutput(output *lambda.GetFunctionUrlConfigOutput) lambdaServiceMockOption {
+func WithGetFunctionUrlConfigOutput(output *lambda.GetFunctionUrlConfigOutput) func(*lambdaServiceMock) {
 	return func(m *lambdaServiceMock) {
 		m.getFunctionUrlConfigOutput = output
 	}
 }
 
-func WithGetFunctionUrlConfigError(err error) lambdaServiceMockOption {
+func WithGetFunctionUrlConfigError(err error) func(*lambdaServiceMock) {
 	return func(m *lambdaServiceMock) {
 		m.getFunctionUrlConfigError = err
 	}
 }
 
-func WithUpdateFunctionUrlConfigOutput(output *lambda.UpdateFunctionUrlConfigOutput) lambdaServiceMockOption {
+func WithUpdateFunctionUrlConfigOutput(output *lambda.UpdateFunctionUrlConfigOutput) func(*lambdaServiceMock) {
 	return func(m *lambdaServiceMock) {
 		m.updateFunctionUrlConfigOutput = output
 	}
 }
 
-func WithUpdateFunctionUrlConfigError(err error) lambdaServiceMockOption {
+func WithUpdateFunctionUrlConfigError(err error) func(*lambdaServiceMock) {
 	return func(m *lambdaServiceMock) {
 		m.updateFunctionUrlConfigError = err
 	}
 }
 
-func WithDeleteFunctionUrlConfigOutput(output *lambda.DeleteFunctionUrlConfigOutput) lambdaServiceMockOption {
+func WithDeleteFunctionUrlConfigOutput(output *lambda.DeleteFunctionUrlConfigOutput) func(*lambdaServiceMock) {
 	return func(m *lambdaServiceMock) {
 		m.deleteFunctionUrlConfigOutput = output
 	}
 }
 
-func WithDeleteFunctionUrlConfigError(err error) lambdaServiceMockOption {
+func WithDeleteFunctionUrlConfigError(err error) func(*lambdaServiceMock) {
 	return func(m *lambdaServiceMock) {
 		m.deleteFunctionUrlConfigError = err
+	}
+}
+
+// Layer Version helper functions
+
+func WithPublishLayerVersionOutput(output *lambda.PublishLayerVersionOutput) func(*lambdaServiceMock) {
+	return func(m *lambdaServiceMock) {
+		m.publishLayerVersionOutput = output
+	}
+}
+
+func WithPublishLayerVersionError(err error) func(*lambdaServiceMock) {
+	return func(m *lambdaServiceMock) {
+		m.publishLayerVersionError = err
+	}
+}
+
+func WithGetLayerVersionOutput(output *lambda.GetLayerVersionOutput) func(*lambdaServiceMock) {
+	return func(m *lambdaServiceMock) {
+		m.getLayerVersionOutput = output
+	}
+}
+
+func WithGetLayerVersionError(err error) func(*lambdaServiceMock) {
+	return func(m *lambdaServiceMock) {
+		m.getLayerVersionError = err
+	}
+}
+
+func WithDeleteLayerVersionOutput(output *lambda.DeleteLayerVersionOutput) func(*lambdaServiceMock) {
+	return func(m *lambdaServiceMock) {
+		m.deleteLayerVersionOutput = output
+	}
+}
+
+func WithDeleteLayerVersionError(err error) func(*lambdaServiceMock) {
+	return func(m *lambdaServiceMock) {
+		m.deleteLayerVersionError = err
 	}
 }

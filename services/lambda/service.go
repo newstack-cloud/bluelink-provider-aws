@@ -377,6 +377,30 @@ type Service interface {
 		params *lambda.DeleteFunctionUrlConfigInput,
 		optFns ...func(*lambda.Options),
 	) (*lambda.DeleteFunctionUrlConfigOutput, error)
+	// Creates an AWS Lambda layer from a ZIP archive. Each time you call
+	// PublishLayerVersion with the same layer name, a new version is created.
+	//
+	// Add layers to your function with CreateFunction or UpdateFunctionConfiguration.
+	PublishLayerVersion(
+		ctx context.Context,
+		params *lambda.PublishLayerVersionInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.PublishLayerVersionOutput, error)
+	// Returns information about a version of an AWS Lambda layer, with a link to
+	// download the layer archive that's valid for 10 minutes.
+	GetLayerVersion(
+		ctx context.Context,
+		params *lambda.GetLayerVersionInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.GetLayerVersionOutput, error)
+	// Deletes a version of an AWS Lambda layer. Deleted versions can no longer be
+	// viewed or added to functions. To avoid breaking functions, a copy of the
+	// version remains in Lambda until no functions refer to it.
+	DeleteLayerVersion(
+		ctx context.Context,
+		params *lambda.DeleteLayerVersionInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.DeleteLayerVersionOutput, error)
 }
 
 // NewService creates a new instance of the AWS Lambda service
