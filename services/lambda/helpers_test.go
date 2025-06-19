@@ -506,7 +506,7 @@ func WithDeleteEventSourceMappingError(err error) lambdaServiceMockOption {
 	}
 }
 
-// Function URL mock methods
+// Function URL mock methods.
 func (m *lambdaServiceMock) DeleteEventSourceMapping(ctx context.Context, input *lambda.DeleteEventSourceMappingInput, optFns ...func(*lambda.Options)) (*lambda.DeleteEventSourceMappingOutput, error) {
 	m.RegisterCall(ctx, input)
 	m.ExpectedEventSourceMappingDeleteCalls = append(m.ExpectedEventSourceMappingDeleteCalls, *input)
@@ -846,7 +846,7 @@ func createBaseTestFunctionConfig(
 	}
 }
 
-// Function URL mock options
+// Function URL mock options.
 func WithCreateFunctionUrlConfigOutput(output *lambda.CreateFunctionUrlConfigOutput) lambdaServiceMockOption {
 	return func(m *lambdaServiceMock) {
 		m.createFunctionUrlConfigOutput = output
