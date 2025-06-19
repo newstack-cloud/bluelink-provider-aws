@@ -51,3 +51,4 @@ resources:
         - x86_64
         - arm64
       licenseInfo: "BSD-3-Clause"
+```

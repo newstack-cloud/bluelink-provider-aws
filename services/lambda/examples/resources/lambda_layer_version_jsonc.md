@@ -29,3 +29,4 @@ This example demonstrates how to create a Lambda layer version using JSONC forma
     }
   }
 }
+```
