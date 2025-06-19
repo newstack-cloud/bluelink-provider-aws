@@ -146,18 +146,7 @@ func (l *lambdaAliasDataSourceFetcher) addOptionalConfigurationsToData(
 	targetData map[string]*core.MappingNode,
 ) error {
 	extractors := []pluginutils.OptionalValueExtractor[*lambda.GetAliasOutput]{
-		{
-			Name: "description",
-			Condition: func(output *lambda.GetAliasOutput) bool {
-				return output.Description != nil
-			},
-			Fields: []string{"description"},
-			Values: func(output *lambda.GetAliasOutput) ([]*core.MappingNode, error) {
-				return []*core.MappingNode{
-					core.MappingNodeFromString(aws.ToString(output.Description)),
-				}, nil
-			},
-		},
+		aliasDescriptionValueExtractor(),
 		{
 			Name: "routingConfig.additionalVersionWeights",
 			Condition: func(output *lambda.GetAliasOutput) bool {

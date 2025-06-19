@@ -150,13 +150,13 @@ func changesToUpdateEventSourceMappingInput(
 		pluginutils.NewValueSetter(
 			"$.destinationConfig",
 			func(value *core.MappingNode, input *lambda.UpdateEventSourceMappingInput) {
-				input.DestinationConfig = buildDestinationConfigForUpdate(value)
+				input.DestinationConfig = buildDestinationConfigFromSpecNode(value)
 			},
 		),
 		pluginutils.NewValueSetter(
 			"$.sourceAccessConfigurations",
 			func(value *core.MappingNode, input *lambda.UpdateEventSourceMappingInput) {
-				input.SourceAccessConfigurations = buildSourceAccessConfigurationsForUpdate(value)
+				input.SourceAccessConfigurations = buildSourceAccessConfigurationsFromSpecNode(value)
 			},
 		),
 		pluginutils.NewValueSetter(
@@ -206,52 +206,6 @@ func buildFilterCriteriaForUpdate(node *core.MappingNode) *types.FilterCriteria 
 	return &types.FilterCriteria{
 		Filters: filters,
 	}
-}
-
-func buildDestinationConfigForUpdate(node *core.MappingNode) *types.DestinationConfig {
-	if node == nil {
-		return nil
-	}
-
-	destConfig := &types.DestinationConfig{}
-
-	if onFailureNode := node.Fields["onFailure"]; onFailureNode != nil {
-		if destinationNode := onFailureNode.Fields["destination"]; destinationNode != nil {
-			destConfig.OnFailure = &types.OnFailure{
-				Destination: aws.String(core.StringValue(destinationNode)),
-			}
-		}
-	}
-
-	if onSuccessNode := node.Fields["onSuccess"]; onSuccessNode != nil {
-		if destinationNode := onSuccessNode.Fields["destination"]; destinationNode != nil {
-			destConfig.OnSuccess = &types.OnSuccess{
-				Destination: aws.String(core.StringValue(destinationNode)),
-			}
-		}
-	}
-
-	return destConfig
-}
-
-func buildSourceAccessConfigurationsForUpdate(node *core.MappingNode) []types.SourceAccessConfiguration {
-	if node == nil || node.Items == nil {
-		return nil
-	}
-
-	var configs []types.SourceAccessConfiguration
-	for _, configNode := range node.Items {
-		config := types.SourceAccessConfiguration{}
-		if typeNode := configNode.Fields["type"]; typeNode != nil {
-			config.Type = types.SourceAccessType(core.StringValue(typeNode))
-		}
-		if uriNode := configNode.Fields["uri"]; uriNode != nil {
-			config.URI = aws.String(core.StringValue(uriNode))
-		}
-		configs = append(configs, config)
-	}
-
-	return configs
 }
 
 func buildMetricsConfigForUpdate(node *core.MappingNode) *types.EventSourceMappingMetricsConfig {

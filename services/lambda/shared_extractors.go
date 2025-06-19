@@ -36,3 +36,18 @@ func functionKMSKeyArnValueExtractor() pluginutils.OptionalValueExtractor[*lambd
 		},
 	}
 }
+
+func aliasDescriptionValueExtractor() pluginutils.OptionalValueExtractor[*lambda.GetAliasOutput] {
+	return pluginutils.OptionalValueExtractor[*lambda.GetAliasOutput]{
+		Name: "description",
+		Condition: func(output *lambda.GetAliasOutput) bool {
+			return output.Description != nil
+		},
+		Fields: []string{"description"},
+		Values: func(output *lambda.GetAliasOutput) ([]*core.MappingNode, error) {
+			return []*core.MappingNode{
+				core.MappingNodeFromString(aws.ToString(output.Description)),
+			}, nil
+		},
+	}
+}
