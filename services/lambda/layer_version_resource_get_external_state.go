@@ -101,7 +101,7 @@ func (l *lambdaLayerVersionResourceActions) addOptionalConfigurationsToSpec(
 }
 
 // parseLayerVersionArn extracts the layer name and version number from a layer version ARN
-// Format: arn:aws:lambda:region:account-id:layer:layer-name:version
+// Format: arn:aws:lambda:region:account-id:layer:layer-name:version.
 func parseLayerVersionArn(arn string) (layerName string, versionNumber int64, err error) {
 	parts := strings.Split(arn, ":")
 	if len(parts) != 8 || parts[0] != "arn" || parts[1] != "aws" || parts[2] != "lambda" || parts[5] != "layer" {
