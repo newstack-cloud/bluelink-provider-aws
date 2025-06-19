@@ -151,7 +151,7 @@ func createLambdaServiceMock(
 	return mock
 }
 
-// NewMockService creates a new mock Service for testing
+// NewMockService creates a new mock Service for testing.
 func NewMockService(t interface{}) *lambdaServiceMock {
 	return createLambdaServiceMock()
 }

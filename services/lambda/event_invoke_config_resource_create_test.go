@@ -162,14 +162,14 @@ func createEventInvokeConfigWithDestinationsTestCase(
 			"qualifier":                core.MappingNodeFromString("$LATEST"),
 			"maximumRetryAttempts":     core.MappingNodeFromInt(2),
 			"maximumEventAgeInSeconds": core.MappingNodeFromInt(1800),
-			"destinationConfig": &core.MappingNode{
+			"destinationConfig": {
 				Fields: map[string]*core.MappingNode{
-					"onSuccess": &core.MappingNode{
+					"onSuccess": {
 						Fields: map[string]*core.MappingNode{
 							"destination": core.MappingNodeFromString("arn:aws:sqs:us-east-1:123456789012:success-queue"),
 						},
 					},
-					"onFailure": &core.MappingNode{
+					"onFailure": {
 						Fields: map[string]*core.MappingNode{
 							"destination": core.MappingNodeFromString("arn:aws:sqs:us-east-1:123456789012:failure-queue"),
 						},
