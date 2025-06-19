@@ -75,6 +75,10 @@ func NewProvider(
 				lambdaServiceFactory,
 				awsConfigStore,
 			),
+			"aws/lambda/layerVersion": lambda.LayerVersionDataSource(
+				lambdaServiceFactory,
+				awsConfigStore,
+			),
 		},
 		Links:               map[string]provider.Link{},
 		CustomVariableTypes: map[string]provider.CustomVariableType{},
