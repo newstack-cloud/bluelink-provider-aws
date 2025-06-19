@@ -60,3 +60,7 @@ plugins
 docs.json
 
 .DS_Store
+
+# Directory for miscellaneous files
+# that should not be committed to version control.
+misc
