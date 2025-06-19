@@ -51,6 +51,10 @@ func NewProvider(
 				lambdaServiceFactory,
 				awsConfigStore,
 			),
+			"aws/lambda/codeSigningConfig": lambda.CodeSigningConfigDataSource(
+				lambdaServiceFactory,
+				awsConfigStore,
+			),
 		},
 		Links:               map[string]provider.Link{},
 		CustomVariableTypes: map[string]provider.CustomVariableType{},
