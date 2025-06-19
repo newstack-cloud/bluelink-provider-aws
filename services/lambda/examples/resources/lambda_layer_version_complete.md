@@ -24,22 +24,6 @@ resources:
         - arm64
       licenseInfo: "Apache-2.0"
 
-  # Layer version using inline content (for small layers)
-  inlineLayerVersion:
-    type: aws/lambda/layerVersion
-    spec:
-      layerName: simple-config-layer
-      description: "Simple configuration utilities"
-      content:
-        zipFile: ${base64encode(file("./layers/config-utils.zip"))}
-      compatibleRuntimes:
-        - python3.9
-        - python3.10
-        - python3.11
-        - nodejs18.x
-        - nodejs20.x
-      licenseInfo: "https://opensource.org/licenses/MIT"
-
   # Multi-runtime layer for cross-platform utilities
   universalLayerVersion:
     type: aws/lambda/layerVersion
