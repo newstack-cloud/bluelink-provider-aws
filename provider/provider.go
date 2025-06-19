@@ -42,7 +42,16 @@ func NewProvider(
 				awsConfigStore,
 			),
 		},
-		DataSources:         map[string]provider.DataSource{},
+		DataSources: map[string]provider.DataSource{
+			"aws/lambda/function": lambda.FunctionDataSource(
+				lambdaServiceFactory,
+				awsConfigStore,
+			),
+			"aws/lambda/alias": lambda.AliasDataSource(
+				lambdaServiceFactory,
+				awsConfigStore,
+			),
+		},
 		Links:               map[string]provider.Link{},
 		CustomVariableTypes: map[string]provider.CustomVariableType{},
 		Functions:           map[string]provider.Function{},
