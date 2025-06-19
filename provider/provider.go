@@ -63,6 +63,10 @@ func NewProvider(
 				lambdaServiceFactory,
 				awsConfigStore,
 			),
+			"aws/lambda/functionUrl": lambda.FunctionUrlDataSource(
+				lambdaServiceFactory,
+				awsConfigStore,
+			),
 			"aws/lambda/alias": lambda.AliasDataSource(
 				lambdaServiceFactory,
 				awsConfigStore,
