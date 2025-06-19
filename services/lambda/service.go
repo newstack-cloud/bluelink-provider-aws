@@ -401,6 +401,26 @@ type Service interface {
 		params *lambda.DeleteLayerVersionInput,
 		optFns ...func(*lambda.Options),
 	) (*lambda.DeleteLayerVersionOutput, error)
+	// Adds permissions to the resource-based policy of a version of an AWS Lambda layer.
+	// Use this action to grant layer usage permission to other accounts. You can grant
+	// permission to a single account, all accounts in an organization, or all AWS accounts.
+	AddLayerVersionPermission(
+		ctx context.Context,
+		params *lambda.AddLayerVersionPermissionInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.AddLayerVersionPermissionOutput, error)
+	// Returns the permission policy for a version of an AWS Lambda layer.
+	GetLayerVersionPolicy(
+		ctx context.Context,
+		params *lambda.GetLayerVersionPolicyInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.GetLayerVersionPolicyOutput, error)
+	// Removes a statement from the permissions policy for a version of an AWS Lambda layer.
+	RemoveLayerVersionPermission(
+		ctx context.Context,
+		params *lambda.RemoveLayerVersionPermissionInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.RemoveLayerVersionPermissionOutput, error)
 	// Configures options for asynchronous invocation on a function, version, or alias. If a configuration already exists for a function, version, or alias, this operation overwrites it. If you exclude any settings, they are removed. To set one option without affecting existing settings for other options, use UpdateFunctionEventInvokeConfig.
 	PutFunctionEventInvokeConfig(
 		ctx context.Context,

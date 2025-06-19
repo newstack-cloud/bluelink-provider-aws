@@ -107,6 +107,14 @@ type lambdaServiceMock struct {
 	updateFunctionEventInvokeConfigOutput *lambda.UpdateFunctionEventInvokeConfigOutput
 	updateFunctionEventInvokeConfigError  error
 
+	// Layer Version Permissions fields
+	addLayerVersionPermissionOutput    *lambda.AddLayerVersionPermissionOutput
+	addLayerVersionPermissionError     error
+	getLayerVersionPolicyOutput        *lambda.GetLayerVersionPolicyOutput
+	getLayerVersionPolicyError         error
+	removeLayerVersionPermissionOutput *lambda.RemoveLayerVersionPermissionOutput
+	removeLayerVersionPermissionError  error
+
 	// Event Source Mapping mock methods
 	MockCreateEventSourceMapping func(ctx context.Context, input *lambda.CreateEventSourceMappingInput) (*lambda.CreateEventSourceMappingOutput, error)
 	MockGetEventSourceMapping    func(ctx context.Context, input *lambda.GetEventSourceMappingInput) (*lambda.GetEventSourceMappingOutput, error)
@@ -1073,4 +1081,71 @@ func (m *lambdaServiceMock) UpdateFunctionEventInvokeConfig(
 ) (*lambda.UpdateFunctionEventInvokeConfigOutput, error) {
 	m.RegisterCall(ctx, params)
 	return m.updateFunctionEventInvokeConfigOutput, m.updateFunctionEventInvokeConfigError
+}
+
+// Layer Version Permissions mock methods
+
+func (m *lambdaServiceMock) AddLayerVersionPermission(
+	ctx context.Context,
+	params *lambda.AddLayerVersionPermissionInput,
+	optFns ...func(*lambda.Options),
+) (*lambda.AddLayerVersionPermissionOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.addLayerVersionPermissionOutput, m.addLayerVersionPermissionError
+}
+
+func (m *lambdaServiceMock) GetLayerVersionPolicy(
+	ctx context.Context,
+	params *lambda.GetLayerVersionPolicyInput,
+	optFns ...func(*lambda.Options),
+) (*lambda.GetLayerVersionPolicyOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.getLayerVersionPolicyOutput, m.getLayerVersionPolicyError
+}
+
+func (m *lambdaServiceMock) RemoveLayerVersionPermission(
+	ctx context.Context,
+	params *lambda.RemoveLayerVersionPermissionInput,
+	optFns ...func(*lambda.Options),
+) (*lambda.RemoveLayerVersionPermissionOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.removeLayerVersionPermissionOutput, m.removeLayerVersionPermissionError
+}
+
+// Layer Version Permissions mock helpers
+
+func WithAddLayerVersionPermissionOutput(output *lambda.AddLayerVersionPermissionOutput) func(*lambdaServiceMock) {
+	return func(m *lambdaServiceMock) {
+		m.addLayerVersionPermissionOutput = output
+	}
+}
+
+func WithAddLayerVersionPermissionError(err error) func(*lambdaServiceMock) {
+	return func(m *lambdaServiceMock) {
+		m.addLayerVersionPermissionError = err
+	}
+}
+
+func WithGetLayerVersionPolicyOutput(output *lambda.GetLayerVersionPolicyOutput) func(*lambdaServiceMock) {
+	return func(m *lambdaServiceMock) {
+		m.getLayerVersionPolicyOutput = output
+	}
+}
+
+func WithGetLayerVersionPolicyError(err error) func(*lambdaServiceMock) {
+	return func(m *lambdaServiceMock) {
+		m.getLayerVersionPolicyError = err
+	}
+}
+
+func WithRemoveLayerVersionPermissionOutput(output *lambda.RemoveLayerVersionPermissionOutput) func(*lambdaServiceMock) {
+	return func(m *lambdaServiceMock) {
+		m.removeLayerVersionPermissionOutput = output
+	}
+}
+
+func WithRemoveLayerVersionPermissionError(err error) func(*lambdaServiceMock) {
+	return func(m *lambdaServiceMock) {
+		m.removeLayerVersionPermissionError = err
+	}
 }

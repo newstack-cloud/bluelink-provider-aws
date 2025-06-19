@@ -29,6 +29,10 @@ func NewProvider(
 				lambdaServiceFactory,
 				awsConfigStore,
 			),
+			"aws/lambda/functionUrl": lambda.FunctionUrlResource(
+				lambdaServiceFactory,
+				awsConfigStore,
+			),
 			"aws/lambda/alias": lambda.AliasResource(
 				lambdaServiceFactory,
 				awsConfigStore,
@@ -42,6 +46,14 @@ func NewProvider(
 				awsConfigStore,
 			),
 			"aws/lambda/eventInvokeConfig": lambda.EventInvokeConfigResource(
+				lambdaServiceFactory,
+				awsConfigStore,
+			),
+			"aws/lambda/layerVersion": lambda.LayerVersionResource(
+				lambdaServiceFactory,
+				awsConfigStore,
+			),
+			"aws/lambda/layerVersionPermission": lambda.LayerVersionPermissionResource(
 				lambdaServiceFactory,
 				awsConfigStore,
 			),
