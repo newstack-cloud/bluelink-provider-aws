@@ -79,6 +79,16 @@ type lambdaServiceMock struct {
 	deleteEventSourceMappingOutput *lambda.DeleteEventSourceMappingOutput
 	deleteEventSourceMappingError  error
 
+	// Function URL fields
+	createFunctionUrlConfigOutput *lambda.CreateFunctionUrlConfigOutput
+	createFunctionUrlConfigError  error
+	getFunctionUrlConfigOutput    *lambda.GetFunctionUrlConfigOutput
+	getFunctionUrlConfigError     error
+	updateFunctionUrlConfigOutput *lambda.UpdateFunctionUrlConfigOutput
+	updateFunctionUrlConfigError  error
+	deleteFunctionUrlConfigOutput *lambda.DeleteFunctionUrlConfigOutput
+	deleteFunctionUrlConfigError  error
+
 	// Event Source Mapping mock methods
 	MockCreateEventSourceMapping func(ctx context.Context, input *lambda.CreateEventSourceMappingInput) (*lambda.CreateEventSourceMappingOutput, error)
 	MockGetEventSourceMapping    func(ctx context.Context, input *lambda.GetEventSourceMappingInput) (*lambda.GetEventSourceMappingOutput, error)
@@ -496,6 +506,52 @@ func WithDeleteEventSourceMappingError(err error) lambdaServiceMockOption {
 	}
 }
 
+// Function URL mock methods
+func (m *lambdaServiceMock) DeleteEventSourceMapping(ctx context.Context, input *lambda.DeleteEventSourceMappingInput, optFns ...func(*lambda.Options)) (*lambda.DeleteEventSourceMappingOutput, error) {
+	m.RegisterCall(ctx, input)
+	m.ExpectedEventSourceMappingDeleteCalls = append(m.ExpectedEventSourceMappingDeleteCalls, *input)
+	if m.MockDeleteEventSourceMapping != nil {
+		return m.MockDeleteEventSourceMapping(ctx, input)
+	}
+	return m.deleteEventSourceMappingOutput, m.deleteEventSourceMappingError
+}
+
+func (m *lambdaServiceMock) CreateFunctionUrlConfig(
+	ctx context.Context,
+	params *lambda.CreateFunctionUrlConfigInput,
+	optFns ...func(*lambda.Options),
+) (*lambda.CreateFunctionUrlConfigOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.createFunctionUrlConfigOutput, m.createFunctionUrlConfigError
+}
+
+func (m *lambdaServiceMock) GetFunctionUrlConfig(
+	ctx context.Context,
+	params *lambda.GetFunctionUrlConfigInput,
+	optFns ...func(*lambda.Options),
+) (*lambda.GetFunctionUrlConfigOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.getFunctionUrlConfigOutput, m.getFunctionUrlConfigError
+}
+
+func (m *lambdaServiceMock) UpdateFunctionUrlConfig(
+	ctx context.Context,
+	params *lambda.UpdateFunctionUrlConfigInput,
+	optFns ...func(*lambda.Options),
+) (*lambda.UpdateFunctionUrlConfigOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.updateFunctionUrlConfigOutput, m.updateFunctionUrlConfigError
+}
+
+func (m *lambdaServiceMock) DeleteFunctionUrlConfig(
+	ctx context.Context,
+	params *lambda.DeleteFunctionUrlConfigInput,
+	optFns ...func(*lambda.Options),
+) (*lambda.DeleteFunctionUrlConfigOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.deleteFunctionUrlConfigOutput, m.deleteFunctionUrlConfigError
+}
+
 func (m *lambdaServiceMock) GetFunction(
 	ctx context.Context,
 	params *lambda.GetFunctionInput,
@@ -767,15 +823,6 @@ func (m *lambdaServiceMock) UpdateEventSourceMapping(ctx context.Context, input 
 	return m.updateEventSourceMappingOutput, m.updateEventSourceMappingError
 }
 
-func (m *lambdaServiceMock) DeleteEventSourceMapping(ctx context.Context, input *lambda.DeleteEventSourceMappingInput, optFns ...func(*lambda.Options)) (*lambda.DeleteEventSourceMappingOutput, error) {
-	m.RegisterCall(ctx, input)
-	m.ExpectedEventSourceMappingDeleteCalls = append(m.ExpectedEventSourceMappingDeleteCalls, *input)
-	if m.MockDeleteEventSourceMapping != nil {
-		return m.MockDeleteEventSourceMapping(ctx, input)
-	}
-	return m.deleteEventSourceMappingOutput, m.deleteEventSourceMappingError
-}
-
 func createBaseTestFunctionConfig(
 	functionName string,
 	runtime types.Runtime,
@@ -796,5 +843,54 @@ func createBaseTestFunctionConfig(
 		Code: &types.FunctionCodeLocation{
 			Location: aws.String("https://test-bucket.s3.amazonaws.com/test-key"),
 		},
+	}
+}
+
+// Function URL mock options
+func WithCreateFunctionUrlConfigOutput(output *lambda.CreateFunctionUrlConfigOutput) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.createFunctionUrlConfigOutput = output
+	}
+}
+
+func WithCreateFunctionUrlConfigError(err error) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.createFunctionUrlConfigError = err
+	}
+}
+
+func WithGetFunctionUrlConfigOutput(output *lambda.GetFunctionUrlConfigOutput) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.getFunctionUrlConfigOutput = output
+	}
+}
+
+func WithGetFunctionUrlConfigError(err error) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.getFunctionUrlConfigError = err
+	}
+}
+
+func WithUpdateFunctionUrlConfigOutput(output *lambda.UpdateFunctionUrlConfigOutput) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.updateFunctionUrlConfigOutput = output
+	}
+}
+
+func WithUpdateFunctionUrlConfigError(err error) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.updateFunctionUrlConfigError = err
+	}
+}
+
+func WithDeleteFunctionUrlConfigOutput(output *lambda.DeleteFunctionUrlConfigOutput) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.deleteFunctionUrlConfigOutput = output
+	}
+}
+
+func WithDeleteFunctionUrlConfigError(err error) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.deleteFunctionUrlConfigError = err
 	}
 }

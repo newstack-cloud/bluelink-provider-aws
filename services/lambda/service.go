@@ -353,6 +353,30 @@ type Service interface {
 		params *lambda.DeleteEventSourceMappingInput,
 		optFns ...func(*lambda.Options),
 	) (*lambda.DeleteEventSourceMappingOutput, error)
+	// Creates a function URL configuration with the specified parameters. A function URL is a dedicated HTTP(S) endpoint that you can use to invoke your function.
+	CreateFunctionUrlConfig(
+		ctx context.Context,
+		params *lambda.CreateFunctionUrlConfigInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.CreateFunctionUrlConfigOutput, error)
+	// Returns details about a function URL configuration.
+	GetFunctionUrlConfig(
+		ctx context.Context,
+		params *lambda.GetFunctionUrlConfigInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.GetFunctionUrlConfigOutput, error)
+	// Updates a function URL configuration. You can update the CORS configuration to control which cross-origin requests are allowed.
+	UpdateFunctionUrlConfig(
+		ctx context.Context,
+		params *lambda.UpdateFunctionUrlConfigInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.UpdateFunctionUrlConfigOutput, error)
+	// Deletes a function URL configuration.
+	DeleteFunctionUrlConfig(
+		ctx context.Context,
+		params *lambda.DeleteFunctionUrlConfigInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.DeleteFunctionUrlConfigOutput, error)
 }
 
 // NewService creates a new instance of the AWS Lambda service
