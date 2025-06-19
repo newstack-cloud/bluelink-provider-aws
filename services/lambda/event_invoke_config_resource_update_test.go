@@ -251,14 +251,14 @@ func updateEventInvokeConfigDestinationsTestCase(
 		Fields: map[string]*core.MappingNode{
 			"functionName": core.MappingNodeFromString("test-function"),
 			"qualifier":    core.MappingNodeFromString("$LATEST"),
-			"destinationConfig": &core.MappingNode{
+			"destinationConfig": {
 				Fields: map[string]*core.MappingNode{
-					"onSuccess": &core.MappingNode{
+					"onSuccess": {
 						Fields: map[string]*core.MappingNode{
 							"destination": core.MappingNodeFromString("arn:aws:sqs:us-east-1:123456789012:success-queue"),
 						},
 					},
-					"onFailure": &core.MappingNode{
+					"onFailure": {
 						Fields: map[string]*core.MappingNode{
 							"destination": core.MappingNodeFromString("arn:aws:sqs:us-east-1:123456789012:failure-queue"),
 						},
@@ -369,14 +369,14 @@ func updateEventInvokeConfigCompleteTestCase(
 			"qualifier":                core.MappingNodeFromString("$LATEST"),
 			"maximumRetryAttempts":     core.MappingNodeFromInt(3),
 			"maximumEventAgeInSeconds": core.MappingNodeFromInt(3600),
-			"destinationConfig": &core.MappingNode{
+			"destinationConfig": {
 				Fields: map[string]*core.MappingNode{
-					"onSuccess": &core.MappingNode{
+					"onSuccess": {
 						Fields: map[string]*core.MappingNode{
 							"destination": core.MappingNodeFromString("arn:aws:sqs:us-east-1:123456789012:success-queue"),
 						},
 					},
-					"onFailure": &core.MappingNode{
+					"onFailure": {
 						Fields: map[string]*core.MappingNode{
 							"destination": core.MappingNodeFromString("arn:aws:sqs:us-east-1:123456789012:failure-queue"),
 						},
