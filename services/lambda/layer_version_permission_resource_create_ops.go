@@ -114,7 +114,7 @@ func changesToAddLayerVersionPermissionInput(
 	return input, hasValuesToSave, nil
 }
 
-// parseLayerVersionPermissionArn parses a layer version ARN or name to extract the layer name and version number
+// parseLayerVersionPermissionArn parses a layer version ARN or name to extract the layer name and version number.
 func parseLayerVersionPermissionArn(layerVersionArn string) (layerName string, versionNumber int64, err error) {
 	// Check if it's an ARN format: arn:aws:lambda:region:account:layer:layer-name:version
 	if strings.HasPrefix(layerVersionArn, "arn:") {
