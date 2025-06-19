@@ -50,11 +50,6 @@ func lambdaLayerVersionResourceSchema() *provider.ResourceDefinitionsSchema {
 						MaxLength:    1024,
 						MustRecreate: true,
 					},
-					"zipFile": {
-						Type:         provider.ResourceDefinitionsSchemaTypeString,
-						Description:  "The base64-encoded contents of the deployment package. AWS SDK and CLI clients handle the encoding for you.",
-						MustRecreate: true,
-					},
 				},
 			},
 			"compatibleArchitectures": {

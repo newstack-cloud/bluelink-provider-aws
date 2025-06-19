@@ -120,10 +120,6 @@ func changesToPublishLayerVersionInput(
 					content.S3ObjectVersion = aws.String(core.StringValue(s3ObjectVersion))
 					contentSet = true
 				}
-				if zipFile, ok := pluginutils.GetValueByPath("$.zipFile", value); ok {
-					content.ZipFile = []byte(core.StringValue(zipFile))
-					contentSet = true
-				}
 
 				if contentSet {
 					input.Content = content
