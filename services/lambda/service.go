@@ -401,6 +401,30 @@ type Service interface {
 		params *lambda.DeleteLayerVersionInput,
 		optFns ...func(*lambda.Options),
 	) (*lambda.DeleteLayerVersionOutput, error)
+	// Configures options for asynchronous invocation on a function, version, or alias. If a configuration already exists for a function, version, or alias, this operation overwrites it. If you exclude any settings, they are removed. To set one option without affecting existing settings for other options, use UpdateFunctionEventInvokeConfig.
+	PutFunctionEventInvokeConfig(
+		ctx context.Context,
+		params *lambda.PutFunctionEventInvokeConfigInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.PutFunctionEventInvokeConfigOutput, error)
+	// Retrieves the configuration for asynchronous invocation for a function, version, or alias.
+	GetFunctionEventInvokeConfig(
+		ctx context.Context,
+		params *lambda.GetFunctionEventInvokeConfigInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.GetFunctionEventInvokeConfigOutput, error)
+	// Deletes the configuration for asynchronous invocation for a function, version, or alias.
+	DeleteFunctionEventInvokeConfig(
+		ctx context.Context,
+		params *lambda.DeleteFunctionEventInvokeConfigInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.DeleteFunctionEventInvokeConfigOutput, error)
+	// Updates the configuration for asynchronous invocation for a function, version, or alias.
+	UpdateFunctionEventInvokeConfig(
+		ctx context.Context,
+		params *lambda.UpdateFunctionEventInvokeConfigInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.UpdateFunctionEventInvokeConfigOutput, error)
 }
 
 // NewService creates a new instance of the AWS Lambda service

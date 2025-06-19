@@ -64,3 +64,6 @@ docs.json
 # Directory for miscellaneous files
 # that should not be committed to version control.
 misc
+
+# Files for instructions and notes for cursor to generate integrations.
+.cursor

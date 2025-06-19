@@ -97,6 +97,16 @@ type lambdaServiceMock struct {
 	deleteLayerVersionOutput  *lambda.DeleteLayerVersionOutput
 	deleteLayerVersionError   error
 
+	// Event Invoke Config fields
+	putFunctionEventInvokeConfigOutput    *lambda.PutFunctionEventInvokeConfigOutput
+	putFunctionEventInvokeConfigError     error
+	getFunctionEventInvokeConfigOutput    *lambda.GetFunctionEventInvokeConfigOutput
+	getFunctionEventInvokeConfigError     error
+	deleteFunctionEventInvokeConfigOutput *lambda.DeleteFunctionEventInvokeConfigOutput
+	deleteFunctionEventInvokeConfigError  error
+	updateFunctionEventInvokeConfigOutput *lambda.UpdateFunctionEventInvokeConfigOutput
+	updateFunctionEventInvokeConfigError  error
+
 	// Event Source Mapping mock methods
 	MockCreateEventSourceMapping func(ctx context.Context, input *lambda.CreateEventSourceMappingInput) (*lambda.CreateEventSourceMappingOutput, error)
 	MockGetEventSourceMapping    func(ctx context.Context, input *lambda.GetEventSourceMappingInput) (*lambda.GetEventSourceMappingOutput, error)
@@ -139,6 +149,11 @@ func createLambdaServiceMock(
 	}
 
 	return mock
+}
+
+// NewMockService creates a new mock Service for testing
+func NewMockService(t interface{}) *lambdaServiceMock {
+	return createLambdaServiceMock()
 }
 
 // Mock configuration options.
@@ -514,7 +529,8 @@ func WithDeleteEventSourceMappingError(err error) lambdaServiceMockOption {
 	}
 }
 
-// Function URL mock methods.
+// Function URL mock methods
+
 func (m *lambdaServiceMock) DeleteEventSourceMapping(ctx context.Context, input *lambda.DeleteEventSourceMappingInput, optFns ...func(*lambda.Options)) (*lambda.DeleteEventSourceMappingOutput, error) {
 	m.RegisterCall(ctx, input)
 	m.ExpectedEventSourceMappingDeleteCalls = append(m.ExpectedEventSourceMappingDeleteCalls, *input)
@@ -969,4 +985,92 @@ func WithDeleteLayerVersionError(err error) func(*lambdaServiceMock) {
 	return func(m *lambdaServiceMock) {
 		m.deleteLayerVersionError = err
 	}
+}
+
+// Event Invoke Config helper functions
+
+func WithPutFunctionEventInvokeConfigOutput(output *lambda.PutFunctionEventInvokeConfigOutput) func(*lambdaServiceMock) {
+	return func(m *lambdaServiceMock) {
+		m.putFunctionEventInvokeConfigOutput = output
+	}
+}
+
+func WithPutFunctionEventInvokeConfigError(err error) func(*lambdaServiceMock) {
+	return func(m *lambdaServiceMock) {
+		m.putFunctionEventInvokeConfigError = err
+	}
+}
+
+func WithGetFunctionEventInvokeConfigOutput(output *lambda.GetFunctionEventInvokeConfigOutput) func(*lambdaServiceMock) {
+	return func(m *lambdaServiceMock) {
+		m.getFunctionEventInvokeConfigOutput = output
+	}
+}
+
+func WithGetFunctionEventInvokeConfigError(err error) func(*lambdaServiceMock) {
+	return func(m *lambdaServiceMock) {
+		m.getFunctionEventInvokeConfigError = err
+	}
+}
+
+func WithDeleteFunctionEventInvokeConfigOutput(output *lambda.DeleteFunctionEventInvokeConfigOutput) func(*lambdaServiceMock) {
+	return func(m *lambdaServiceMock) {
+		m.deleteFunctionEventInvokeConfigOutput = output
+	}
+}
+
+func WithDeleteFunctionEventInvokeConfigError(err error) func(*lambdaServiceMock) {
+	return func(m *lambdaServiceMock) {
+		m.deleteFunctionEventInvokeConfigError = err
+	}
+}
+
+func WithUpdateFunctionEventInvokeConfigOutput(output *lambda.UpdateFunctionEventInvokeConfigOutput) func(*lambdaServiceMock) {
+	return func(m *lambdaServiceMock) {
+		m.updateFunctionEventInvokeConfigOutput = output
+	}
+}
+
+func WithUpdateFunctionEventInvokeConfigError(err error) func(*lambdaServiceMock) {
+	return func(m *lambdaServiceMock) {
+		m.updateFunctionEventInvokeConfigError = err
+	}
+}
+
+// Event Invoke Config mock methods
+
+func (m *lambdaServiceMock) PutFunctionEventInvokeConfig(
+	ctx context.Context,
+	params *lambda.PutFunctionEventInvokeConfigInput,
+	optFns ...func(*lambda.Options),
+) (*lambda.PutFunctionEventInvokeConfigOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.putFunctionEventInvokeConfigOutput, m.putFunctionEventInvokeConfigError
+}
+
+func (m *lambdaServiceMock) GetFunctionEventInvokeConfig(
+	ctx context.Context,
+	params *lambda.GetFunctionEventInvokeConfigInput,
+	optFns ...func(*lambda.Options),
+) (*lambda.GetFunctionEventInvokeConfigOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.getFunctionEventInvokeConfigOutput, m.getFunctionEventInvokeConfigError
+}
+
+func (m *lambdaServiceMock) DeleteFunctionEventInvokeConfig(
+	ctx context.Context,
+	params *lambda.DeleteFunctionEventInvokeConfigInput,
+	optFns ...func(*lambda.Options),
+) (*lambda.DeleteFunctionEventInvokeConfigOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.deleteFunctionEventInvokeConfigOutput, m.deleteFunctionEventInvokeConfigError
+}
+
+func (m *lambdaServiceMock) UpdateFunctionEventInvokeConfig(
+	ctx context.Context,
+	params *lambda.UpdateFunctionEventInvokeConfigInput,
+	optFns ...func(*lambda.Options),
+) (*lambda.UpdateFunctionEventInvokeConfigOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.updateFunctionEventInvokeConfigOutput, m.updateFunctionEventInvokeConfigError
 }

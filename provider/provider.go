@@ -41,6 +41,10 @@ func NewProvider(
 				lambdaServiceFactory,
 				awsConfigStore,
 			),
+			"aws/lambda/eventInvokeConfig": lambda.EventInvokeConfigResource(
+				lambdaServiceFactory,
+				awsConfigStore,
+			),
 		},
 		DataSources: map[string]provider.DataSource{
 			"aws/lambda/function": lambda.FunctionDataSource(
