@@ -13,42 +13,66 @@ import (
 type lambdaServiceMock struct {
 	plugintestutils.MockCalls
 
-	getFunctionOutput                  *lambda.GetFunctionOutput
-	getFunctionCodeSigningOutput       *lambda.GetFunctionCodeSigningConfigOutput
-	getFunctionRecursionOutput         *lambda.GetFunctionRecursionConfigOutput
-	getFunctionConcurrencyOutput       *lambda.GetFunctionConcurrencyOutput
-	getProvisionedConcurrencyOutput    *lambda.GetProvisionedConcurrencyConfigOutput
-	getFunctionError                   error
-	getFunctionCodeSigningError        error
-	getFunctionRecursionError          error
-	getFunctionConcurrencyError        error
-	getProvisionedConcurrencyError     error
-	deleteFunctionOutput               *lambda.DeleteFunctionOutput
-	deleteFunctionError                error
-	updateFunctionConfigurationOutput  *lambda.UpdateFunctionConfigurationOutput
-	updateFunctionConfigurationError   error
-	updateFunctionCodeOutput           *lambda.UpdateFunctionCodeOutput
-	updateFunctionCodeError            error
-	putFunctionCodeSigningConfigOutput *lambda.PutFunctionCodeSigningConfigOutput
-	putFunctionCodeSigningConfigError  error
-	putFunctionConcurrencyOutput       *lambda.PutFunctionConcurrencyOutput
-	putFunctionConcurrencyError        error
-	putFunctionRecursionConfigOutput   *lambda.PutFunctionRecursionConfigOutput
-	putFunctionRecursionConfigError    error
-	putRuntimeManagementConfigOutput   *lambda.PutRuntimeManagementConfigOutput
-	putRuntimeManagementConfigError    error
-	tagResourceOutput                  *lambda.TagResourceOutput
-	tagResourceError                   error
-	untagResourceOutput                *lambda.UntagResourceOutput
-	untagResourceError                 error
-	listTagsOutput                     *lambda.ListTagsOutput
-	listTagsError                      error
-	createFunctionOutput               *lambda.CreateFunctionOutput
-	createFunctionError                error
-	publishVersionOutput               *lambda.PublishVersionOutput
-	publishVersionError                error
-	putProvisionedConcurrencyOutput    *lambda.PutProvisionedConcurrencyConfigOutput
-	putProvisionedConcurrencyError     error
+	getFunctionOutput *lambda.GetFunctionOutput
+	getFunctionError  error
+
+	getFunctionCodeSigningOutput *lambda.GetFunctionCodeSigningConfigOutput
+	getFunctionCodeSigningError  error
+
+	getFunctionRecursionOutput *lambda.GetFunctionRecursionConfigOutput
+	getFunctionRecursionError  error
+
+	getFunctionConcurrencyOutput *lambda.GetFunctionConcurrencyOutput
+	getFunctionConcurrencyError  error
+
+	// Get Provisioned Concurrency-related mock fields
+	getProvisionedConcurrencyOutput *lambda.GetProvisionedConcurrencyConfigOutput
+	getProvisionedConcurrencyError  error
+
+	// Delete Function-related mock fields
+	deleteFunctionOutput *lambda.DeleteFunctionOutput
+	deleteFunctionError  error
+
+	// Update Function Configuration-related mock fields
+	updateFunctionConfigurationOutput *lambda.UpdateFunctionConfigurationOutput
+	updateFunctionConfigurationError  error
+	updateFunctionCodeOutput          *lambda.UpdateFunctionCodeOutput
+	updateFunctionCodeError           error
+
+	// Function Code Signing Config-related mock fields
+	putFunctionCodeSigningConfigOutput    *lambda.PutFunctionCodeSigningConfigOutput
+	putFunctionCodeSigningConfigError     error
+	deleteFunctionCodeSigningConfigOutput *lambda.DeleteFunctionCodeSigningConfigOutput
+	deleteFunctionCodeSigningConfigError  error
+
+	// Function Concurrency-related mock fields
+	putFunctionConcurrencyOutput     *lambda.PutFunctionConcurrencyOutput
+	putFunctionConcurrencyError      error
+	putFunctionRecursionConfigOutput *lambda.PutFunctionRecursionConfigOutput
+	putFunctionRecursionConfigError  error
+	putRuntimeManagementConfigOutput *lambda.PutRuntimeManagementConfigOutput
+	putRuntimeManagementConfigError  error
+
+	// Tag Resource-related mock fields
+	tagResourceOutput   *lambda.TagResourceOutput
+	tagResourceError    error
+	untagResourceOutput *lambda.UntagResourceOutput
+	untagResourceError  error
+	listTagsOutput      *lambda.ListTagsOutput
+	listTagsError       error
+
+	// Create Function-related mock fields
+	createFunctionOutput *lambda.CreateFunctionOutput
+	createFunctionError  error
+
+	// Publish Version-related mock fields
+	publishVersionOutput *lambda.PublishVersionOutput
+	publishVersionError  error
+
+	// Provisioned Concurrency-related mock fields
+	putProvisionedConcurrencyOutput *lambda.PutProvisionedConcurrencyConfigOutput
+	putProvisionedConcurrencyError  error
+
 	// Alias-related mock fields
 	createAliasOutput *lambda.CreateAliasOutput
 	createAliasError  error
@@ -58,6 +82,7 @@ type lambdaServiceMock struct {
 	updateAliasError  error
 	deleteAliasOutput *lambda.DeleteAliasOutput
 	deleteAliasError  error
+
 	// Code signing config-related mock fields
 	createCodeSigningConfigOutput *lambda.CreateCodeSigningConfigOutput
 	createCodeSigningConfigError  error
@@ -282,6 +307,18 @@ func WithPutFunctionCodeSigningConfigOutput(
 func WithPutFunctionCodeSigningConfigError(err error) lambdaServiceMockOption {
 	return func(m *lambdaServiceMock) {
 		m.putFunctionCodeSigningConfigError = err
+	}
+}
+
+func WithDeleteFunctionCodeSigningConfigOutput(output *lambda.DeleteFunctionCodeSigningConfigOutput) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.deleteFunctionCodeSigningConfigOutput = output
+	}
+}
+
+func WithDeleteFunctionCodeSigningConfigError(err error) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.deleteFunctionCodeSigningConfigError = err
 	}
 }
 
@@ -667,6 +704,15 @@ func (m *lambdaServiceMock) PutFunctionCodeSigningConfig(
 ) (*lambda.PutFunctionCodeSigningConfigOutput, error) {
 	m.RegisterCall(ctx, params)
 	return m.putFunctionCodeSigningConfigOutput, m.putFunctionCodeSigningConfigError
+}
+
+func (m *lambdaServiceMock) DeleteFunctionCodeSigningConfig(
+	ctx context.Context,
+	params *lambda.DeleteFunctionCodeSigningConfigInput,
+	optFns ...func(*lambda.Options),
+) (*lambda.DeleteFunctionCodeSigningConfigOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.deleteFunctionCodeSigningConfigOutput, m.deleteFunctionCodeSigningConfigError
 }
 
 func (m *lambdaServiceMock) PutFunctionConcurrency(

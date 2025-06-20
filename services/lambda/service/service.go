@@ -122,6 +122,12 @@ type Service interface {
 		params *lambda.PutFunctionCodeSigningConfigInput,
 		optFns ...func(*lambda.Options),
 	) (*lambda.PutFunctionCodeSigningConfigOutput, error)
+	// Removes the code signing configuration from the function.
+	DeleteFunctionCodeSigningConfig(
+		ctx context.Context,
+		params *lambda.DeleteFunctionCodeSigningConfigInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.DeleteFunctionCodeSigningConfigOutput, error)
 	// Sets the maximum number of simultaneous executions for a function, and reserves
 	// capacity for that concurrency level.
 	//

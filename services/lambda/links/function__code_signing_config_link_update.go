@@ -6,6 +6,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
 	"github.com/newstack-cloud/celerity/libs/blueprint/state"
@@ -16,20 +17,18 @@ func (l *lambdaFunctionCodeSigningConfigLinkActions) UpdateResourceA(
 	ctx context.Context,
 	input *provider.LinkUpdateResourceInput,
 ) (*provider.LinkUpdateResourceOutput, error) {
-	codeSigningConfigSpec := pluginutils.GetSpecDataFromResourceInfo(
-		input.OtherResourceInfo,
+	lambdaService, err := l.getLambdaService(
+		ctx,
+		provider.NewProviderContextFromLinkContext(
+			input.LinkContext,
+			"aws",
+		),
 	)
-	codeSigningConfigARN, hasCodeSigningConfigARN := pluginutils.GetValueByPath(
-		"$.codeSigningConfigArn",
-		codeSigningConfigSpec,
-	)
-	if !hasCodeSigningConfigARN {
-		return nil, fmt.Errorf(
-			"code signing config ARN could not be retrieved from code signing config",
-		)
+	if err != nil {
+		return nil, err
 	}
 
-	functionSpec := pluginutils.GetSpecDataFromResourceInfo(
+	functionSpec := pluginutils.GetCurrentStateSpecDataFromResourceInfo(
 		input.ResourceInfo,
 	)
 	functionARN, hasFunctionARN := pluginutils.GetValueByPath(
@@ -42,21 +41,45 @@ func (l *lambdaFunctionCodeSigningConfigLinkActions) UpdateResourceA(
 		)
 	}
 
-	lambdaService, err := l.getLambdaService(
-		ctx,
-		provider.NewProviderContextFromLinkContext(
-			input.LinkContext,
-			"aws",
-		),
-	)
-	if err != nil {
-		return nil, err
+	if input.LinkUpdateType == provider.LinkUpdateTypeDestroy {
+		return l.removeCodeSigningConfigFromFunction(
+			ctx,
+			core.StringValue(functionARN),
+			lambdaService,
+		)
 	}
 
-	_, err = lambdaService.PutFunctionCodeSigningConfig(
+	return l.addCodeSigningConfigToFunction(
+		ctx,
+		input,
+		core.StringValue(functionARN),
+		lambdaService,
+	)
+}
+
+func (l *lambdaFunctionCodeSigningConfigLinkActions) addCodeSigningConfigToFunction(
+	ctx context.Context,
+	input *provider.LinkUpdateResourceInput,
+	functionARN string,
+	lambdaService lambdaservice.Service,
+) (*provider.LinkUpdateResourceOutput, error) {
+	codeSigningConfigSpec := pluginutils.GetCurrentStateSpecDataFromResourceInfo(
+		input.OtherResourceInfo,
+	)
+	codeSigningConfigARN, hasCodeSigningConfigARN := pluginutils.GetValueByPath(
+		"$.codeSigningConfigArn",
+		codeSigningConfigSpec,
+	)
+	if !hasCodeSigningConfigARN {
+		return nil, fmt.Errorf(
+			"code signing config ARN could not be retrieved from code signing config",
+		)
+	}
+
+	_, err := lambdaService.PutFunctionCodeSigningConfig(
 		ctx,
 		&lambda.PutFunctionCodeSigningConfigInput{
-			FunctionName:         aws.String(core.StringValue(functionARN)),
+			FunctionName:         aws.String(functionARN),
 			CodeSigningConfigArn: aws.String(core.StringValue(codeSigningConfigARN)),
 		},
 	)
@@ -75,6 +98,28 @@ func (l *lambdaFunctionCodeSigningConfigLinkActions) UpdateResourceA(
 					},
 				},
 			},
+		},
+	}, nil
+}
+
+func (l *lambdaFunctionCodeSigningConfigLinkActions) removeCodeSigningConfigFromFunction(
+	ctx context.Context,
+	functionARN string,
+	lambdaService lambdaservice.Service,
+) (*provider.LinkUpdateResourceOutput, error) {
+	_, err := lambdaService.DeleteFunctionCodeSigningConfig(
+		ctx,
+		&lambda.DeleteFunctionCodeSigningConfigInput{
+			FunctionName: aws.String(functionARN),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &provider.LinkUpdateResourceOutput{
+		LinkData: &core.MappingNode{
+			Fields: map[string]*core.MappingNode{},
 		},
 	}, nil
 }
