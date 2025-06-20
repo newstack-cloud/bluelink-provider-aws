@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
 	"github.com/newstack-cloud/celerity/libs/blueprint/schema"
@@ -19,7 +20,7 @@ import (
 
 // FunctionDataSource returns a data source implementation for an AWS Lambda Function.
 func FunctionDataSource(
-	lambdaServiceFactory pluginutils.ServiceFactory[*aws.Config, Service],
+	lambdaServiceFactory pluginutils.ServiceFactory[*aws.Config, lambdaservice.Service],
 	awsConfigStore pluginutils.ServiceConfigStore[*aws.Config],
 ) provider.DataSource {
 	yamlExample, _ := examples.ReadFile("examples/datasources/lambda_function_yaml.md")
@@ -86,14 +87,14 @@ func FunctionDataSource(
 }
 
 type lambdaFunctionDataSourceFetcher struct {
-	lambdaServiceFactory pluginutils.ServiceFactory[*aws.Config, Service]
+	lambdaServiceFactory pluginutils.ServiceFactory[*aws.Config, lambdaservice.Service]
 	awsConfigStore       pluginutils.ServiceConfigStore[*aws.Config]
 }
 
 func (l *lambdaFunctionDataSourceFetcher) getLambdaService(
 	ctx context.Context,
 	input *provider.DataSourceFetchInput,
-) (Service, error) {
+) (lambdaservice.Service, error) {
 	meta := map[string]*core.MappingNode{
 		"region": extractRegionFromFilters(input.DataSourceWithResolvedSubs.Filter),
 	}
@@ -428,9 +429,9 @@ func (l *lambdaFunctionDataSourceFetcher) addAdditionalConfigurationsToData(
 	ctx context.Context,
 	filters *provider.ResolvedDataSourceFilters,
 	targetData map[string]*core.MappingNode,
-	lambdaService Service,
+	lambdaService lambdaservice.Service,
 ) error {
-	additionalConfigurations := []pluginutils.AdditionalValueExtractor[Service]{
+	additionalConfigurations := []pluginutils.AdditionalValueExtractor[lambdaservice.Service]{
 		{
 			Name:    "code signing config",
 			Extract: l.addCodeSigningConfigToData,
@@ -454,7 +455,7 @@ func (l *lambdaFunctionDataSourceFetcher) addCodeSigningConfigToData(
 	ctx context.Context,
 	filters *provider.ResolvedDataSourceFilters,
 	targetData map[string]*core.MappingNode,
-	lambdaService Service,
+	lambdaService lambdaservice.Service,
 ) error {
 	functionNameOrARN := extractFunctionNameOrARNFromFilters(filters)
 	codeSigningConfigOutput, err := lambdaService.GetFunctionCodeSigningConfig(
@@ -486,7 +487,7 @@ func (l *lambdaFunctionDataSourceFetcher) addConcurrencyConfigToData(
 	ctx context.Context,
 	filters *provider.ResolvedDataSourceFilters,
 	targetData map[string]*core.MappingNode,
-	lambdaService Service,
+	lambdaService lambdaservice.Service,
 ) error {
 	functionNameOrARN := extractFunctionNameOrARNFromFilters(filters)
 	concurrencyConfigOutput, err := lambdaService.GetFunctionConcurrency(

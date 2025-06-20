@@ -10,6 +10,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -25,7 +27,7 @@ type LambdaAliasDataSourceSuite struct {
 // Custom test case structure for data source tests.
 type AliasDataSourceFetchTestCase struct {
 	Name                 string
-	ServiceFactory       func(awsConfig *aws.Config, providerContext provider.Context) Service
+	ServiceFactory       func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service
 	ConfigStore          pluginutils.ServiceConfigStore[*aws.Config]
 	Input                *provider.DataSourceFetchInput
 	ExpectedOutput       *provider.DataSourceFetchOutput
@@ -91,8 +93,8 @@ func createBasicAliasFetchTestCase(
 ) AliasDataSourceFetchTestCase {
 	return AliasDataSourceFetchTestCase{
 		Name: "successfully fetches basic alias data",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetAliasOutput(&lambda.GetAliasOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetAliasOutput(&lambda.GetAliasOutput{
 				AliasArn:        aws.String("arn:aws:lambda:us-west-2:123456789012:function:test-function:test-alias"),
 				FunctionVersion: aws.String("1"),
 				Name:            aws.String("test-alias"),
@@ -134,8 +136,8 @@ func createDataSourceAliasWithDescriptionTestCase(
 ) AliasDataSourceFetchTestCase {
 	return AliasDataSourceFetchTestCase{
 		Name: "successfully fetches alias with description",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetAliasOutput(&lambda.GetAliasOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetAliasOutput(&lambda.GetAliasOutput{
 				AliasArn:        aws.String("arn:aws:lambda:us-west-2:123456789012:function:test-function:test-alias"),
 				Description:     aws.String("Test alias description"),
 				FunctionVersion: aws.String("1"),
@@ -185,8 +187,8 @@ func createDataSourceAliasWithRoutingConfigTestCase(
 
 	return AliasDataSourceFetchTestCase{
 		Name: "successfully fetches alias with routing config",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetAliasOutput(&lambda.GetAliasOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetAliasOutput(&lambda.GetAliasOutput{
 				AliasArn:        aws.String("arn:aws:lambda:us-west-2:123456789012:function:test-function:test-alias"),
 				FunctionVersion: aws.String("1"),
 				Name:            aws.String("test-alias"),
@@ -238,8 +240,8 @@ func createAliasWithAllOptionalConfigsTestCase(
 
 	return AliasDataSourceFetchTestCase{
 		Name: "successfully fetches alias with all optional configurations",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetAliasOutput(&lambda.GetAliasOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetAliasOutput(&lambda.GetAliasOutput{
 				AliasArn:        aws.String("arn:aws:lambda:us-west-2:123456789012:function:test-function:test-alias"),
 				Description:     aws.String("Production alias with routing"),
 				FunctionVersion: aws.String("1"),
@@ -287,8 +289,8 @@ func createAliasFetchErrorTestCase(
 ) AliasDataSourceFetchTestCase {
 	return AliasDataSourceFetchTestCase{
 		Name: "handles get alias error",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetAliasError(errors.New("ResourceNotFoundException")),
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetAliasError(errors.New("ResourceNotFoundException")),
 		),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},
@@ -318,7 +320,7 @@ func createAliasMissingFunctionNameTestCase(
 ) AliasDataSourceFetchTestCase {
 	return AliasDataSourceFetchTestCase{
 		Name:           "handles missing function name filter",
-		ServiceFactory: createLambdaServiceMockFactory(),
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},
 			utils.AWSConfigFromProviderContext,
@@ -346,7 +348,7 @@ func createAliasMissingNameTestCase(
 ) AliasDataSourceFetchTestCase {
 	return AliasDataSourceFetchTestCase{
 		Name:           "handles missing name filter",
-		ServiceFactory: createLambdaServiceMockFactory(),
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},
 			utils.AWSConfigFromProviderContext,

@@ -7,6 +7,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -31,7 +33,7 @@ func (s *LambdaFunctionUrlResourceDestroySuite) Test_destroy() {
 		},
 	)
 
-	testCases := []plugintestutils.ResourceDestroyTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service]{
 		destroyBasicFunctionUrlTestCase(providerCtx, loader),
 		destroyFunctionUrlWithQualifierTestCase(providerCtx, loader),
 		destroyFunctionUrlFailureTestCase(providerCtx, loader),
@@ -48,9 +50,9 @@ func (s *LambdaFunctionUrlResourceDestroySuite) Test_destroy() {
 func destroyBasicFunctionUrlTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDestroyTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithDeleteFunctionUrlConfigOutput(&lambda.DeleteFunctionUrlConfigOutput{}),
+) plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithDeleteFunctionUrlConfigOutput(&lambda.DeleteFunctionUrlConfigOutput{}),
 	)
 
 	specData := &core.MappingNode{
@@ -60,9 +62,9 @@ func destroyBasicFunctionUrlTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDestroyTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "successfully deletes function URL",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -89,9 +91,9 @@ func destroyBasicFunctionUrlTestCase(
 func destroyFunctionUrlWithQualifierTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDestroyTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithDeleteFunctionUrlConfigOutput(&lambda.DeleteFunctionUrlConfigOutput{}),
+) plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithDeleteFunctionUrlConfigOutput(&lambda.DeleteFunctionUrlConfigOutput{}),
 	)
 
 	specData := &core.MappingNode{
@@ -102,9 +104,9 @@ func destroyFunctionUrlWithQualifierTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDestroyTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "successfully deletes function URL with qualifier",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -132,9 +134,9 @@ func destroyFunctionUrlWithQualifierTestCase(
 func destroyFunctionUrlFailureTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDestroyTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithDeleteFunctionUrlConfigError(fmt.Errorf("function URL not found")),
+) plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithDeleteFunctionUrlConfigError(fmt.Errorf("function URL not found")),
 	)
 
 	specData := &core.MappingNode{
@@ -144,9 +146,9 @@ func destroyFunctionUrlFailureTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDestroyTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "fails to delete function URL",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -174,18 +176,18 @@ func destroyFunctionUrlFailureTestCase(
 func destroyFunctionUrlWithNoIDTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDestroyTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithDeleteFunctionUrlConfigOutput(&lambda.DeleteFunctionUrlConfigOutput{}),
+) plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithDeleteFunctionUrlConfigOutput(&lambda.DeleteFunctionUrlConfigOutput{}),
 	)
 
 	specData := &core.MappingNode{
 		Fields: map[string]*core.MappingNode{},
 	}
 
-	return plugintestutils.ResourceDestroyTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "handles destroy with no function arn without panicking",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,

@@ -6,6 +6,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -31,7 +33,7 @@ func (s *LambdaEventSourceMappingResourceUpdateSuite) Test_update_lambda_event_s
 		},
 	)
 
-	testCases := []plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		updateEventSourceMappingBasicUpdateTestCase(providerCtx, loader),
 	}
 
@@ -45,13 +47,13 @@ func (s *LambdaEventSourceMappingResourceUpdateSuite) Test_update_lambda_event_s
 func updateEventSourceMappingBasicUpdateTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	uuid := "test-update-uuid"
 	eventSourceMappingArn := "arn:aws:lambda:us-west-2:123456789012:event-source-mapping:test-update-uuid"
 	functionArn := "arn:aws:lambda:us-west-2:123456789012:function:test-function"
 
-	service := createLambdaServiceMock(
-		WithUpdateEventSourceMappingOutput(&lambda.UpdateEventSourceMappingOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithUpdateEventSourceMappingOutput(&lambda.UpdateEventSourceMappingOutput{
 			UUID:                  aws.String(uuid),
 			EventSourceMappingArn: aws.String(eventSourceMappingArn),
 			FunctionArn:           aws.String(functionArn),
@@ -59,7 +61,7 @@ func updateEventSourceMappingBasicUpdateTestCase(
 			EventSourceArn:        aws.String("arn:aws:sqs:us-west-2:123456789012:test-queue"),
 			BatchSize:             aws.Int32(20), // Updated from 10 to 20
 		}),
-		WithTagResourceOutput(&lambda.TagResourceOutput{}),
+		lambdamock.WithTagResourceOutput(&lambda.TagResourceOutput{}),
 	)
 
 	// New spec data with updated values
@@ -95,9 +97,9 @@ func updateEventSourceMappingBasicUpdateTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "update event source mapping batch size and add tags",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,

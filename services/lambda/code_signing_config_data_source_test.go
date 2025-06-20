@@ -9,6 +9,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -23,7 +25,7 @@ type LambdaCodeSigningConfigDataSourceSuite struct {
 
 type CodeSigningConfigDataSourceFetchTestCase struct {
 	Name                 string
-	ServiceFactory       func(awsConfig *aws.Config, providerContext provider.Context) Service
+	ServiceFactory       func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service
 	ConfigStore          pluginutils.ServiceConfigStore[*aws.Config]
 	Input                *provider.DataSourceFetchInput
 	ExpectedOutput       *provider.DataSourceFetchOutput
@@ -80,8 +82,8 @@ func createBasicCodeSigningConfigFetchTestCase(
 ) CodeSigningConfigDataSourceFetchTestCase {
 	return CodeSigningConfigDataSourceFetchTestCase{
 		Name: "successfully fetches basic code signing config data",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetCodeSigningConfigOutput(&lambda.GetCodeSigningConfigOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetCodeSigningConfigOutput(&lambda.GetCodeSigningConfigOutput{
 				CodeSigningConfig: &types.CodeSigningConfig{
 					CodeSigningConfigArn: aws.String("arn:aws:lambda:us-west-2:123456789012:code-signing-config:csc-1234567890abcdef"),
 					CodeSigningConfigId:  aws.String("csc-1234567890abcdef"),
@@ -116,8 +118,8 @@ func createDataSourceCodeSigningConfigWithDescriptionTestCase(
 ) CodeSigningConfigDataSourceFetchTestCase {
 	return CodeSigningConfigDataSourceFetchTestCase{
 		Name: "successfully fetches code signing config with description",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetCodeSigningConfigOutput(&lambda.GetCodeSigningConfigOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetCodeSigningConfigOutput(&lambda.GetCodeSigningConfigOutput{
 				CodeSigningConfig: &types.CodeSigningConfig{
 					CodeSigningConfigArn: aws.String("arn:aws:lambda:us-west-2:123456789012:code-signing-config:csc-1234567890abcdef"),
 					CodeSigningConfigId:  aws.String("csc-1234567890abcdef"),
@@ -154,8 +156,8 @@ func createDataSourceCodeSigningConfigWithPolicyTestCase(
 ) CodeSigningConfigDataSourceFetchTestCase {
 	return CodeSigningConfigDataSourceFetchTestCase{
 		Name: "successfully fetches code signing config with policy",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetCodeSigningConfigOutput(&lambda.GetCodeSigningConfigOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetCodeSigningConfigOutput(&lambda.GetCodeSigningConfigOutput{
 				CodeSigningConfig: &types.CodeSigningConfig{
 					CodeSigningConfigArn: aws.String("arn:aws:lambda:us-west-2:123456789012:code-signing-config:csc-1234567890abcdef"),
 					CodeSigningConfigId:  aws.String("csc-1234567890abcdef"),
@@ -194,8 +196,8 @@ func createCodeSigningConfigWithAllConfigsTestCase(
 ) CodeSigningConfigDataSourceFetchTestCase {
 	return CodeSigningConfigDataSourceFetchTestCase{
 		Name: "successfully fetches code signing config with all configurations",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetCodeSigningConfigOutput(&lambda.GetCodeSigningConfigOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetCodeSigningConfigOutput(&lambda.GetCodeSigningConfigOutput{
 				CodeSigningConfig: &types.CodeSigningConfig{
 					CodeSigningConfigArn: aws.String("arn:aws:lambda:us-west-2:123456789012:code-signing-config:csc-1234567890abcdef"),
 					CodeSigningConfigId:  aws.String("csc-1234567890abcdef"),
@@ -242,8 +244,8 @@ func createCodeSigningConfigFetchErrorTestCase(
 ) CodeSigningConfigDataSourceFetchTestCase {
 	return CodeSigningConfigDataSourceFetchTestCase{
 		Name: "handles get code signing config error",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetCodeSigningConfigError(errors.New("ResourceNotFoundException")),
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetCodeSigningConfigError(errors.New("ResourceNotFoundException")),
 		),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},
@@ -268,7 +270,7 @@ func createCodeSigningConfigMissingARNFilterTestCase(
 ) CodeSigningConfigDataSourceFetchTestCase {
 	return CodeSigningConfigDataSourceFetchTestCase{
 		Name:           "handles missing ARN filter",
-		ServiceFactory: createLambdaServiceMockFactory(),
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},
 			utils.AWSConfigFromProviderContext,

@@ -5,6 +5,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -28,7 +30,7 @@ func (s *LambdaEventInvokeConfigResourceStabilisedSuite) Test_stabilised_lambda_
 		},
 	)
 
-	testCases := []plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, lambdaservice.Service]{
 		stabilisedEventInvokeConfigTestCase(providerCtx, loader),
 	}
 
@@ -42,8 +44,8 @@ func (s *LambdaEventInvokeConfigResourceStabilisedSuite) Test_stabilised_lambda_
 func stabilisedEventInvokeConfigTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock()
+) plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock()
 
 	resourceSpecState := &core.MappingNode{
 		Fields: map[string]*core.MappingNode{
@@ -52,9 +54,9 @@ func stabilisedEventInvokeConfigTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "event invoke config is stabilised",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ConfigStore: utils.NewAWSConfigStore(

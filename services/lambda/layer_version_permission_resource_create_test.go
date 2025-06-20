@@ -7,6 +7,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -31,7 +33,7 @@ func (s *LambdaLayerVersionPermissionsResourceCreateSuite) Test_create_lambda_la
 		},
 	)
 
-	testCases := []plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		createBasicLayerVersionPermissionTestCase(providerCtx, loader),
 		createLayerVersionPermissionWithOrganizationTestCase(providerCtx, loader),
 		createLayerVersionPermissionFailureTestCase(providerCtx, loader),
@@ -47,11 +49,11 @@ func (s *LambdaLayerVersionPermissionsResourceCreateSuite) Test_create_lambda_la
 func createBasicLayerVersionPermissionTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	statementJson := `{"Sid":"test-statement","Effect":"Allow","Principal":{"AWS":"arn:aws:iam::123456789012:root"},"Action":"lambda:GetLayerVersion","Resource":"arn:aws:lambda:us-west-2:123456789012:layer:test-layer:1"}`
 
-	service := createLambdaServiceMock(
-		WithAddLayerVersionPermissionOutput(&lambda.AddLayerVersionPermissionOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithAddLayerVersionPermissionOutput(&lambda.AddLayerVersionPermissionOutput{
 			Statement:  aws.String(statementJson),
 			RevisionId: aws.String("revision-123"),
 		}),
@@ -67,9 +69,9 @@ func createBasicLayerVersionPermissionTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create basic layer version permission",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -131,11 +133,11 @@ func createBasicLayerVersionPermissionTestCase(
 func createLayerVersionPermissionWithOrganizationTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	statementJson := `{"Sid":"org-statement","Effect":"Allow","Principal":"*","Action":"lambda:GetLayerVersion","Resource":"arn:aws:lambda:us-west-2:123456789012:layer:my-layer:2","Condition":{"StringEquals":{"aws:PrincipalOrgID":"o-abc123defg"}}}`
 
-	service := createLambdaServiceMock(
-		WithAddLayerVersionPermissionOutput(&lambda.AddLayerVersionPermissionOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithAddLayerVersionPermissionOutput(&lambda.AddLayerVersionPermissionOutput{
 			Statement:  aws.String(statementJson),
 			RevisionId: aws.String("revision-456"),
 		}),
@@ -152,9 +154,9 @@ func createLayerVersionPermissionWithOrganizationTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create layer version permission with organization",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -220,9 +222,9 @@ func createLayerVersionPermissionWithOrganizationTestCase(
 func createLayerVersionPermissionFailureTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithAddLayerVersionPermissionError(fmt.Errorf("failed to add layer version permission")),
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithAddLayerVersionPermissionError(fmt.Errorf("failed to add layer version permission")),
 	)
 
 	// Create test data for layer version permission creation failure
@@ -235,9 +237,9 @@ func createLayerVersionPermissionFailureTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create layer version permission failure",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,

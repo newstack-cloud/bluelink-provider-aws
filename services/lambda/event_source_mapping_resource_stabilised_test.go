@@ -7,6 +7,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -30,7 +32,7 @@ func (s *LambdaEventSourceMappingResourceStabilisedSuite) Test_stabilised_lambda
 		},
 	)
 
-	testCases := []plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, lambdaservice.Service]{
 		stabilisedBasicEventSourceMappingEnabledTestCase(providerCtx, loader),
 		stabilisedBasicEventSourceMappingDisabledTestCase(providerCtx, loader),
 		stabilisedBasicEventSourceMappingErrorTestCase(providerCtx, loader),
@@ -46,9 +48,9 @@ func (s *LambdaEventSourceMappingResourceStabilisedSuite) Test_stabilised_lambda
 func stabilisedBasicEventSourceMappingEnabledTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithGetEventSourceMappingOutput(&lambda.GetEventSourceMappingOutput{
+) plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetEventSourceMappingOutput(&lambda.GetEventSourceMappingOutput{
 			State: aws.String(string("Enabled")),
 		}),
 	)
@@ -59,9 +61,9 @@ func stabilisedBasicEventSourceMappingEnabledTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "basic event source mapping is stabilised when in an enabled state",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ConfigStore: utils.NewAWSConfigStore(
@@ -83,9 +85,9 @@ func stabilisedBasicEventSourceMappingEnabledTestCase(
 func stabilisedBasicEventSourceMappingDisabledTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithGetEventSourceMappingOutput(&lambda.GetEventSourceMappingOutput{
+) plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetEventSourceMappingOutput(&lambda.GetEventSourceMappingOutput{
 			State: aws.String(string("Disabled")),
 		}),
 	)
@@ -96,9 +98,9 @@ func stabilisedBasicEventSourceMappingDisabledTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "basic event source mapping is stabilised when in a disabled state",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ConfigStore: utils.NewAWSConfigStore(
@@ -120,9 +122,9 @@ func stabilisedBasicEventSourceMappingDisabledTestCase(
 func stabilisedBasicEventSourceMappingErrorTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithGetEventSourceMappingError(errors.New("event source mapping error")),
+) plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetEventSourceMappingError(errors.New("event source mapping error")),
 	)
 
 	resourceSpecState := &core.MappingNode{
@@ -131,9 +133,9 @@ func stabilisedBasicEventSourceMappingErrorTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "basic event source mapping is not stabilised when there is an error",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ConfigStore: utils.NewAWSConfigStore(

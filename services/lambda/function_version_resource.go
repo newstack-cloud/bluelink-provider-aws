@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
 	"github.com/newstack-cloud/celerity/libs/plugin-framework/sdk/pluginutils"
 	"github.com/newstack-cloud/celerity/libs/plugin-framework/sdk/providerv1"
@@ -12,7 +13,7 @@ import (
 
 // FunctionVersionResource returns a resource implementation for an AWS Lambda Function Version.
 func FunctionVersionResource(
-	lambdaServiceFactory pluginutils.ServiceFactory[*aws.Config, Service],
+	lambdaServiceFactory pluginutils.ServiceFactory[*aws.Config, lambdaservice.Service],
 	awsConfigStore pluginutils.ServiceConfigStore[*aws.Config],
 ) provider.Resource {
 	basicExample, _ := examples.ReadFile("examples/resources/lambda_function_version_basic.md")
@@ -51,14 +52,14 @@ func FunctionVersionResource(
 }
 
 type lambdaFunctionVersionResourceActions struct {
-	lambdaServiceFactory pluginutils.ServiceFactory[*aws.Config, Service]
+	lambdaServiceFactory pluginutils.ServiceFactory[*aws.Config, lambdaservice.Service]
 	awsConfigStore       pluginutils.ServiceConfigStore[*aws.Config]
 }
 
 func (l *lambdaFunctionVersionResourceActions) getLambdaService(
 	ctx context.Context,
 	providerContext provider.Context,
-) (Service, error) {
+) (lambdaservice.Service, error) {
 	awsConfig, err := l.awsConfigStore.FromProviderContext(
 		ctx,
 		providerContext,

@@ -8,6 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -31,7 +33,7 @@ func (s *LambdaAliasResourceGetExternalStateSuite) Test_get_external_state_lambd
 		},
 	)
 
-	testCases := []plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		getBasicAliasExternalStateTestCase(providerCtx, loader),
 		getAliasWithDescriptionExternalStateTestCase(providerCtx, loader),
 		getAliasWithRoutingConfigExternalStateTestCase(providerCtx, loader),
@@ -49,20 +51,20 @@ func (s *LambdaAliasResourceGetExternalStateSuite) Test_get_external_state_lambd
 func getBasicAliasExternalStateTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
 	aliasArn := "arn:aws:lambda:us-west-2:123456789012:function:test-function:PROD"
 
-	service := createLambdaServiceMock(
-		WithGetAliasOutput(&lambda.GetAliasOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetAliasOutput(&lambda.GetAliasOutput{
 			AliasArn:        aws.String(aliasArn),
 			Name:            aws.String("PROD"),
 			FunctionVersion: aws.String("1"),
 		}),
 	)
 
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "get basic alias external state",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ConfigStore: utils.NewAWSConfigStore(
@@ -96,11 +98,11 @@ func getBasicAliasExternalStateTestCase(
 func getAliasWithDescriptionExternalStateTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
 	aliasArn := "arn:aws:lambda:us-west-2:123456789012:function:test-function:STAGING"
 
-	service := createLambdaServiceMock(
-		WithGetAliasOutput(&lambda.GetAliasOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetAliasOutput(&lambda.GetAliasOutput{
 			AliasArn:        aws.String(aliasArn),
 			Name:            aws.String("STAGING"),
 			FunctionVersion: aws.String("2"),
@@ -108,9 +110,9 @@ func getAliasWithDescriptionExternalStateTestCase(
 		}),
 	)
 
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "get alias with description external state",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ConfigStore: utils.NewAWSConfigStore(
@@ -145,11 +147,11 @@ func getAliasWithDescriptionExternalStateTestCase(
 func getAliasWithRoutingConfigExternalStateTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
 	aliasArn := "arn:aws:lambda:us-west-2:123456789012:function:test-function:CANARY"
 
-	service := createLambdaServiceMock(
-		WithGetAliasOutput(&lambda.GetAliasOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetAliasOutput(&lambda.GetAliasOutput{
 			AliasArn:        aws.String(aliasArn),
 			Name:            aws.String("CANARY"),
 			FunctionVersion: aws.String("3"),
@@ -161,9 +163,9 @@ func getAliasWithRoutingConfigExternalStateTestCase(
 		}),
 	)
 
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "get alias with routing config external state",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ConfigStore: utils.NewAWSConfigStore(
@@ -206,11 +208,11 @@ func getAliasWithRoutingConfigExternalStateTestCase(
 func getComplexAliasExternalStateTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
 	aliasArn := "arn:aws:lambda:us-west-2:123456789012:function:test-function:COMPLEX"
 
-	service := createLambdaServiceMock(
-		WithGetAliasOutput(&lambda.GetAliasOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetAliasOutput(&lambda.GetAliasOutput{
 			AliasArn:        aws.String(aliasArn),
 			Name:            aws.String("COMPLEX"),
 			FunctionVersion: aws.String("4"),
@@ -224,9 +226,9 @@ func getComplexAliasExternalStateTestCase(
 		}),
 	)
 
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "get complex alias external state",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ConfigStore: utils.NewAWSConfigStore(
@@ -271,7 +273,7 @@ func getComplexAliasExternalStateTestCase(
 func getAliasExternalStateFailureTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
 	currentResourceSpec := &core.MappingNode{
 		Fields: map[string]*core.MappingNode{
 			"functionName":    core.MappingNodeFromString("test-function"),
@@ -280,10 +282,10 @@ func getAliasExternalStateFailureTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "get alias external state failure",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetAliasError(fmt.Errorf("failed to get alias")),
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetAliasError(fmt.Errorf("failed to get alias")),
 		),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},

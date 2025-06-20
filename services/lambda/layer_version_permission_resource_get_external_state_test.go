@@ -7,6 +7,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/smithy-go"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -30,7 +32,7 @@ func (s *LambdaLayerVersionPermissionsResourceGetExternalStateSuite) Test_get_ex
 		},
 	)
 
-	testCases := []plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		getExternalStateBasicLayerVersionPermissionTestCase(providerCtx, loader),
 		getExternalStateLayerVersionPermissionNotFoundTestCase(providerCtx, loader),
 	}
@@ -45,7 +47,7 @@ func (s *LambdaLayerVersionPermissionsResourceGetExternalStateSuite) Test_get_ex
 func getExternalStateBasicLayerVersionPermissionTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
 	// Create test data for layer version permission get external state
 	currentResourceSpec := &core.MappingNode{
 		Fields: map[string]*core.MappingNode{
@@ -67,10 +69,10 @@ func getExternalStateBasicLayerVersionPermissionTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "get external state basic layer version permission",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetLayerVersionPolicyOutput(&lambda.GetLayerVersionPolicyOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetLayerVersionPolicyOutput(&lambda.GetLayerVersionPolicyOutput{
 				Policy:     aws.String(`{"Version":"2012-10-17","Statement":{"Sid":"test-statement","Effect":"Allow","Principal":"123456789012","Action":"lambda:GetLayerVersion"}}`),
 				RevisionId: aws.String("revision-123"),
 			}),
@@ -96,11 +98,11 @@ func getExternalStateBasicLayerVersionPermissionTestCase(
 func getExternalStateLayerVersionPermissionNotFoundTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "get external state layer version permission not found",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetLayerVersionPolicyError(&smithy.GenericAPIError{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetLayerVersionPolicyError(&smithy.GenericAPIError{
 				Code:    "ResourceNotFoundException",
 				Message: "Layer version not found",
 			}),

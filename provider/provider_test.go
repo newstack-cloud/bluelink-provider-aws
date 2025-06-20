@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/newstack-cloud/celerity-provider-aws/services/lambda"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/stretchr/testify/suite"
@@ -58,7 +58,7 @@ func (s *ProviderSuite) Test_loads_provider_and_applies_duration_validation() {
 		&utils.DefaultAWSConfigLoader{},
 		utils.AWSConfigCacheKey,
 	)
-	provider := NewProvider(lambda.NewService, configStore)
+	provider := NewProvider(lambdaservice.NewService, configStore)
 	configDef, err := provider.ConfigDefinition(context.Background())
 	s.Require().NoError(err, "should get config definition without error")
 
@@ -137,7 +137,7 @@ func (s *ProviderSuite) Test_loads_provider_and_applies_role_arn_validation() {
 		&utils.DefaultAWSConfigLoader{},
 		utils.AWSConfigCacheKey,
 	)
-	provider := NewProvider(lambda.NewService, configStore)
+	provider := NewProvider(lambdaservice.NewService, configStore)
 	configDef, err := provider.ConfigDefinition(context.Background())
 	s.Require().NoError(err, "should get config definition without error")
 

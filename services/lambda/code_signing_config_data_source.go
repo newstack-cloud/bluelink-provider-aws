@@ -7,6 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
 	"github.com/newstack-cloud/celerity/libs/blueprint/schema"
@@ -16,7 +17,7 @@ import (
 
 // CodeSigningConfigDataSource returns a data source implementation for an AWS Lambda Code Signing Configuration.
 func CodeSigningConfigDataSource(
-	lambdaServiceFactory pluginutils.ServiceFactory[*aws.Config, Service],
+	lambdaServiceFactory pluginutils.ServiceFactory[*aws.Config, lambdaservice.Service],
 	awsConfigStore pluginutils.ServiceConfigStore[*aws.Config],
 ) provider.DataSource {
 	yamlExample, _ := examples.ReadFile("examples/datasources/lambda_code_signing_config_basic.md")
@@ -51,14 +52,14 @@ func CodeSigningConfigDataSource(
 }
 
 type lambdaCodeSigningConfigDataSourceFetcher struct {
-	lambdaServiceFactory pluginutils.ServiceFactory[*aws.Config, Service]
+	lambdaServiceFactory pluginutils.ServiceFactory[*aws.Config, lambdaservice.Service]
 	awsConfigStore       pluginutils.ServiceConfigStore[*aws.Config]
 }
 
 func (l *lambdaCodeSigningConfigDataSourceFetcher) getLambdaService(
 	ctx context.Context,
 	input *provider.DataSourceFetchInput,
-) (Service, error) {
+) (lambdaservice.Service, error) {
 	awsConfig, err := l.awsConfigStore.FromProviderContext(
 		ctx,
 		input.ProviderContext,

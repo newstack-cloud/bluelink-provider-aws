@@ -8,6 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -33,7 +35,7 @@ func (s *LambdaAliasResourceUpdateSuite) Test_update_lambda_alias() {
 		},
 	)
 
-	testCases := []plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		updateAliasDescriptionTestCase(providerCtx, loader),
 		updateAliasFunctionVersionTestCase(providerCtx, loader),
 		updateAliasRoutingConfigTestCase(providerCtx, loader),
@@ -52,11 +54,11 @@ func (s *LambdaAliasResourceUpdateSuite) Test_update_lambda_alias() {
 func updateAliasDescriptionTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	aliasArn := "arn:aws:lambda:us-west-2:123456789012:function:test-function:PROD"
 
-	service := createLambdaServiceMock(
-		WithUpdateAliasOutput(&lambda.UpdateAliasOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithUpdateAliasOutput(&lambda.UpdateAliasOutput{
 			AliasArn:        aws.String(aliasArn),
 			Name:            aws.String("PROD"),
 			FunctionVersion: aws.String("1"),
@@ -82,9 +84,9 @@ func updateAliasDescriptionTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "update alias description",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -142,11 +144,11 @@ func updateAliasDescriptionTestCase(
 func updateAliasFunctionVersionTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	aliasArn := "arn:aws:lambda:us-west-2:123456789012:function:test-function:STAGING"
 
-	service := createLambdaServiceMock(
-		WithUpdateAliasOutput(&lambda.UpdateAliasOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithUpdateAliasOutput(&lambda.UpdateAliasOutput{
 			AliasArn:        aws.String(aliasArn),
 			Name:            aws.String("STAGING"),
 			FunctionVersion: aws.String("3"),
@@ -169,9 +171,9 @@ func updateAliasFunctionVersionTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "update alias function version",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -228,11 +230,11 @@ func updateAliasFunctionVersionTestCase(
 func updateAliasRoutingConfigTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	aliasArn := "arn:aws:lambda:us-west-2:123456789012:function:test-function:CANARY"
 
-	service := createLambdaServiceMock(
-		WithUpdateAliasOutput(&lambda.UpdateAliasOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithUpdateAliasOutput(&lambda.UpdateAliasOutput{
 			AliasArn:        aws.String(aliasArn),
 			Name:            aws.String("CANARY"),
 			FunctionVersion: aws.String("4"),
@@ -278,9 +280,9 @@ func updateAliasRoutingConfigTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "update alias routing config",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -345,16 +347,16 @@ func updateAliasRoutingConfigTestCase(
 func updateAliasProvisionedConcurrencyTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	aliasArn := "arn:aws:lambda:us-west-2:123456789012:function:test-function:HIGHPERF"
 
-	service := createLambdaServiceMock(
-		WithUpdateAliasOutput(&lambda.UpdateAliasOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithUpdateAliasOutput(&lambda.UpdateAliasOutput{
 			AliasArn:        aws.String(aliasArn),
 			Name:            aws.String("HIGHPERF"),
 			FunctionVersion: aws.String("2"),
 		}),
-		WithPutProvisionedConcurrencyConfigOutput(&lambda.PutProvisionedConcurrencyConfigOutput{}),
+		lambdamock.WithPutProvisionedConcurrencyConfigOutput(&lambda.PutProvisionedConcurrencyConfigOutput{}),
 	)
 
 	specData := &core.MappingNode{
@@ -383,9 +385,9 @@ func updateAliasProvisionedConcurrencyTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "update alias provisioned concurrency",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -446,11 +448,11 @@ func updateAliasProvisionedConcurrencyTestCase(
 func updateAliasComplexTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	aliasArn := "arn:aws:lambda:us-west-2:123456789012:function:test-function:COMPLEX"
 
-	service := createLambdaServiceMock(
-		WithUpdateAliasOutput(&lambda.UpdateAliasOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithUpdateAliasOutput(&lambda.UpdateAliasOutput{
 			AliasArn:        aws.String(aliasArn),
 			Name:            aws.String("COMPLEX"),
 			FunctionVersion: aws.String("6"),
@@ -462,7 +464,7 @@ func updateAliasComplexTestCase(
 				},
 			},
 		}),
-		WithPutProvisionedConcurrencyConfigOutput(&lambda.PutProvisionedConcurrencyConfigOutput{}),
+		lambdamock.WithPutProvisionedConcurrencyConfigOutput(&lambda.PutProvisionedConcurrencyConfigOutput{}),
 	)
 
 	specData := &core.MappingNode{
@@ -513,9 +515,9 @@ func updateAliasComplexTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "update complex alias with all features",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -592,9 +594,9 @@ func updateAliasComplexTestCase(
 func updateAliasFailureTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithUpdateAliasError(fmt.Errorf("failed to update alias")),
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithUpdateAliasError(fmt.Errorf("failed to update alias")),
 	)
 
 	specData := &core.MappingNode{
@@ -615,9 +617,9 @@ func updateAliasFailureTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "update alias failure",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,

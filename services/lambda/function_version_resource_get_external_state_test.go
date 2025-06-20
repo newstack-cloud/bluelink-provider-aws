@@ -8,6 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -32,7 +34,7 @@ func (s *LambdaFunctionVersionResourceGetExternalStateSuite) Test_get_external_s
 		},
 	)
 
-	testCases := []plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		createBasicFunctionVersionStateTestCase(providerCtx, loader),
 		createAllOptionalConfigsFunctionVersionTestCase(providerCtx, loader),
 		createGetFunctionVersionErrorTestCase(providerCtx, loader),
@@ -55,11 +57,11 @@ func TestLambdaFunctionVersionResourceGetExternalStateSuite(t *testing.T) {
 func createBasicFunctionVersionStateTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "successfully gets basic function version state",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetFunctionOutput(&lambda.GetFunctionOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetFunctionOutput(&lambda.GetFunctionOutput{
 				Configuration: &types.FunctionConfiguration{
 					FunctionName: aws.String("test-function"),
 					FunctionArn: aws.String(
@@ -68,7 +70,7 @@ func createBasicFunctionVersionStateTestCase(
 					Version: aws.String("1"),
 				},
 			}),
-			WithGetProvisionedConcurrencyOutput(&lambda.GetProvisionedConcurrencyConfigOutput{
+			lambdamock.WithGetProvisionedConcurrencyOutput(&lambda.GetProvisionedConcurrencyConfigOutput{
 				RequestedProvisionedConcurrentExecutions: aws.Int32(10),
 			}),
 		),
@@ -112,11 +114,11 @@ func createBasicFunctionVersionStateTestCase(
 func createAllOptionalConfigsFunctionVersionTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "successfully gets function version state with all optional configurations",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetFunctionOutput(&lambda.GetFunctionOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetFunctionOutput(&lambda.GetFunctionOutput{
 				Configuration: &types.FunctionConfiguration{
 					FunctionName: aws.String("test-function"),
 					FunctionArn:  aws.String("arn:aws:lambda:us-east-1:123456789012:function:test-function"),
@@ -127,7 +129,7 @@ func createAllOptionalConfigsFunctionVersionTestCase(
 					},
 				},
 			}),
-			WithGetProvisionedConcurrencyOutput(&lambda.GetProvisionedConcurrencyConfigOutput{
+			lambdamock.WithGetProvisionedConcurrencyOutput(&lambda.GetProvisionedConcurrencyConfigOutput{
 				RequestedProvisionedConcurrentExecutions: aws.Int32(10),
 			}),
 		),
@@ -191,11 +193,11 @@ func createAllOptionalConfigsFunctionVersionTestCase(
 func createGetFunctionVersionErrorTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "handles get function version error",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetFunctionError(errors.New("failed to get function")),
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetFunctionError(errors.New("failed to get function")),
 		),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},
@@ -218,18 +220,18 @@ func createGetFunctionVersionErrorTestCase(
 func createGetProvisionedConcurrencyErrorTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "handles get provisioned concurrency config error",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetFunctionOutput(&lambda.GetFunctionOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetFunctionOutput(&lambda.GetFunctionOutput{
 				Configuration: &types.FunctionConfiguration{
 					FunctionName: aws.String("test-function"),
 					FunctionArn:  aws.String("arn:aws:lambda:us-east-1:123456789012:function:test-function"),
 					Version:      aws.String("1"),
 				},
 			}),
-			WithGetProvisionedConcurrencyError(errors.New("failed to get provisioned concurrency config")),
+			lambdamock.WithGetProvisionedConcurrencyError(errors.New("failed to get provisioned concurrency config")),
 		),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},

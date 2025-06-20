@@ -9,6 +9,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -24,7 +26,7 @@ type LambdaLayerVersionDataSourceSuite struct {
 // Custom test case structure for data source tests.
 type LayerVersionDataSourceFetchTestCase struct {
 	Name                 string
-	ServiceFactory       func(awsConfig *aws.Config, providerContext provider.Context) Service
+	ServiceFactory       func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service
 	ConfigStore          pluginutils.ServiceConfigStore[*aws.Config]
 	Input                *provider.DataSourceFetchInput
 	ExpectedOutput       *provider.DataSourceFetchOutput
@@ -90,8 +92,8 @@ func createBasicLayerVersionFetchTestCase(
 ) LayerVersionDataSourceFetchTestCase {
 	return LayerVersionDataSourceFetchTestCase{
 		Name: "successfully fetches basic layer version data",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetLayerVersionOutput(&lambda.GetLayerVersionOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetLayerVersionOutput(&lambda.GetLayerVersionOutput{
 				LayerArn:        aws.String("arn:aws:lambda:us-west-2:123456789012:layer:my-layer"),
 				LayerVersionArn: aws.String("arn:aws:lambda:us-west-2:123456789012:layer:my-layer:1"),
 				Version:         1,
@@ -158,8 +160,8 @@ func createMinimalLayerVersionTestCase(
 ) LayerVersionDataSourceFetchTestCase {
 	return LayerVersionDataSourceFetchTestCase{
 		Name: "successfully fetches minimal layer version",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetLayerVersionOutput(&lambda.GetLayerVersionOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetLayerVersionOutput(&lambda.GetLayerVersionOutput{
 				LayerArn: aws.String("arn:aws:lambda:us-west-2:123456789012:layer:minimal-layer"),
 				Version:  2,
 				Content: &types.LayerVersionContentOutput{
@@ -205,8 +207,8 @@ func createLayerVersionWithAllOptionalFieldsTestCase(
 ) LayerVersionDataSourceFetchTestCase {
 	return LayerVersionDataSourceFetchTestCase{
 		Name: "successfully fetches layer version with all optional fields",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetLayerVersionOutput(&lambda.GetLayerVersionOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetLayerVersionOutput(&lambda.GetLayerVersionOutput{
 				LayerArn:        aws.String("arn:aws:lambda:us-west-2:123456789012:layer:full-layer"),
 				LayerVersionArn: aws.String("arn:aws:lambda:us-west-2:123456789012:layer:full-layer:3"),
 				Version:         3,
@@ -279,8 +281,8 @@ func createLayerVersionWithLayerARNTestCase(
 	layerARN := "arn:aws:lambda:us-west-2:123456789012:layer:shared-layer"
 	return LayerVersionDataSourceFetchTestCase{
 		Name: "successfully fetches layer version using layer ARN",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetLayerVersionOutput(&lambda.GetLayerVersionOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetLayerVersionOutput(&lambda.GetLayerVersionOutput{
 				LayerArn:        aws.String(layerARN),
 				LayerVersionArn: aws.String(layerARN + ":5"),
 				Version:         5,
@@ -328,8 +330,8 @@ func createLayerVersionFetchErrorTestCase(
 ) LayerVersionDataSourceFetchTestCase {
 	return LayerVersionDataSourceFetchTestCase{
 		Name: "handles get layer version error",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetLayerVersionError(errors.New("ResourceNotFoundException")),
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetLayerVersionError(errors.New("ResourceNotFoundException")),
 		),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},
@@ -359,7 +361,7 @@ func createLayerVersionMissingLayerNameTestCase(
 ) LayerVersionDataSourceFetchTestCase {
 	return LayerVersionDataSourceFetchTestCase{
 		Name:           "handles missing layer name filter",
-		ServiceFactory: createLambdaServiceMockFactory(),
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},
 			utils.AWSConfigFromProviderContext,
@@ -387,7 +389,7 @@ func createLayerVersionMissingVersionNumberTestCase(
 ) LayerVersionDataSourceFetchTestCase {
 	return LayerVersionDataSourceFetchTestCase{
 		Name:           "handles missing version number filter",
-		ServiceFactory: createLambdaServiceMockFactory(),
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},
 			utils.AWSConfigFromProviderContext,

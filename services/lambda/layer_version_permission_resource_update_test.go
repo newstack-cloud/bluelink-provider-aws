@@ -5,6 +5,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -30,7 +32,7 @@ func (s *LambdaLayerVersionPermissionsResourceUpdateSuite) Test_update_lambda_la
 		},
 	)
 
-	testCases := []plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		updateLayerVersionPermissionImmutableTestCase(providerCtx, loader),
 	}
 
@@ -44,8 +46,8 @@ func (s *LambdaLayerVersionPermissionsResourceUpdateSuite) Test_update_lambda_la
 func updateLayerVersionPermissionImmutableTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock()
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock()
 
 	// Create current state data
 	currentStateSpecData := &core.MappingNode{
@@ -65,9 +67,9 @@ func updateLayerVersionPermissionImmutableTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "update layer version permission should fail (immutable)",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,

@@ -8,6 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -31,11 +33,11 @@ func (s *LambdaFunctionResourceStabilisedSuite) Test_stabilised() {
 		},
 	)
 
-	testCases := []plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, lambdaservice.Service]{
 		{
 			Name: "returns stabilised when function is successfully updated",
-			ServiceFactory: createLambdaServiceMockFactory(
-				WithGetFunctionOutput(&lambda.GetFunctionOutput{
+			ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+				lambdamock.WithGetFunctionOutput(&lambda.GetFunctionOutput{
 					Configuration: &types.FunctionConfiguration{
 						State: types.StateActive,
 					},
@@ -64,8 +66,8 @@ func (s *LambdaFunctionResourceStabilisedSuite) Test_stabilised() {
 		},
 		{
 			Name: "returns not stabilised when function is still updating",
-			ServiceFactory: createLambdaServiceMockFactory(
-				WithGetFunctionOutput(&lambda.GetFunctionOutput{
+			ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+				lambdamock.WithGetFunctionOutput(&lambda.GetFunctionOutput{
 					Configuration: &types.FunctionConfiguration{
 						State: types.StatePending,
 					},
@@ -94,8 +96,8 @@ func (s *LambdaFunctionResourceStabilisedSuite) Test_stabilised() {
 		},
 		{
 			Name: "handles get function error",
-			ServiceFactory: createLambdaServiceMockFactory(
-				WithGetFunctionError(errors.New("failed to get function")),
+			ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+				lambdamock.WithGetFunctionError(errors.New("failed to get function")),
 			),
 			ConfigStore: utils.NewAWSConfigStore(
 				[]string{},

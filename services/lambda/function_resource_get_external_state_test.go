@@ -8,6 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -32,7 +34,7 @@ func (s *LambdaFunctionResourceGetExternalStateSuite) Test_get_external_state() 
 		},
 	)
 
-	testCases := []plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		createBasicFunctionStateTestCase(providerCtx, loader),
 		createAllOptionalConfigsTestCase(providerCtx, loader),
 		createGetFunctionErrorTestCase(providerCtx, loader),
@@ -58,19 +60,19 @@ func TestLambdaFunctionResourceGetExternalStateSuite(t *testing.T) {
 func createBasicFunctionStateTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "successfully gets basic function state",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetFunctionOutput(createBaseTestFunctionConfig(
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetFunctionOutput(createBaseTestFunctionConfig(
 				"test-function",
 				types.RuntimeNodejs18x,
 				"index.handler",
 				"arn:aws:iam::123456789012:role/test-role",
 			)),
-			WithGetFunctionCodeSigningOutput(&lambda.GetFunctionCodeSigningConfigOutput{}),
-			WithGetFunctionRecursionOutput(&lambda.GetFunctionRecursionConfigOutput{}),
-			WithGetFunctionConcurrencyOutput(&lambda.GetFunctionConcurrencyOutput{}),
+			lambdamock.WithGetFunctionCodeSigningOutput(&lambda.GetFunctionCodeSigningConfigOutput{}),
+			lambdamock.WithGetFunctionRecursionOutput(&lambda.GetFunctionRecursionConfigOutput{}),
+			lambdamock.WithGetFunctionConcurrencyOutput(&lambda.GetFunctionConcurrencyOutput{}),
 		),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},
@@ -117,7 +119,7 @@ func createBasicFunctionStateTestCase(
 func createAllOptionalConfigsTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
 	tags := map[string]string{
 		"Environment": "test",
 		"Project":     "celerity",
@@ -222,10 +224,10 @@ func createAllOptionalConfigsTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "successfully gets function state with all optional configurations",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetFunctionOutput(&lambda.GetFunctionOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetFunctionOutput(&lambda.GetFunctionOutput{
 				Configuration: &types.FunctionConfiguration{
 					FunctionName: aws.String("test-function"),
 					FunctionArn:  aws.String("arn:aws:lambda:us-east-1:123456789012:function:test-function"),
@@ -282,9 +284,9 @@ func createAllOptionalConfigsTestCase(
 				},
 				Tags: tags,
 			}),
-			WithGetFunctionCodeSigningOutput(&lambda.GetFunctionCodeSigningConfigOutput{}),
-			WithGetFunctionRecursionOutput(&lambda.GetFunctionRecursionConfigOutput{}),
-			WithGetFunctionConcurrencyOutput(&lambda.GetFunctionConcurrencyOutput{}),
+			lambdamock.WithGetFunctionCodeSigningOutput(&lambda.GetFunctionCodeSigningConfigOutput{}),
+			lambdamock.WithGetFunctionRecursionOutput(&lambda.GetFunctionRecursionConfigOutput{}),
+			lambdamock.WithGetFunctionConcurrencyOutput(&lambda.GetFunctionConcurrencyOutput{}),
 		),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},
@@ -315,11 +317,11 @@ func createAllOptionalConfigsTestCase(
 func createGetFunctionErrorTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "handles get function error",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetFunctionError(errors.New("failed to get function")),
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetFunctionError(errors.New("failed to get function")),
 		),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},
@@ -342,17 +344,17 @@ func createGetFunctionErrorTestCase(
 func createGetFunctionCodeSigningErrorTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "handles get function code signing config error",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetFunctionOutput(createBaseTestFunctionConfig(
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetFunctionOutput(createBaseTestFunctionConfig(
 				"test-function",
 				types.RuntimeNodejs18x,
 				"index.handler",
 				"arn:aws:iam::123456789012:role/test-role",
 			)),
-			WithGetFunctionCodeSigningError(errors.New("failed to get code signing config")),
+			lambdamock.WithGetFunctionCodeSigningError(errors.New("failed to get code signing config")),
 		),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},
@@ -375,11 +377,11 @@ func createGetFunctionCodeSigningErrorTestCase(
 func createEphemeralStorageTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "successfully gets function state with ephemeral storage",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetFunctionOutput(&lambda.GetFunctionOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetFunctionOutput(&lambda.GetFunctionOutput{
 				Configuration: &types.FunctionConfiguration{
 					FunctionName: aws.String("test-function"),
 					FunctionArn:  aws.String("arn:aws:lambda:us-east-1:123456789012:function:test-function"),
@@ -397,9 +399,9 @@ func createEphemeralStorageTestCase(
 					Location: aws.String("https://test-bucket.s3.amazonaws.com/test-key"),
 				},
 			}),
-			WithGetFunctionCodeSigningOutput(&lambda.GetFunctionCodeSigningConfigOutput{}),
-			WithGetFunctionRecursionOutput(&lambda.GetFunctionRecursionConfigOutput{}),
-			WithGetFunctionConcurrencyOutput(&lambda.GetFunctionConcurrencyOutput{}),
+			lambdamock.WithGetFunctionCodeSigningOutput(&lambda.GetFunctionCodeSigningConfigOutput{}),
+			lambdamock.WithGetFunctionRecursionOutput(&lambda.GetFunctionRecursionConfigOutput{}),
+			lambdamock.WithGetFunctionConcurrencyOutput(&lambda.GetFunctionConcurrencyOutput{}),
 		),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},
@@ -451,11 +453,11 @@ func createEphemeralStorageTestCase(
 func createImageConfigTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "successfully gets function state with image configuration",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetFunctionOutput(&lambda.GetFunctionOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetFunctionOutput(&lambda.GetFunctionOutput{
 				Configuration: &types.FunctionConfiguration{
 					FunctionName: aws.String("test-function"),
 					FunctionArn:  aws.String("arn:aws:lambda:us-east-1:123456789012:function:test-function"),
@@ -483,9 +485,9 @@ func createImageConfigTestCase(
 					Location: aws.String("https://test-bucket.s3.amazonaws.com/test-key"),
 				},
 			}),
-			WithGetFunctionCodeSigningOutput(&lambda.GetFunctionCodeSigningConfigOutput{}),
-			WithGetFunctionRecursionOutput(&lambda.GetFunctionRecursionConfigOutput{}),
-			WithGetFunctionConcurrencyOutput(&lambda.GetFunctionConcurrencyOutput{}),
+			lambdamock.WithGetFunctionCodeSigningOutput(&lambda.GetFunctionCodeSigningConfigOutput{}),
+			lambdamock.WithGetFunctionRecursionOutput(&lambda.GetFunctionRecursionConfigOutput{}),
+			lambdamock.WithGetFunctionConcurrencyOutput(&lambda.GetFunctionConcurrencyOutput{}),
 		),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},
@@ -549,11 +551,11 @@ func createImageConfigTestCase(
 func createTracingAndRuntimeVersionTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "successfully gets function state with tracing and runtime version config",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetFunctionOutput(&lambda.GetFunctionOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetFunctionOutput(&lambda.GetFunctionOutput{
 				Configuration: &types.FunctionConfiguration{
 					FunctionName: aws.String("test-function"),
 					FunctionArn:  aws.String("arn:aws:lambda:us-east-1:123456789012:function:test-function"),
@@ -574,9 +576,9 @@ func createTracingAndRuntimeVersionTestCase(
 					Location: aws.String("https://test-bucket.s3.amazonaws.com/test-key"),
 				},
 			}),
-			WithGetFunctionCodeSigningOutput(&lambda.GetFunctionCodeSigningConfigOutput{}),
-			WithGetFunctionRecursionOutput(&lambda.GetFunctionRecursionConfigOutput{}),
-			WithGetFunctionConcurrencyOutput(&lambda.GetFunctionConcurrencyOutput{}),
+			lambdamock.WithGetFunctionCodeSigningOutput(&lambda.GetFunctionCodeSigningConfigOutput{}),
+			lambdamock.WithGetFunctionRecursionOutput(&lambda.GetFunctionRecursionConfigOutput{}),
+			lambdamock.WithGetFunctionConcurrencyOutput(&lambda.GetFunctionConcurrencyOutput{}),
 		),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},

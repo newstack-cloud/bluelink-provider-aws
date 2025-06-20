@@ -6,6 +6,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
 	"github.com/newstack-cloud/celerity/libs/blueprint/schema"
@@ -15,7 +16,7 @@ import (
 
 // FunctionUrlDataSource returns a data source implementation for an AWS Lambda Function URL.
 func FunctionUrlDataSource(
-	lambdaServiceFactory pluginutils.ServiceFactory[*aws.Config, Service],
+	lambdaServiceFactory pluginutils.ServiceFactory[*aws.Config, lambdaservice.Service],
 	awsConfigStore pluginutils.ServiceConfigStore[*aws.Config],
 ) provider.DataSource {
 	yamlExample, _ := examples.ReadFile("examples/datasources/lambda_function_url_yaml.md")
@@ -71,14 +72,14 @@ func FunctionUrlDataSource(
 }
 
 type lambdaFunctionUrlDataSourceFetcher struct {
-	lambdaServiceFactory pluginutils.ServiceFactory[*aws.Config, Service]
+	lambdaServiceFactory pluginutils.ServiceFactory[*aws.Config, lambdaservice.Service]
 	awsConfigStore       pluginutils.ServiceConfigStore[*aws.Config]
 }
 
 func (l *lambdaFunctionUrlDataSourceFetcher) getLambdaService(
 	ctx context.Context,
 	input *provider.DataSourceFetchInput,
-) (Service, error) {
+) (lambdaservice.Service, error) {
 	meta := map[string]*core.MappingNode{
 		"region": extractRegionFromFilters(input.DataSourceWithResolvedSubs.Filter),
 	}

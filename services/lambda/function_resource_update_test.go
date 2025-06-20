@@ -8,6 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -33,7 +35,7 @@ func (s *LambdaFunctionResourceUpdateSuite) Test_update_lambda_function() {
 		},
 	)
 
-	testCases := []plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		createBasicFunctionUpdateTestCase(providerCtx, loader),
 		createFunctionNoUpdatesTestCase(providerCtx, loader),
 		createFunctionConfigAndCodeUpdateTestCase(providerCtx, loader),
@@ -51,11 +53,11 @@ func (s *LambdaFunctionResourceUpdateSuite) Test_update_lambda_function() {
 func createBasicFunctionUpdateTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	resourceARN := "arn:aws:lambda:us-west-2:123456789012:function:test-function"
 
-	service := createLambdaServiceMock(
-		WithGetFunctionOutput(&lambda.GetFunctionOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetFunctionOutput(&lambda.GetFunctionOutput{
 			// We only need to set the fields that are marked as "computed"
 			// in the schema.
 			Configuration: &types.FunctionConfiguration{
@@ -157,9 +159,9 @@ func createBasicFunctionUpdateTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "update function configuration",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -301,11 +303,11 @@ func createBasicFunctionUpdateTestCase(
 func createFunctionNoUpdatesTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	resourceARN := "arn:aws:lambda:us-west-2:123456789012:function:test-function"
 
-	service := createLambdaServiceMock(
-		WithGetFunctionOutput(&lambda.GetFunctionOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetFunctionOutput(&lambda.GetFunctionOutput{
 			Configuration: &types.FunctionConfiguration{
 				FunctionArn: aws.String(resourceARN),
 				SnapStart: &types.SnapStartResponse{
@@ -324,9 +326,9 @@ func createFunctionNoUpdatesTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "no updates",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -385,11 +387,11 @@ func createFunctionNoUpdatesTestCase(
 func createFunctionConfigAndCodeUpdateTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	resourceARN := "arn:aws:lambda:us-west-2:123456789012:function:test-function"
 
-	service := createLambdaServiceMock(
-		WithGetFunctionOutput(&lambda.GetFunctionOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetFunctionOutput(&lambda.GetFunctionOutput{
 			Configuration: &types.FunctionConfiguration{
 				FunctionArn: aws.String(resourceARN),
 				SnapStart: &types.SnapStartResponse{
@@ -428,9 +430,9 @@ func createFunctionConfigAndCodeUpdateTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "update function configuration and code",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -511,11 +513,11 @@ func createFunctionConfigAndCodeUpdateTestCase(
 func createFunctionMultipleConfigsUpdateTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	resourceARN := "arn:aws:lambda:us-west-2:123456789012:function:test-function"
 
-	service := createLambdaServiceMock(
-		WithGetFunctionOutput(&lambda.GetFunctionOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetFunctionOutput(&lambda.GetFunctionOutput{
 			Configuration: &types.FunctionConfiguration{
 				FunctionArn: aws.String(resourceARN),
 				SnapStart: &types.SnapStartResponse{
@@ -524,10 +526,10 @@ func createFunctionMultipleConfigsUpdateTestCase(
 				},
 			},
 		}),
-		WithPutFunctionCodeSigningConfigOutput(&lambda.PutFunctionCodeSigningConfigOutput{}),
-		WithPutFunctionConcurrencyOutput(&lambda.PutFunctionConcurrencyOutput{}),
-		WithPutFunctionRecursionConfigOutput(&lambda.PutFunctionRecursionConfigOutput{}),
-		WithPutRuntimeManagementConfigOutput(&lambda.PutRuntimeManagementConfigOutput{}),
+		lambdamock.WithPutFunctionCodeSigningConfigOutput(&lambda.PutFunctionCodeSigningConfigOutput{}),
+		lambdamock.WithPutFunctionConcurrencyOutput(&lambda.PutFunctionConcurrencyOutput{}),
+		lambdamock.WithPutFunctionRecursionConfigOutput(&lambda.PutFunctionRecursionConfigOutput{}),
+		lambdamock.WithPutRuntimeManagementConfigOutput(&lambda.PutRuntimeManagementConfigOutput{}),
 	)
 
 	// Create test data for current state
@@ -575,9 +577,9 @@ func createFunctionMultipleConfigsUpdateTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "update multiple configurations",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -671,16 +673,16 @@ func createFunctionMultipleConfigsUpdateTestCase(
 func createFunctionUpdateFailureTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	resourceARN := "arn:aws:lambda:us-west-2:123456789012:function:test-function"
 
-	service := createLambdaServiceMock(
-		WithGetFunctionOutput(&lambda.GetFunctionOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetFunctionOutput(&lambda.GetFunctionOutput{
 			Configuration: &types.FunctionConfiguration{
 				FunctionArn: aws.String(resourceARN),
 			},
 		}),
-		WithUpdateFunctionConfigurationError(fmt.Errorf("update function configuration failed")),
+		lambdamock.WithUpdateFunctionConfigurationError(fmt.Errorf("update function configuration failed")),
 	)
 
 	// Create test data for current state
@@ -699,9 +701,9 @@ func createFunctionUpdateFailureTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "update function configuration failure",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,

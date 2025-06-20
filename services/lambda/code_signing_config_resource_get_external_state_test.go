@@ -8,6 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -32,7 +34,7 @@ func (s *LambdaCodeSigningConfigResourceGetExternalStateSuite) Test_get_external
 		},
 	)
 
-	testCases := []plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		createGetExternalStateBasicCodeSigningConfigTestCase(providerCtx, loader),
 		createGetExternalStateCodeSigningConfigWithDescriptionTestCase(providerCtx, loader),
 		createGetExternalStateCodeSigningConfigWithPolicyTestCase(providerCtx, loader),
@@ -57,11 +59,11 @@ func TestLambdaCodeSigningConfigResourceGetExternalStateSuite(t *testing.T) {
 func createGetExternalStateBasicCodeSigningConfigTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "successfully gets basic code signing config state",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetCodeSigningConfigOutput(&lambda.GetCodeSigningConfigOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetCodeSigningConfigOutput(&lambda.GetCodeSigningConfigOutput{
 				CodeSigningConfig: &types.CodeSigningConfig{
 					CodeSigningConfigArn: aws.String("arn:aws:lambda:us-west-2:123456789012:code-signing-config:test-config"),
 					CodeSigningConfigId:  aws.String("test-config-id"),
@@ -97,11 +99,11 @@ func createGetExternalStateBasicCodeSigningConfigTestCase(
 func createGetExternalStateCodeSigningConfigWithDescriptionTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "successfully gets code signing config state with description",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetCodeSigningConfigOutput(&lambda.GetCodeSigningConfigOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetCodeSigningConfigOutput(&lambda.GetCodeSigningConfigOutput{
 				CodeSigningConfig: &types.CodeSigningConfig{
 					CodeSigningConfigArn: aws.String("arn:aws:lambda:us-west-2:123456789012:code-signing-config:test-config"),
 					CodeSigningConfigId:  aws.String("test-config-id"),
@@ -139,11 +141,11 @@ func createGetExternalStateCodeSigningConfigWithDescriptionTestCase(
 func createGetExternalStateCodeSigningConfigWithPolicyTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "successfully gets code signing config state with policy",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetCodeSigningConfigOutput(&lambda.GetCodeSigningConfigOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetCodeSigningConfigOutput(&lambda.GetCodeSigningConfigOutput{
 				CodeSigningConfig: &types.CodeSigningConfig{
 					CodeSigningConfigArn: aws.String("arn:aws:lambda:us-west-2:123456789012:code-signing-config:test-config"),
 					CodeSigningConfigId:  aws.String("test-config-id"),
@@ -187,23 +189,23 @@ func createGetExternalStateCodeSigningConfigWithPolicyTestCase(
 func createGetExternalStateCodeSigningConfigWithTagsTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
 	tags := map[string]string{
 		"Environment": "test",
 		"Project":     "celerity",
 		"Service":     "lambda",
 	}
 
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "successfully gets code signing config state with tags",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetCodeSigningConfigOutput(&lambda.GetCodeSigningConfigOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetCodeSigningConfigOutput(&lambda.GetCodeSigningConfigOutput{
 				CodeSigningConfig: &types.CodeSigningConfig{
 					CodeSigningConfigArn: aws.String("arn:aws:lambda:us-west-2:123456789012:code-signing-config:test-config"),
 					CodeSigningConfigId:  aws.String("test-config-id"),
 				},
 			}),
-			WithListTagsOutput(&lambda.ListTagsOutput{
+			lambdamock.WithListTagsOutput(&lambda.ListTagsOutput{
 				Tags: tags,
 			}),
 		),
@@ -260,11 +262,11 @@ func createGetExternalStateCodeSigningConfigWithTagsTestCase(
 func createGetExternalStateCodeSigningConfigWithAllowedPublishersTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "successfully gets code signing config state with allowed publishers",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetCodeSigningConfigOutput(&lambda.GetCodeSigningConfigOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetCodeSigningConfigOutput(&lambda.GetCodeSigningConfigOutput{
 				CodeSigningConfig: &types.CodeSigningConfig{
 					CodeSigningConfigArn: aws.String("arn:aws:lambda:us-west-2:123456789012:code-signing-config:test-config"),
 					CodeSigningConfigId:  aws.String("test-config-id"),
@@ -316,11 +318,11 @@ func createGetExternalStateCodeSigningConfigWithAllowedPublishersTestCase(
 func createGetExternalStateCodeSigningConfigErrorTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "handles get code signing config error",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetCodeSigningConfigError(errors.New("failed to get code signing config")),
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetCodeSigningConfigError(errors.New("failed to get code signing config")),
 		),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},

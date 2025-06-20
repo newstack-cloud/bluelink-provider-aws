@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
 	"github.com/newstack-cloud/celerity/libs/plugin-framework/sdk/pluginutils"
@@ -34,7 +35,7 @@ func (u *functionConfigUpdate) Prepare(
 func (u *functionConfigUpdate) Execute(
 	ctx context.Context,
 	saveOpCtx pluginutils.SaveOperationContext,
-	lambdaService Service,
+	lambdaService lambdaservice.Service,
 ) (pluginutils.SaveOperationContext, error) {
 	_, err := lambdaService.UpdateFunctionConfiguration(ctx, u.input)
 	return saveOpCtx, err
@@ -68,7 +69,7 @@ func (u *functionCodeUpdate) Prepare(
 func (u *functionCodeUpdate) Execute(
 	ctx context.Context,
 	saveOpCtx pluginutils.SaveOperationContext,
-	lambdaService Service,
+	lambdaService lambdaservice.Service,
 ) (pluginutils.SaveOperationContext, error) {
 	_, err := lambdaService.UpdateFunctionCode(ctx, u.input)
 	return saveOpCtx, err
@@ -98,7 +99,7 @@ func (u *functionCodeSigningConfigUpdate) Prepare(
 func (u *functionCodeSigningConfigUpdate) Execute(
 	ctx context.Context,
 	saveOpCtx pluginutils.SaveOperationContext,
-	lambdaService Service,
+	lambdaService lambdaservice.Service,
 ) (pluginutils.SaveOperationContext, error) {
 	_, err := lambdaService.PutFunctionCodeSigningConfig(ctx, u.input)
 	return saveOpCtx, err
@@ -128,7 +129,7 @@ func (u *functionConcurrencyUpdate) Prepare(
 func (u *functionConcurrencyUpdate) Execute(
 	ctx context.Context,
 	saveOpCtx pluginutils.SaveOperationContext,
-	lambdaService Service,
+	lambdaService lambdaservice.Service,
 ) (pluginutils.SaveOperationContext, error) {
 	_, err := lambdaService.PutFunctionConcurrency(ctx, u.input)
 	return saveOpCtx, err
@@ -158,7 +159,7 @@ func (u *functionRecursionConfigUpdate) Prepare(
 func (u *functionRecursionConfigUpdate) Execute(
 	ctx context.Context,
 	saveOpCtx pluginutils.SaveOperationContext,
-	lambdaService Service,
+	lambdaService lambdaservice.Service,
 ) (pluginutils.SaveOperationContext, error) {
 	_, err := lambdaService.PutFunctionRecursionConfig(ctx, u.input)
 	return saveOpCtx, err

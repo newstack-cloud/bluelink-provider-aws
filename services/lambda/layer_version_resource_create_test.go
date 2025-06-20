@@ -8,6 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -32,7 +34,7 @@ func (s *LambdaLayerVersionResourceCreateSuite) Test_create_lambda_layer_version
 		},
 	)
 
-	testCases := []plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		createBasicLayerVersionTestCase(providerCtx, loader),
 		createLayerVersionWithAllOptionsTestCase(providerCtx, loader),
 		createLayerVersionFailureTestCase(providerCtx, loader),
@@ -48,12 +50,12 @@ func (s *LambdaLayerVersionResourceCreateSuite) Test_create_lambda_layer_version
 func createBasicLayerVersionTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	layerArn := "arn:aws:lambda:us-west-2:123456789012:layer:test-layer"
 	layerVersionArn := layerArn + ":1"
 
-	service := createLambdaServiceMock(
-		WithPublishLayerVersionOutput(&lambda.PublishLayerVersionOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithPublishLayerVersionOutput(&lambda.PublishLayerVersionOutput{
 			LayerArn:        aws.String("arn:aws:lambda:us-west-2:123456789012:layer:test-layer"),
 			LayerVersionArn: aws.String("arn:aws:lambda:us-west-2:123456789012:layer:test-layer:1"),
 			Version:         1,
@@ -74,9 +76,9 @@ func createBasicLayerVersionTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create basic layer version",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -135,12 +137,12 @@ func createBasicLayerVersionTestCase(
 func createLayerVersionWithAllOptionsTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	layerArn := "arn:aws:lambda:us-west-2:123456789012:layer:comprehensive-layer"
 	layerVersionArn := layerArn + ":2"
 
-	service := createLambdaServiceMock(
-		WithPublishLayerVersionOutput(&lambda.PublishLayerVersionOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithPublishLayerVersionOutput(&lambda.PublishLayerVersionOutput{
 			LayerArn:        aws.String("arn:aws:lambda:us-west-2:123456789012:layer:comprehensive-layer"),
 			LayerVersionArn: aws.String("arn:aws:lambda:us-west-2:123456789012:layer:comprehensive-layer:2"),
 			Version:         2,
@@ -176,9 +178,9 @@ func createLayerVersionWithAllOptionsTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create layer version with all options",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -260,9 +262,9 @@ func createLayerVersionWithAllOptionsTestCase(
 func createLayerVersionFailureTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithPublishLayerVersionError(fmt.Errorf("failed to publish layer version")),
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithPublishLayerVersionError(fmt.Errorf("failed to publish layer version")),
 	)
 
 	// Create test data for layer version creation
@@ -278,9 +280,9 @@ func createLayerVersionFailureTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create layer version failure",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,

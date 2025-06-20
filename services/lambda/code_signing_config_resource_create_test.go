@@ -7,6 +7,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -31,7 +33,7 @@ func (s *LambdaCodeSigningConfigResourceCreateSuite) Test_create_lambda_code_sig
 		},
 	)
 
-	testCases := []plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		createBasicCodeSigningConfigTestCase(providerCtx, loader),
 		createCodeSigningConfigWithDescriptionTestCase(providerCtx, loader),
 		createCodeSigningConfigWithPolicyTestCase(providerCtx, loader),
@@ -49,12 +51,12 @@ func (s *LambdaCodeSigningConfigResourceCreateSuite) Test_create_lambda_code_sig
 func createBasicCodeSigningConfigTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	cscArn := "arn:aws:lambda:us-west-2:123456789012:code-signing-config:csc-1234567890abcdef0"
 	cscId := "csc-1234567890abcdef0"
 
-	service := createLambdaServiceMock(
-		WithCreateCodeSigningConfigOutput(&lambda.CreateCodeSigningConfigOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithCreateCodeSigningConfigOutput(&lambda.CreateCodeSigningConfigOutput{
 			CodeSigningConfig: &types.CodeSigningConfig{
 				CodeSigningConfigArn: aws.String(cscArn),
 				CodeSigningConfigId:  aws.String(cscId),
@@ -81,9 +83,9 @@ func createBasicCodeSigningConfigTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create basic code signing config",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -137,12 +139,12 @@ func createBasicCodeSigningConfigTestCase(
 func createCodeSigningConfigWithDescriptionTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	cscArn := "arn:aws:lambda:us-west-2:123456789012:code-signing-config:csc-1234567890abcdef1"
 	cscId := "csc-1234567890abcdef1"
 
-	service := createLambdaServiceMock(
-		WithCreateCodeSigningConfigOutput(&lambda.CreateCodeSigningConfigOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithCreateCodeSigningConfigOutput(&lambda.CreateCodeSigningConfigOutput{
 			CodeSigningConfig: &types.CodeSigningConfig{
 				CodeSigningConfigArn: aws.String(cscArn),
 				CodeSigningConfigId:  aws.String(cscId),
@@ -171,9 +173,9 @@ func createCodeSigningConfigWithDescriptionTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create code signing config with description",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -231,12 +233,12 @@ func createCodeSigningConfigWithDescriptionTestCase(
 func createCodeSigningConfigWithPolicyTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	cscArn := "arn:aws:lambda:us-west-2:123456789012:code-signing-config:csc-1234567890abcdef2"
 	cscId := "csc-1234567890abcdef2"
 
-	service := createLambdaServiceMock(
-		WithCreateCodeSigningConfigOutput(&lambda.CreateCodeSigningConfigOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithCreateCodeSigningConfigOutput(&lambda.CreateCodeSigningConfigOutput{
 			CodeSigningConfig: &types.CodeSigningConfig{
 				CodeSigningConfigArn: aws.String(cscArn),
 				CodeSigningConfigId:  aws.String(cscId),
@@ -271,9 +273,9 @@ func createCodeSigningConfigWithPolicyTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create code signing config with policy",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -333,12 +335,12 @@ func createCodeSigningConfigWithPolicyTestCase(
 func createCodeSigningConfigWithTagsTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	cscArn := "arn:aws:lambda:us-west-2:123456789012:code-signing-config:csc-1234567890abcdef3"
 	cscId := "csc-1234567890abcdef3"
 
-	service := createLambdaServiceMock(
-		WithCreateCodeSigningConfigOutput(&lambda.CreateCodeSigningConfigOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithCreateCodeSigningConfigOutput(&lambda.CreateCodeSigningConfigOutput{
 			CodeSigningConfig: &types.CodeSigningConfig{
 				CodeSigningConfigArn: aws.String(cscArn),
 				CodeSigningConfigId:  aws.String(cscId),
@@ -349,7 +351,7 @@ func createCodeSigningConfigWithTagsTestCase(
 				},
 			},
 		}),
-		WithTagResourceOutput(&lambda.TagResourceOutput{}),
+		lambdamock.WithTagResourceOutput(&lambda.TagResourceOutput{}),
 	)
 
 	specData := &core.MappingNode{
@@ -382,9 +384,9 @@ func createCodeSigningConfigWithTagsTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create code signing config with tags",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -448,12 +450,12 @@ func createCodeSigningConfigWithTagsTestCase(
 func createComplexCodeSigningConfigTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	cscArn := "arn:aws:lambda:us-west-2:123456789012:code-signing-config:csc-1234567890abcdef4"
 	cscId := "csc-1234567890abcdef4"
 
-	service := createLambdaServiceMock(
-		WithCreateCodeSigningConfigOutput(&lambda.CreateCodeSigningConfigOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithCreateCodeSigningConfigOutput(&lambda.CreateCodeSigningConfigOutput{
 			CodeSigningConfig: &types.CodeSigningConfig{
 				CodeSigningConfigArn: aws.String(cscArn),
 				CodeSigningConfigId:  aws.String(cscId),
@@ -469,7 +471,7 @@ func createComplexCodeSigningConfigTestCase(
 				},
 			},
 		}),
-		WithTagResourceOutput(&lambda.TagResourceOutput{}),
+		lambdamock.WithTagResourceOutput(&lambda.TagResourceOutput{}),
 	)
 
 	specData := &core.MappingNode{
@@ -515,9 +517,9 @@ func createComplexCodeSigningConfigTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create complex code signing config with all features",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,

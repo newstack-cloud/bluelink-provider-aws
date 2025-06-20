@@ -8,6 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -31,7 +33,7 @@ func (s *LambdaFunctionUrlResourceGetExternalStateSuite) Test_get_external_state
 		},
 	)
 
-	testCases := []plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		getBasicFunctionUrlExternalStateTestCase(providerCtx, loader),
 		getFunctionUrlWithCorsExternalStateTestCase(providerCtx, loader),
 		getFunctionUrlWithAuthTypeExternalStateTestCase(providerCtx, loader),
@@ -52,12 +54,12 @@ func (s *LambdaFunctionUrlResourceGetExternalStateSuite) Test_get_external_state
 func getBasicFunctionUrlExternalStateTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
 	functionUrl := "https://test-function-url.lambda-url.us-west-2.on.aws/"
 	functionARN := "arn:aws:lambda:us-west-2:123456789012:function:test-function"
 
-	service := createLambdaServiceMock(
-		WithGetFunctionUrlConfigOutput(&lambda.GetFunctionUrlConfigOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetFunctionUrlConfigOutput(&lambda.GetFunctionUrlConfigOutput{
 			FunctionUrl: aws.String(functionUrl),
 			FunctionArn: aws.String(functionARN),
 			AuthType:    types.FunctionUrlAuthTypeNone,
@@ -70,9 +72,9 @@ func getBasicFunctionUrlExternalStateTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "successfully gets basic function URL state",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ConfigStore: utils.NewAWSConfigStore(
@@ -100,12 +102,12 @@ func getBasicFunctionUrlExternalStateTestCase(
 func getFunctionUrlWithCorsExternalStateTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
 	functionUrl := "https://test-function-url.lambda-url.us-west-2.on.aws/"
 	functionARN := "arn:aws:lambda:us-west-2:123456789012:function:test-function"
 
-	service := createLambdaServiceMock(
-		WithGetFunctionUrlConfigOutput(&lambda.GetFunctionUrlConfigOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetFunctionUrlConfigOutput(&lambda.GetFunctionUrlConfigOutput{
 			FunctionUrl: aws.String(functionUrl),
 			FunctionArn: aws.String(functionARN),
 			AuthType:    types.FunctionUrlAuthTypeNone,
@@ -127,9 +129,9 @@ func getFunctionUrlWithCorsExternalStateTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "successfully gets function URL state with CORS",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ConfigStore: utils.NewAWSConfigStore(
@@ -185,12 +187,12 @@ func getFunctionUrlWithCorsExternalStateTestCase(
 func getFunctionUrlWithAuthTypeExternalStateTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
 	functionUrl := "https://test-function-url.lambda-url.us-west-2.on.aws/"
 	functionARN := "arn:aws:lambda:us-west-2:123456789012:function:test-function"
 
-	service := createLambdaServiceMock(
-		WithGetFunctionUrlConfigOutput(&lambda.GetFunctionUrlConfigOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetFunctionUrlConfigOutput(&lambda.GetFunctionUrlConfigOutput{
 			FunctionUrl: aws.String(functionUrl),
 			FunctionArn: aws.String(functionARN),
 			AuthType:    types.FunctionUrlAuthTypeAwsIam,
@@ -204,9 +206,9 @@ func getFunctionUrlWithAuthTypeExternalStateTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "successfully gets function URL state with auth type",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ConfigStore: utils.NewAWSConfigStore(
@@ -234,12 +236,12 @@ func getFunctionUrlWithAuthTypeExternalStateTestCase(
 func getFunctionUrlWithInvokeModeExternalStateTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
 	functionUrl := "https://test-function-url.lambda-url.us-west-2.on.aws/"
 	functionARN := "arn:aws:lambda:us-west-2:123456789012:function:test-function"
 
-	service := createLambdaServiceMock(
-		WithGetFunctionUrlConfigOutput(&lambda.GetFunctionUrlConfigOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetFunctionUrlConfigOutput(&lambda.GetFunctionUrlConfigOutput{
 			FunctionUrl: aws.String(functionUrl),
 			FunctionArn: aws.String(functionARN),
 			AuthType:    types.FunctionUrlAuthTypeNone,
@@ -254,9 +256,9 @@ func getFunctionUrlWithInvokeModeExternalStateTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "successfully gets function URL state with invoke mode",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ConfigStore: utils.NewAWSConfigStore(
@@ -285,12 +287,12 @@ func getFunctionUrlWithInvokeModeExternalStateTestCase(
 func getFunctionUrlWithQualifierExternalStateTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
 	functionUrl := "https://test-function-url.lambda-url.us-west-2.on.aws/"
 	functionARN := "arn:aws:lambda:us-west-2:123456789012:function:test-function"
 
-	service := createLambdaServiceMock(
-		WithGetFunctionUrlConfigOutput(&lambda.GetFunctionUrlConfigOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetFunctionUrlConfigOutput(&lambda.GetFunctionUrlConfigOutput{
 			FunctionUrl: aws.String(functionUrl),
 			FunctionArn: aws.String(functionARN),
 			AuthType:    types.FunctionUrlAuthTypeNone,
@@ -304,9 +306,9 @@ func getFunctionUrlWithQualifierExternalStateTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "successfully gets function URL state with qualifier",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ConfigStore: utils.NewAWSConfigStore(
@@ -334,12 +336,12 @@ func getFunctionUrlWithQualifierExternalStateTestCase(
 func getComplexFunctionUrlExternalStateTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
 	functionUrl := "https://test-function-url.lambda-url.us-west-2.on.aws/"
 	functionARN := "arn:aws:lambda:us-west-2:123456789012:function:test-function"
 
-	service := createLambdaServiceMock(
-		WithGetFunctionUrlConfigOutput(&lambda.GetFunctionUrlConfigOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetFunctionUrlConfigOutput(&lambda.GetFunctionUrlConfigOutput{
 			FunctionUrl: aws.String(functionUrl),
 			FunctionArn: aws.String(functionARN),
 			AuthType:    types.FunctionUrlAuthTypeAwsIam,
@@ -360,9 +362,9 @@ func getComplexFunctionUrlExternalStateTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "successfully gets complex function URL state with all features",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ConfigStore: utils.NewAWSConfigStore(
@@ -411,9 +413,9 @@ func getComplexFunctionUrlExternalStateTestCase(
 func getFunctionUrlExternalStateFailureTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithGetFunctionUrlConfigError(fmt.Errorf("function URL not found")),
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetFunctionUrlConfigError(fmt.Errorf("function URL not found")),
 	)
 
 	specData := &core.MappingNode{
@@ -423,9 +425,9 @@ func getFunctionUrlExternalStateFailureTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "handles get function URL error",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ConfigStore: utils.NewAWSConfigStore(
@@ -445,16 +447,16 @@ func getFunctionUrlExternalStateFailureTestCase(
 func getFunctionUrlExternalStateNoIDTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock()
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock()
 
 	specData := &core.MappingNode{
 		Fields: map[string]*core.MappingNode{},
 	}
 
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "returns error when no function arn is present",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ConfigStore: utils.NewAWSConfigStore(

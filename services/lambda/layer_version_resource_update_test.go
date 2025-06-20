@@ -5,6 +5,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -30,7 +32,7 @@ func (s *LambdaLayerVersionResourceUpdateSuite) Test_update_lambda_layer_version
 		},
 	)
 
-	testCases := []plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		createLayerVersionDescriptionUpdateTestCase(providerCtx, loader),
 		createLayerVersionContentUpdateTestCase(providerCtx, loader),
 		createLayerVersionCompatibleRuntimesUpdateTestCase(providerCtx, loader),
@@ -46,11 +48,11 @@ func (s *LambdaLayerVersionResourceUpdateSuite) Test_update_lambda_layer_version
 func createLayerVersionDescriptionUpdateTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	layerVersionArn := "arn:aws:lambda:us-west-2:123456789012:layer:test-layer:1"
 
 	// No service mock calls needed since updates should fail immediately
-	service := createLambdaServiceMock()
+	service := lambdamock.CreateLambdaServiceMock()
 
 	currentStateSpecData := &core.MappingNode{
 		Fields: map[string]*core.MappingNode{
@@ -70,9 +72,9 @@ func createLayerVersionDescriptionUpdateTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "layer version description update should fail",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -119,11 +121,11 @@ func createLayerVersionDescriptionUpdateTestCase(
 func createLayerVersionContentUpdateTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	layerVersionArn := "arn:aws:lambda:us-west-2:123456789012:layer:test-layer:1"
 
 	// No service mock calls needed since updates should fail immediately
-	service := createLambdaServiceMock()
+	service := lambdamock.CreateLambdaServiceMock()
 
 	currentStateSpecData := &core.MappingNode{
 		Fields: map[string]*core.MappingNode{
@@ -153,9 +155,9 @@ func createLayerVersionContentUpdateTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "layer version content update should fail",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -205,11 +207,11 @@ func createLayerVersionContentUpdateTestCase(
 func createLayerVersionCompatibleRuntimesUpdateTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	layerVersionArn := "arn:aws:lambda:us-west-2:123456789012:layer:test-layer:1"
 
 	// No service mock calls needed since updates should fail immediately
-	service := createLambdaServiceMock()
+	service := lambdamock.CreateLambdaServiceMock()
 
 	currentStateSpecData := &core.MappingNode{
 		Fields: map[string]*core.MappingNode{
@@ -240,9 +242,9 @@ func createLayerVersionCompatibleRuntimesUpdateTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "layer version compatible runtimes update should fail",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,

@@ -8,6 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -33,7 +35,7 @@ func (s *LambdaFunctionVersionResourceUpdateSuite) Test_update_lambda_function_v
 		},
 	)
 
-	testCases := []plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		createFunctionVersionNoUpdatesTestCase(providerCtx, loader),
 		createFunctionVersionWithProvisionedConcurrencyUpdateTestCase(providerCtx, loader),
 		createFunctionVersionWithRuntimePolicyUpdateTestCase(providerCtx, loader),
@@ -50,13 +52,13 @@ func (s *LambdaFunctionVersionResourceUpdateSuite) Test_update_lambda_function_v
 func createFunctionVersionNoUpdatesTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	resourceARN := "arn:aws:lambda:us-west-2:123456789012:function:test-function"
 	version := "1"
 	resourceARNWithVersion := resourceARN + ":" + version
 
-	service := createLambdaServiceMock(
-		WithGetFunctionOutput(&lambda.GetFunctionOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetFunctionOutput(&lambda.GetFunctionOutput{
 			Configuration: &types.FunctionConfiguration{
 				FunctionArn: aws.String(resourceARN),
 				Version:     aws.String(version),
@@ -74,9 +76,9 @@ func createFunctionVersionNoUpdatesTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "no updates",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -123,13 +125,13 @@ func createFunctionVersionNoUpdatesTestCase(
 func createFunctionVersionWithProvisionedConcurrencyUpdateTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	resourceARN := "arn:aws:lambda:us-west-2:123456789012:function:test-function"
 	version := "1"
 	resourceARNWithVersion := resourceARN + ":" + version
 
-	service := createLambdaServiceMock(
-		WithGetFunctionOutput(&lambda.GetFunctionOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetFunctionOutput(&lambda.GetFunctionOutput{
 			Configuration: &types.FunctionConfiguration{
 				FunctionArn: aws.String(resourceARN),
 				Version:     aws.String(version),
@@ -166,9 +168,9 @@ func createFunctionVersionWithProvisionedConcurrencyUpdateTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "update function version with provisioned concurrency",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -227,13 +229,13 @@ func createFunctionVersionWithProvisionedConcurrencyUpdateTestCase(
 func createFunctionVersionWithRuntimePolicyUpdateTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	resourceARN := "arn:aws:lambda:us-west-2:123456789012:function:test-function"
 	version := "1"
 	resourceARNWithVersion := resourceARN + ":" + version
 
-	service := createLambdaServiceMock(
-		WithGetFunctionOutput(&lambda.GetFunctionOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetFunctionOutput(&lambda.GetFunctionOutput{
 			Configuration: &types.FunctionConfiguration{
 				FunctionArn: aws.String(resourceARN),
 				Version:     aws.String(version),
@@ -273,9 +275,9 @@ func createFunctionVersionWithRuntimePolicyUpdateTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "update function version with runtime policy",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -338,19 +340,19 @@ func createFunctionVersionWithRuntimePolicyUpdateTestCase(
 func createFunctionVersionUpdateFailureTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	resourceARN := "arn:aws:lambda:us-west-2:123456789012:function:test-function"
 	version := "1"
 	resourceARNWithVersion := resourceARN + ":" + version
 
-	service := createLambdaServiceMock(
-		WithGetFunctionOutput(&lambda.GetFunctionOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetFunctionOutput(&lambda.GetFunctionOutput{
 			Configuration: &types.FunctionConfiguration{
 				FunctionArn: aws.String(resourceARN),
 				Version:     aws.String(version),
 			},
 		}),
-		WithPutProvisionedConcurrencyConfigError(fmt.Errorf("failed to update provisioned concurrency")),
+		lambdamock.WithPutProvisionedConcurrencyConfigError(fmt.Errorf("failed to update provisioned concurrency")),
 	)
 
 	// Create test data for function version update failure
@@ -382,9 +384,9 @@ func createFunctionVersionUpdateFailureTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "update function version failure",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,

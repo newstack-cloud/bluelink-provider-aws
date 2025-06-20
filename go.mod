@@ -11,7 +11,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.20
 	github.com/aws/smithy-go v1.22.2
 	github.com/newstack-cloud/celerity/libs/blueprint v0.22.0
-	github.com/newstack-cloud/celerity/libs/plugin-framework v0.0.0-20250618175550-aa5721e803ca
+	github.com/newstack-cloud/celerity/libs/plugin-framework v0.0.0-20250620023026-f5f45b51b77e
 	github.com/stretchr/testify v1.10.0
 )
 

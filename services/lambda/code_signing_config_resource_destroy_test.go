@@ -7,6 +7,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -31,7 +33,7 @@ func (s *LambdaCodeSigningConfigResourceDestroySuite) Test_destroy() {
 		},
 	)
 
-	testCases := []plugintestutils.ResourceDestroyTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service]{
 		createSuccessfulCodeSigningConfigDestroyTestCase(providerCtx, loader),
 		createFailingCodeSigningConfigDestroyTestCase(providerCtx, loader),
 	}
@@ -46,16 +48,16 @@ func (s *LambdaCodeSigningConfigResourceDestroySuite) Test_destroy() {
 func createSuccessfulCodeSigningConfigDestroyTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDestroyTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithDeleteCodeSigningConfigOutput(&lambda.DeleteCodeSigningConfigOutput{}),
+) plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithDeleteCodeSigningConfigOutput(&lambda.DeleteCodeSigningConfigOutput{}),
 	)
 
 	expectedCodeSigningConfigARN := "arn:aws:lambda:us-east-1:123456789012:code-signing-config:test-config"
 
-	return plugintestutils.ResourceDestroyTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "successfully deletes code signing config",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -87,16 +89,16 @@ func createSuccessfulCodeSigningConfigDestroyTestCase(
 func createFailingCodeSigningConfigDestroyTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDestroyTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithDeleteCodeSigningConfigError(errors.New("failed to delete code signing config")),
+) plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithDeleteCodeSigningConfigError(errors.New("failed to delete code signing config")),
 	)
 
 	expectedCodeSigningConfigARN := "arn:aws:lambda:us-east-1:123456789012:code-signing-config:test-config"
 
-	return plugintestutils.ResourceDestroyTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "fails to delete code signing config",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,

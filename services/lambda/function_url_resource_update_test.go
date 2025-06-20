@@ -8,6 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -33,7 +35,7 @@ func (s *LambdaFunctionUrlResourceUpdateSuite) Test_update_lambda_function_url()
 		},
 	)
 
-	testCases := []plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		updateFunctionUrlCorsTestCase(providerCtx, loader),
 		updateFunctionUrlAuthTypeTestCase(providerCtx, loader),
 		updateFunctionUrlInvokeModeTestCase(providerCtx, loader),
@@ -53,9 +55,9 @@ func (s *LambdaFunctionUrlResourceUpdateSuite) Test_update_lambda_function_url()
 func updateFunctionUrlCorsTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithUpdateFunctionUrlConfigOutput(&lambda.UpdateFunctionUrlConfigOutput{
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithUpdateFunctionUrlConfigOutput(&lambda.UpdateFunctionUrlConfigOutput{
 			FunctionArn: aws.String("arn:aws:lambda:us-west-2:123456789012:function:test-function"),
 			FunctionUrl: aws.String("https://test-function-url.lambda-url.us-west-2.on.aws/"),
 		}),
@@ -97,9 +99,9 @@ func updateFunctionUrlCorsTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "update function URL CORS",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -161,9 +163,9 @@ func updateFunctionUrlCorsTestCase(
 func updateFunctionUrlAuthTypeTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithUpdateFunctionUrlConfigOutput(&lambda.UpdateFunctionUrlConfigOutput{
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithUpdateFunctionUrlConfigOutput(&lambda.UpdateFunctionUrlConfigOutput{
 			FunctionArn: aws.String("arn:aws:lambda:us-west-2:123456789012:function:test-function"),
 			FunctionUrl: aws.String("https://test-function-url.lambda-url.us-west-2.on.aws/"),
 		}),
@@ -185,9 +187,9 @@ func updateFunctionUrlAuthTypeTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "update function URL auth type",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -244,9 +246,9 @@ func updateFunctionUrlAuthTypeTestCase(
 func updateFunctionUrlInvokeModeTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithUpdateFunctionUrlConfigOutput(&lambda.UpdateFunctionUrlConfigOutput{
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithUpdateFunctionUrlConfigOutput(&lambda.UpdateFunctionUrlConfigOutput{
 			FunctionArn: aws.String("arn:aws:lambda:us-west-2:123456789012:function:test-function"),
 			FunctionUrl: aws.String("https://test-function-url.lambda-url.us-west-2.on.aws/"),
 		}),
@@ -268,9 +270,9 @@ func updateFunctionUrlInvokeModeTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "update function URL invoke mode",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -327,9 +329,9 @@ func updateFunctionUrlInvokeModeTestCase(
 func updateFunctionUrlQualifierTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithUpdateFunctionUrlConfigOutput(&lambda.UpdateFunctionUrlConfigOutput{
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithUpdateFunctionUrlConfigOutput(&lambda.UpdateFunctionUrlConfigOutput{
 			FunctionArn: aws.String("arn:aws:lambda:us-west-2:123456789012:function:test-function"),
 			FunctionUrl: aws.String("https://test-function-url.lambda-url.us-west-2.on.aws/"),
 		}),
@@ -351,9 +353,9 @@ func updateFunctionUrlQualifierTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "update function URL qualifier",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -410,9 +412,9 @@ func updateFunctionUrlQualifierTestCase(
 func updateFunctionUrlComplexTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithUpdateFunctionUrlConfigOutput(&lambda.UpdateFunctionUrlConfigOutput{
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithUpdateFunctionUrlConfigOutput(&lambda.UpdateFunctionUrlConfigOutput{
 			FunctionArn: aws.String("arn:aws:lambda:us-west-2:123456789012:function:test-function"),
 			FunctionUrl: aws.String("https://test-function-url.lambda-url.us-west-2.on.aws/"),
 		}),
@@ -455,9 +457,9 @@ func updateFunctionUrlComplexTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "update function URL with complex changes",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -527,9 +529,9 @@ func updateFunctionUrlComplexTestCase(
 func updateFunctionUrlNoChangesTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithUpdateFunctionUrlConfigOutput(&lambda.UpdateFunctionUrlConfigOutput{}),
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithUpdateFunctionUrlConfigOutput(&lambda.UpdateFunctionUrlConfigOutput{}),
 	)
 
 	functionARN := "arn:aws:lambda:us-west-2:123456789012:function:test-function"
@@ -542,9 +544,9 @@ func updateFunctionUrlNoChangesTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "no updates",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -591,9 +593,9 @@ func updateFunctionUrlNoChangesTestCase(
 func updateFunctionUrlFailureTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithUpdateFunctionUrlConfigError(fmt.Errorf("function URL not found")),
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithUpdateFunctionUrlConfigError(fmt.Errorf("function URL not found")),
 	)
 
 	specData := &core.MappingNode{
@@ -611,9 +613,9 @@ func updateFunctionUrlFailureTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "update function URL failure",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,

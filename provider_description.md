@@ -92,7 +92,7 @@ If you're running the Celerity Deploy Engine on EKS and have configured [IAM Rol
 
 ### EC2 Instance Profile Credentials
 
-When the Celerity Deploy Engine is running on an EC2 with an IAM Instance Profile set, the AWS provider can source credentials from the [EC2 Instance Metadata Service](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html). IMDS v1 and v2 are both supported.
+When the Celerity Deploy Engine is running on an EC2 with an IAM Instance Profile set, the AWS provider can source credentials from the [EC2 Instance Metadata lambdaservice.Service](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html). IMDS v1 and v2 are both supported.
 
 A custom endpoint for the metadata service can be configured with the `ec2_metadata_service_endpoint` config field or the `AWS_EC2_METADATA_SERVICE_ENDPOINT` environment variable.
 

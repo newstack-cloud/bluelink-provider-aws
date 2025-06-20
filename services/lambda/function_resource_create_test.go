@@ -8,6 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -32,7 +34,7 @@ func (s *LambdaFunctionResourceCreateSuite) Test_create_lambda_function() {
 		},
 	)
 
-	testCases := []plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		createBasicFunctionCreateTestCase(providerCtx, loader),
 		createFunctionWithTagsTestCase(providerCtx, loader),
 		createFunctionWithSnapStartTestCase(providerCtx, loader),
@@ -52,11 +54,11 @@ func (s *LambdaFunctionResourceCreateSuite) Test_create_lambda_function() {
 func createBasicFunctionCreateTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	resourceARN := "arn:aws:lambda:us-west-2:123456789012:function:test-function"
 
-	service := createLambdaServiceMock(
-		WithCreateFunctionOutput(&lambda.CreateFunctionOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithCreateFunctionOutput(&lambda.CreateFunctionOutput{
 			FunctionArn: aws.String(resourceARN),
 		}),
 	)
@@ -79,9 +81,9 @@ func createBasicFunctionCreateTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create basic function",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -160,11 +162,11 @@ func createBasicFunctionCreateTestCase(
 func createFunctionWithTagsTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	resourceARN := "arn:aws:lambda:us-west-2:123456789012:function:test-function"
 
-	service := createLambdaServiceMock(
-		WithCreateFunctionOutput(&lambda.CreateFunctionOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithCreateFunctionOutput(&lambda.CreateFunctionOutput{
 			FunctionArn: aws.String(resourceARN),
 		}),
 	)
@@ -203,9 +205,9 @@ func createFunctionWithTagsTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create function with tags",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -291,11 +293,11 @@ func createFunctionWithTagsTestCase(
 func createFunctionWithSnapStartTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	resourceARN := "arn:aws:lambda:us-west-2:123456789012:function:test-function"
 
-	service := createLambdaServiceMock(
-		WithCreateFunctionOutput(&lambda.CreateFunctionOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithCreateFunctionOutput(&lambda.CreateFunctionOutput{
 			FunctionArn: aws.String(resourceARN),
 			SnapStart: &types.SnapStartResponse{
 				ApplyOn:            types.SnapStartApplyOnPublishedVersions,
@@ -327,9 +329,9 @@ func createFunctionWithSnapStartTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create function with SnapStart",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -420,9 +422,9 @@ func createFunctionWithSnapStartTestCase(
 func createFunctionFailureTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithCreateFunctionError(fmt.Errorf("failed to create function")),
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithCreateFunctionError(fmt.Errorf("failed to create function")),
 	)
 
 	// Create test data for function creation
@@ -443,9 +445,9 @@ func createFunctionFailureTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create function failure",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -520,17 +522,17 @@ func createFunctionFailureTestCase(
 func createFunctionWithMultipleConfigsTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	resourceARN := "arn:aws:lambda:us-west-2:123456789012:function:test-function"
 
-	service := createLambdaServiceMock(
-		WithCreateFunctionOutput(&lambda.CreateFunctionOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithCreateFunctionOutput(&lambda.CreateFunctionOutput{
 			FunctionArn: aws.String(resourceARN),
 		}),
-		WithPutFunctionCodeSigningConfigOutput(&lambda.PutFunctionCodeSigningConfigOutput{}),
-		WithPutFunctionConcurrencyOutput(&lambda.PutFunctionConcurrencyOutput{}),
-		WithPutFunctionRecursionConfigOutput(&lambda.PutFunctionRecursionConfigOutput{}),
-		WithPutRuntimeManagementConfigOutput(&lambda.PutRuntimeManagementConfigOutput{}),
+		lambdamock.WithPutFunctionCodeSigningConfigOutput(&lambda.PutFunctionCodeSigningConfigOutput{}),
+		lambdamock.WithPutFunctionConcurrencyOutput(&lambda.PutFunctionConcurrencyOutput{}),
+		lambdamock.WithPutFunctionRecursionConfigOutput(&lambda.PutFunctionRecursionConfigOutput{}),
+		lambdamock.WithPutRuntimeManagementConfigOutput(&lambda.PutRuntimeManagementConfigOutput{}),
 	)
 
 	// Create test data for function creation with all configs
@@ -562,9 +564,9 @@ func createFunctionWithMultipleConfigsTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create function with all configs",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -674,14 +676,14 @@ func createFunctionWithMultipleConfigsTestCase(
 func createFunctionWithAdvancedConfigsTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	resourceARN := "arn:aws:lambda:us-west-2:123456789012:function:test-function"
 
-	service := createLambdaServiceMock(
-		WithCreateFunctionOutput(&lambda.CreateFunctionOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithCreateFunctionOutput(&lambda.CreateFunctionOutput{
 			FunctionArn: aws.String(resourceARN),
 		}),
-		WithGetFunctionOutput(&lambda.GetFunctionOutput{
+		lambdamock.WithGetFunctionOutput(&lambda.GetFunctionOutput{
 			Configuration: &types.FunctionConfiguration{
 				FunctionArn: aws.String(resourceARN),
 			},
@@ -763,9 +765,9 @@ func createFunctionWithAdvancedConfigsTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create function with advanced configurations",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -858,9 +860,9 @@ func createFunctionWithAdvancedConfigsTestCase(
 func createFunctionWithAllCodeSourceFieldsTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithCreateFunctionOutput(&lambda.CreateFunctionOutput{
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithCreateFunctionOutput(&lambda.CreateFunctionOutput{
 			FunctionArn: aws.String("arn:aws:lambda:us-east-1:123456789012:function:test-function"),
 		}),
 	)
@@ -892,9 +894,9 @@ func createFunctionWithAllCodeSourceFieldsTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create function with all code source fields",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,

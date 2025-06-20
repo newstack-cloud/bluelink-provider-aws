@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
 	"github.com/newstack-cloud/celerity/libs/plugin-framework/sdk/pluginutils"
 	"github.com/newstack-cloud/celerity/libs/plugin-framework/sdk/providerv1"
@@ -12,7 +13,7 @@ import (
 
 // EventInvokeConfigResource returns a resource implementation for an AWS Lambda Event Invoke Config.
 func EventInvokeConfigResource(
-	lambdaServiceFactory pluginutils.ServiceFactory[*aws.Config, Service],
+	lambdaServiceFactory pluginutils.ServiceFactory[*aws.Config, lambdaservice.Service],
 	awsConfigStore pluginutils.ServiceConfigStore[*aws.Config],
 ) provider.Resource {
 	yamlExample, _ := examples.ReadFile("examples/resources/lambda_event_invoke_config_basic.md")
@@ -48,14 +49,14 @@ func EventInvokeConfigResource(
 }
 
 type lambdaEventInvokeConfigResourceActions struct {
-	lambdaServiceFactory pluginutils.ServiceFactory[*aws.Config, Service]
+	lambdaServiceFactory pluginutils.ServiceFactory[*aws.Config, lambdaservice.Service]
 	awsConfigStore       pluginutils.ServiceConfigStore[*aws.Config]
 }
 
 func (l *lambdaEventInvokeConfigResourceActions) getLambdaService(
 	ctx context.Context,
 	providerContext provider.Context,
-) (Service, error) {
+) (lambdaservice.Service, error) {
 	awsConfig, err := l.awsConfigStore.FromProviderContext(
 		ctx,
 		providerContext,

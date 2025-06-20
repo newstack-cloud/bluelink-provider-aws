@@ -6,6 +6,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
 	"github.com/newstack-cloud/celerity/libs/plugin-framework/sdk/pluginutils"
@@ -30,7 +31,7 @@ func (l *lambdaFunctionUrlResourceActions) Update(
 		return nil, err
 	}
 
-	updateOperations := []pluginutils.SaveOperation[Service]{
+	updateOperations := []pluginutils.SaveOperation[lambdaservice.Service]{
 		&functionUrlUpdate{},
 	}
 

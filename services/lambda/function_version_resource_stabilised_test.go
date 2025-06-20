@@ -8,6 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -31,7 +33,7 @@ func (s *LambdaFunctionVersionResourceStabilisedSuite) Test_stabilised() {
 		},
 	)
 
-	testCases := []plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, lambdaservice.Service]{
 		createSuccessfulFunctionVersionStabilisedTestCase(providerCtx, loader),
 		createFailingFunctionVersionStabilisedTestCase(providerCtx, loader),
 	}
@@ -46,9 +48,9 @@ func (s *LambdaFunctionVersionResourceStabilisedSuite) Test_stabilised() {
 func createSuccessfulFunctionVersionStabilisedTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithGetFunctionOutput(&lambda.GetFunctionOutput{
+) plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetFunctionOutput(&lambda.GetFunctionOutput{
 			Configuration: &types.FunctionConfiguration{
 				State: types.StateActive,
 			},
@@ -58,9 +60,9 @@ func createSuccessfulFunctionVersionStabilisedTestCase(
 	expectedFunctionARN := "arn:aws:lambda:us-east-1:123456789012:function:test-function"
 	expectedVersion := "1"
 
-	return plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "successfully stabilises function version",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ConfigStore: utils.NewAWSConfigStore(
@@ -88,17 +90,17 @@ func createSuccessfulFunctionVersionStabilisedTestCase(
 func createFailingFunctionVersionStabilisedTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithGetFunctionError(errors.New("failed to get function")),
+) plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetFunctionError(errors.New("failed to get function")),
 	)
 
 	expectedFunctionARN := "arn:aws:lambda:us-east-1:123456789012:function:test-function"
 	expectedVersion := "1"
 
-	return plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "fails to stabilise function version",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ConfigStore: utils.NewAWSConfigStore(

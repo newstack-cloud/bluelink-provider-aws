@@ -8,6 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -32,7 +34,7 @@ func (s *LambdaEventSourceMappingResourceGetExternalStateSuite) Test_get_externa
 		},
 	)
 
-	testCases := []plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		createBasicEventSourceMappingStateTestCase(providerCtx, loader),
 		createAllOptionalConfigsEventSourceMappingTestCase(providerCtx, loader),
 		createGetEventSourceMappingErrorTestCase(providerCtx, loader),
@@ -59,11 +61,11 @@ func TestLambdaEventSourceMappingResourceGetExternalStateSuite(t *testing.T) {
 func createBasicEventSourceMappingStateTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "successfully gets basic event source mapping state",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetEventSourceMappingOutput(&lambda.GetEventSourceMappingOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetEventSourceMappingOutput(&lambda.GetEventSourceMappingOutput{
 				UUID:                           aws.String("test-uuid-123"),
 				EventSourceMappingArn:          aws.String("arn:aws:lambda:us-west-2:123456789012:event-source-mapping:test-uuid-123"),
 				FunctionArn:                    aws.String("arn:aws:lambda:us-west-2:123456789012:function:test-function"),
@@ -110,11 +112,11 @@ func createBasicEventSourceMappingStateTestCase(
 func createAllOptionalConfigsEventSourceMappingTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "successfully gets event source mapping state with all optional configurations",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetEventSourceMappingOutput(&lambda.GetEventSourceMappingOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetEventSourceMappingOutput(&lambda.GetEventSourceMappingOutput{
 				UUID:                           aws.String("test-uuid-456"),
 				EventSourceMappingArn:          aws.String("arn:aws:lambda:us-west-2:123456789012:event-source-mapping:test-uuid-456"),
 				FunctionArn:                    aws.String("arn:aws:lambda:us-west-2:123456789012:function:test-function"),
@@ -193,11 +195,11 @@ func createAllOptionalConfigsEventSourceMappingTestCase(
 func createGetEventSourceMappingErrorTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "handles get event source mapping error",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetEventSourceMappingError(errors.New("failed to get event source mapping")),
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetEventSourceMappingError(errors.New("failed to get event source mapping")),
 		),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},
@@ -221,10 +223,10 @@ func createGetEventSourceMappingErrorTestCase(
 func createNoUUIDTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name:           "returns empty state when no UUID is present",
-		ServiceFactory: createLambdaServiceMockFactory(),
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},
 			utils.AWSConfigFromProviderContext,
@@ -251,11 +253,11 @@ func createNoUUIDTestCase(
 func createWithFilterCriteriaTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "successfully gets event source mapping with filter criteria",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetEventSourceMappingOutput(&lambda.GetEventSourceMappingOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetEventSourceMappingOutput(&lambda.GetEventSourceMappingOutput{
 				UUID:                  aws.String("test-uuid-filter"),
 				EventSourceMappingArn: aws.String("arn:aws:lambda:us-west-2:123456789012:event-source-mapping:test-uuid-filter"),
 				FunctionArn:           aws.String("arn:aws:lambda:us-west-2:123456789012:function:test-function"),
@@ -322,11 +324,11 @@ func createWithFilterCriteriaTestCase(
 func createWithDestinationConfigTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "successfully gets event source mapping with destination configuration",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetEventSourceMappingOutput(&lambda.GetEventSourceMappingOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetEventSourceMappingOutput(&lambda.GetEventSourceMappingOutput{
 				UUID:                  aws.String("test-uuid-dest"),
 				EventSourceMappingArn: aws.String("arn:aws:lambda:us-west-2:123456789012:event-source-mapping:test-uuid-dest"),
 				FunctionArn:           aws.String("arn:aws:lambda:us-west-2:123456789012:function:test-function"),
@@ -387,11 +389,11 @@ func createWithDestinationConfigTestCase(
 func createWithSourceAccessConfigurationsTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "successfully gets event source mapping with source access configurations",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetEventSourceMappingOutput(&lambda.GetEventSourceMappingOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetEventSourceMappingOutput(&lambda.GetEventSourceMappingOutput{
 				UUID:                  aws.String("test-uuid-sac"),
 				EventSourceMappingArn: aws.String("arn:aws:lambda:us-west-2:123456789012:event-source-mapping:test-uuid-sac"),
 				FunctionArn:           aws.String("arn:aws:lambda:us-west-2:123456789012:function:test-function"),
@@ -456,11 +458,11 @@ func createWithSourceAccessConfigurationsTestCase(
 func createWithComplexConfigurationsTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "successfully gets event source mapping with complex configurations",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetEventSourceMappingOutput(&lambda.GetEventSourceMappingOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetEventSourceMappingOutput(&lambda.GetEventSourceMappingOutput{
 				UUID:                           aws.String("test-uuid-complex"),
 				EventSourceMappingArn:          aws.String("arn:aws:lambda:us-west-2:123456789012:event-source-mapping:test-uuid-complex"),
 				FunctionArn:                    aws.String("arn:aws:lambda:us-west-2:123456789012:function:test-function"),

@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
 	"github.com/newstack-cloud/celerity/libs/plugin-framework/sdk/pluginutils"
@@ -45,7 +46,7 @@ func (u *tagsUpdate) Prepare(
 func (u *tagsUpdate) Execute(
 	ctx context.Context,
 	saveOpCtx pluginutils.SaveOperationContext,
-	lambdaService Service,
+	lambdaService lambdaservice.Service,
 ) (pluginutils.SaveOperationContext, error) {
 	if len(u.saveTagsInput.Tags) > 0 {
 		_, err := lambdaService.TagResource(ctx, u.saveTagsInput)
@@ -141,7 +142,7 @@ func (u *functionRuntimeManagementConfigUpdate) Prepare(
 func (u *functionRuntimeManagementConfigUpdate) Execute(
 	ctx context.Context,
 	saveOpCtx pluginutils.SaveOperationContext,
-	lambdaService Service,
+	lambdaService lambdaservice.Service,
 ) (pluginutils.SaveOperationContext, error) {
 	_, err := lambdaService.PutRuntimeManagementConfig(ctx, u.input)
 	return saveOpCtx, err

@@ -5,6 +5,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/newstack-cloud/celerity-provider-aws/services/lambda"
+	lambdalinks "github.com/newstack-cloud/celerity-provider-aws/services/lambda/links"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -14,7 +16,7 @@ import (
 )
 
 func NewProvider(
-	lambdaServiceFactory pluginutils.ServiceFactory[*aws.Config, lambda.Service],
+	lambdaServiceFactory pluginutils.ServiceFactory[*aws.Config, lambdaservice.Service],
 	awsConfigStore *utils.AWSConfigStore,
 ) provider.Provider {
 	return &providerv1.ProviderPluginDefinition{
@@ -80,7 +82,14 @@ func NewProvider(
 				awsConfigStore,
 			),
 		},
-		Links:               map[string]provider.Link{},
+		Links: map[string]provider.Link{
+			"aws/lambda/function::aws/lambda/codeSigningConfig": lambdalinks.FunctionCodeSigningConfigLink(
+				pluginutils.NewSingleLinkServiceDeps(
+					lambdaServiceFactory,
+					awsConfigStore,
+				),
+			),
+		},
 		CustomVariableTypes: map[string]provider.CustomVariableType{},
 		Functions:           map[string]provider.Function{},
 	}

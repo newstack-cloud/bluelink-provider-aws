@@ -7,6 +7,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -31,7 +33,7 @@ func (s *LambdaLayerVersionPermissionsResourceDestroySuite) Test_destroy_lambda_
 		},
 	)
 
-	testCases := []plugintestutils.ResourceDestroyTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service]{
 		destroyBasicLayerVersionPermissionTestCase(providerCtx, loader),
 		destroyLayerVersionPermissionFailureTestCase(providerCtx, loader),
 	}
@@ -46,9 +48,9 @@ func (s *LambdaLayerVersionPermissionsResourceDestroySuite) Test_destroy_lambda_
 func destroyBasicLayerVersionPermissionTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDestroyTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithRemoveLayerVersionPermissionOutput(&lambda.RemoveLayerVersionPermissionOutput{}),
+) plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithRemoveLayerVersionPermissionOutput(&lambda.RemoveLayerVersionPermissionOutput{}),
 	)
 
 	// Create test data for layer version permission destruction
@@ -61,9 +63,9 @@ func destroyBasicLayerVersionPermissionTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDestroyTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "destroy basic layer version permission",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -94,9 +96,9 @@ func destroyBasicLayerVersionPermissionTestCase(
 func destroyLayerVersionPermissionFailureTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDestroyTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithRemoveLayerVersionPermissionError(fmt.Errorf("failed to remove layer version permission")),
+) plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithRemoveLayerVersionPermissionError(fmt.Errorf("failed to remove layer version permission")),
 	)
 
 	// Create test data for layer version permission destruction
@@ -109,9 +111,9 @@ func destroyLayerVersionPermissionFailureTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDestroyTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "destroy layer version permission failure",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,

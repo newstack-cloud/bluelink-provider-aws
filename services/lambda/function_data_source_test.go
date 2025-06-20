@@ -9,6 +9,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -24,7 +26,7 @@ type LambdaFunctionDataSourceSuite struct {
 // Custom test case structure for data source tests.
 type DataSourceFetchTestCase struct {
 	Name                 string
-	ServiceFactory       func(awsConfig *aws.Config, providerContext provider.Context) Service
+	ServiceFactory       func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service
 	ConfigStore          pluginutils.ServiceConfigStore[*aws.Config]
 	Input                *provider.DataSourceFetchInput
 	ExpectedOutput       *provider.DataSourceFetchOutput
@@ -93,15 +95,15 @@ func createBasicFunctionFetchTestCase(
 ) DataSourceFetchTestCase {
 	return DataSourceFetchTestCase{
 		Name: "successfully fetches basic function data",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetFunctionOutput(createBaseTestFunctionConfig(
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetFunctionOutput(createBaseTestFunctionConfig(
 				"test-function",
 				types.RuntimeNodejs18x,
 				"index.handler",
 				"arn:aws:iam::123456789012:role/test-role",
 			)),
-			WithGetFunctionCodeSigningError(errors.New("ResourceNotFoundException")),
-			WithGetFunctionConcurrencyError(errors.New("ResourceNotFoundException")),
+			lambdamock.WithGetFunctionCodeSigningError(errors.New("ResourceNotFoundException")),
+			lambdamock.WithGetFunctionConcurrencyError(errors.New("ResourceNotFoundException")),
 		),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},
@@ -139,12 +141,12 @@ func createFunctionWithAllOptionalConfigsTestCase(
 ) DataSourceFetchTestCase {
 	return DataSourceFetchTestCase{
 		Name: "successfully fetches function with all optional configurations",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetFunctionOutput(createComplexTestFunctionConfig()),
-			WithGetFunctionCodeSigningOutput(&lambda.GetFunctionCodeSigningConfigOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetFunctionOutput(createComplexTestFunctionConfig()),
+			lambdamock.WithGetFunctionCodeSigningOutput(&lambda.GetFunctionCodeSigningConfigOutput{
 				CodeSigningConfigArn: aws.String("arn:aws:lambda:us-west-2:123456789012:code-signing-config:test-config"),
 			}),
-			WithGetFunctionConcurrencyOutput(&lambda.GetFunctionConcurrencyOutput{
+			lambdamock.WithGetFunctionConcurrencyOutput(&lambda.GetFunctionConcurrencyOutput{
 				ReservedConcurrentExecutions: aws.Int32(10),
 			}),
 		),
@@ -217,17 +219,17 @@ func createFunctionWithCodeSigningConfigTestCase(
 ) DataSourceFetchTestCase {
 	return DataSourceFetchTestCase{
 		Name: "successfully fetches function with code signing config",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetFunctionOutput(createBaseTestFunctionConfig(
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetFunctionOutput(createBaseTestFunctionConfig(
 				"test-function",
 				types.RuntimeNodejs18x,
 				"index.handler",
 				"arn:aws:iam::123456789012:role/test-role",
 			)),
-			WithGetFunctionCodeSigningOutput(&lambda.GetFunctionCodeSigningConfigOutput{
+			lambdamock.WithGetFunctionCodeSigningOutput(&lambda.GetFunctionCodeSigningConfigOutput{
 				CodeSigningConfigArn: aws.String("arn:aws:lambda:us-west-2:123456789012:code-signing-config:test-config"),
 			}),
-			WithGetFunctionConcurrencyError(errors.New("ResourceNotFoundException")),
+			lambdamock.WithGetFunctionConcurrencyError(errors.New("ResourceNotFoundException")),
 		),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},
@@ -266,15 +268,15 @@ func createFunctionWithConcurrencyConfigTestCase(
 ) DataSourceFetchTestCase {
 	return DataSourceFetchTestCase{
 		Name: "successfully fetches function with concurrency config",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetFunctionOutput(createBaseTestFunctionConfig(
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetFunctionOutput(createBaseTestFunctionConfig(
 				"test-function",
 				types.RuntimeNodejs18x,
 				"index.handler",
 				"arn:aws:iam::123456789012:role/test-role",
 			)),
-			WithGetFunctionCodeSigningError(errors.New("ResourceNotFoundException")),
-			WithGetFunctionConcurrencyOutput(&lambda.GetFunctionConcurrencyOutput{
+			lambdamock.WithGetFunctionCodeSigningError(errors.New("ResourceNotFoundException")),
+			lambdamock.WithGetFunctionConcurrencyOutput(&lambda.GetFunctionConcurrencyOutput{
 				ReservedConcurrentExecutions: aws.Int32(5),
 			}),
 		),
@@ -315,15 +317,15 @@ func createFunctionWithQualifierTestCase(
 ) DataSourceFetchTestCase {
 	return DataSourceFetchTestCase{
 		Name: "successfully fetches function with qualifier",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetFunctionOutput(createBaseTestFunctionConfig(
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetFunctionOutput(createBaseTestFunctionConfig(
 				"test-function",
 				types.RuntimeNodejs18x,
 				"index.handler",
 				"arn:aws:iam::123456789012:role/test-role",
 			)),
-			WithGetFunctionCodeSigningError(errors.New("ResourceNotFoundException")),
-			WithGetFunctionConcurrencyError(errors.New("ResourceNotFoundException")),
+			lambdamock.WithGetFunctionCodeSigningError(errors.New("ResourceNotFoundException")),
+			lambdamock.WithGetFunctionConcurrencyError(errors.New("ResourceNotFoundException")),
 		),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},
@@ -361,15 +363,15 @@ func createFunctionWithRegionFilterTestCase(
 ) DataSourceFetchTestCase {
 	return DataSourceFetchTestCase{
 		Name: "successfully fetches function with region filter",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetFunctionOutput(createBaseTestFunctionConfig(
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetFunctionOutput(createBaseTestFunctionConfig(
 				"test-function",
 				types.RuntimeNodejs18x,
 				"index.handler",
 				"arn:aws:iam::123456789012:role/test-role",
 			)),
-			WithGetFunctionCodeSigningError(errors.New("ResourceNotFoundException")),
-			WithGetFunctionConcurrencyError(errors.New("ResourceNotFoundException")),
+			lambdamock.WithGetFunctionCodeSigningError(errors.New("ResourceNotFoundException")),
+			lambdamock.WithGetFunctionConcurrencyError(errors.New("ResourceNotFoundException")),
 		),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},
@@ -407,8 +409,8 @@ func createFunctionFetchErrorTestCase(
 ) DataSourceFetchTestCase {
 	return DataSourceFetchTestCase{
 		Name: "handles get function error",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetFunctionError(errors.New("Function not found")),
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetFunctionError(errors.New("Function not found")),
 		),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},
@@ -434,15 +436,15 @@ func createFunctionCodeSigningConfigErrorTestCase(
 ) DataSourceFetchTestCase {
 	return DataSourceFetchTestCase{
 		Name: "handles code signing config error",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetFunctionOutput(createBaseTestFunctionConfig(
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetFunctionOutput(createBaseTestFunctionConfig(
 				"test-function",
 				types.RuntimeNodejs18x,
 				"index.handler",
 				"arn:aws:iam::123456789012:role/test-role",
 			)),
-			WithGetFunctionCodeSigningError(errors.New("Access denied")),
-			WithGetFunctionConcurrencyError(errors.New("ResourceNotFoundException")),
+			lambdamock.WithGetFunctionCodeSigningError(errors.New("Access denied")),
+			lambdamock.WithGetFunctionConcurrencyError(errors.New("ResourceNotFoundException")),
 		),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},
@@ -468,15 +470,15 @@ func createFunctionConcurrencyConfigErrorTestCase(
 ) DataSourceFetchTestCase {
 	return DataSourceFetchTestCase{
 		Name: "handles concurrency config error",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetFunctionOutput(createBaseTestFunctionConfig(
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetFunctionOutput(createBaseTestFunctionConfig(
 				"test-function",
 				types.RuntimeNodejs18x,
 				"index.handler",
 				"arn:aws:iam::123456789012:role/test-role",
 			)),
-			WithGetFunctionCodeSigningError(errors.New("ResourceNotFoundException")),
-			WithGetFunctionConcurrencyError(errors.New("Access denied")),
+			lambdamock.WithGetFunctionCodeSigningError(errors.New("ResourceNotFoundException")),
+			lambdamock.WithGetFunctionConcurrencyError(errors.New("Access denied")),
 		),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},
@@ -502,7 +504,7 @@ func createFunctionMissingNameOrARNTestCase(
 ) DataSourceFetchTestCase {
 	return DataSourceFetchTestCase{
 		Name:           "handles missing function name or ARN",
-		ServiceFactory: createLambdaServiceMockFactory(),
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},
 			utils.AWSConfigFromProviderContext,

@@ -9,6 +9,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/aws/smithy-go"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -33,7 +35,7 @@ func (s *LambdaLayerVersionResourceGetExternalStateSuite) Test_get_external_stat
 		},
 	)
 
-	testCases := []plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		getLayerVersionBasicStateTestCase(providerCtx, loader),
 		getLayerVersionFullStateTestCase(providerCtx, loader),
 		getLayerVersionNotFoundTestCase(providerCtx, loader),
@@ -55,13 +57,13 @@ func TestLambdaLayerVersionResourceGetExternalStateSuite(t *testing.T) {
 func getLayerVersionBasicStateTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
 	layerVersionArn := "arn:aws:lambda:us-west-2:123456789012:layer:test-layer:1"
 
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "successfully gets basic layer version state",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetLayerVersionOutput(&lambda.GetLayerVersionOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetLayerVersionOutput(&lambda.GetLayerVersionOutput{
 				LayerArn:        aws.String("arn:aws:lambda:us-west-2:123456789012:layer:test-layer"),
 				LayerVersionArn: aws.String(layerVersionArn),
 				Version:         1,
@@ -114,13 +116,13 @@ func getLayerVersionBasicStateTestCase(
 func getLayerVersionFullStateTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
 	layerVersionArn := "arn:aws:lambda:us-west-2:123456789012:layer:comprehensive-layer:2"
 
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "successfully gets comprehensive layer version state",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetLayerVersionOutput(&lambda.GetLayerVersionOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetLayerVersionOutput(&lambda.GetLayerVersionOutput{
 				LayerArn:        aws.String("arn:aws:lambda:us-west-2:123456789012:layer:comprehensive-layer"),
 				LayerVersionArn: aws.String(layerVersionArn),
 				Version:         2,
@@ -201,17 +203,17 @@ func getLayerVersionFullStateTestCase(
 func getLayerVersionNotFoundTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
 	// Create a mock error that implements smithy.APIError
 	notFoundError := &smithy.GenericAPIError{
 		Code:    "ResourceNotFoundException",
 		Message: "The resource you requested does not exist.",
 	}
 
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "handles layer version not found",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetLayerVersionError(notFoundError),
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetLayerVersionError(notFoundError),
 		),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},
@@ -238,11 +240,11 @@ func getLayerVersionNotFoundTestCase(
 func getLayerVersionErrorTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "handles get layer version error",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetLayerVersionError(errors.New("internal server error")),
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetLayerVersionError(errors.New("internal server error")),
 		),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},
@@ -266,11 +268,11 @@ func getLayerVersionErrorTestCase(
 func getLayerVersionInvalidArnTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "handles missing version field in spec",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetLayerVersionOutput(&lambda.GetLayerVersionOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetLayerVersionOutput(&lambda.GetLayerVersionOutput{
 				LayerArn:        aws.String("arn:aws:lambda:us-west-2:123456789012:layer:test-layer"),
 				LayerVersionArn: aws.String("arn:aws:lambda:us-west-2:123456789012:layer:test-layer:0"),
 				Version:         0,

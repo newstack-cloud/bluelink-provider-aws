@@ -7,6 +7,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -31,7 +33,7 @@ func (s *LambdaLayerVersionResourceDestroySuite) Test_destroy_lambda_layer_versi
 		},
 	)
 
-	testCases := []plugintestutils.ResourceDestroyTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service]{
 		destroyLayerVersionSuccessTestCase(providerCtx, loader),
 		destroyLayerVersionFailureTestCase(providerCtx, loader),
 		destroyLayerVersionInvalidArnTestCase(providerCtx, loader),
@@ -47,16 +49,16 @@ func (s *LambdaLayerVersionResourceDestroySuite) Test_destroy_lambda_layer_versi
 func destroyLayerVersionSuccessTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDestroyTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service] {
 	layerVersionArn := "arn:aws:lambda:us-west-2:123456789012:layer:test-layer:1"
 
-	service := createLambdaServiceMock(
-		WithDeleteLayerVersionOutput(&lambda.DeleteLayerVersionOutput{}),
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithDeleteLayerVersionOutput(&lambda.DeleteLayerVersionOutput{}),
 	)
 
-	return plugintestutils.ResourceDestroyTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "destroy layer version success",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -89,16 +91,16 @@ func destroyLayerVersionSuccessTestCase(
 func destroyLayerVersionFailureTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDestroyTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service] {
 	layerVersionArn := "arn:aws:lambda:us-west-2:123456789012:layer:test-layer:1"
 
-	service := createLambdaServiceMock(
-		WithDeleteLayerVersionError(fmt.Errorf("failed to delete layer version")),
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithDeleteLayerVersionError(fmt.Errorf("failed to delete layer version")),
 	)
 
-	return plugintestutils.ResourceDestroyTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "destroy layer version failure",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -131,14 +133,14 @@ func destroyLayerVersionFailureTestCase(
 func destroyLayerVersionInvalidArnTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDestroyTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service] {
 	invalidArn := "invalid-arn-format"
 
-	service := createLambdaServiceMock()
+	service := lambdamock.CreateLambdaServiceMock()
 
-	return plugintestutils.ResourceDestroyTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "destroy layer version with invalid ARN",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,

@@ -7,6 +7,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -31,7 +33,7 @@ func (s *LambdaEventInvokeConfigResourceDestroySuite) Test_destroy_lambda_event_
 		},
 	)
 
-	testCases := []plugintestutils.ResourceDestroyTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service]{
 		destroyEventInvokeConfigTestCase(providerCtx, loader),
 		destroyEventInvokeConfigFailureTestCase(providerCtx, loader),
 	}
@@ -46,9 +48,9 @@ func (s *LambdaEventInvokeConfigResourceDestroySuite) Test_destroy_lambda_event_
 func destroyEventInvokeConfigTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDestroyTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithDeleteFunctionEventInvokeConfigOutput(&lambda.DeleteFunctionEventInvokeConfigOutput{}),
+) plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithDeleteFunctionEventInvokeConfigOutput(&lambda.DeleteFunctionEventInvokeConfigOutput{}),
 	)
 
 	specData := &core.MappingNode{
@@ -58,9 +60,9 @@ func destroyEventInvokeConfigTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDestroyTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "destroy event invoke config",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -88,9 +90,9 @@ func destroyEventInvokeConfigTestCase(
 func destroyEventInvokeConfigFailureTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDestroyTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithDeleteFunctionEventInvokeConfigError(fmt.Errorf("failed to delete event invoke config")),
+) plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithDeleteFunctionEventInvokeConfigError(fmt.Errorf("failed to delete event invoke config")),
 	)
 
 	specData := &core.MappingNode{
@@ -100,9 +102,9 @@ func destroyEventInvokeConfigFailureTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDestroyTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "destroy event invoke config failure",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,

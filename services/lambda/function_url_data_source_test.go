@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -79,8 +80,8 @@ func createBasicFunctionUrlDataSourceFetchTestCase(
 ) DataSourceFetchTestCase {
 	return DataSourceFetchTestCase{
 		Name: "successfully fetches basic function URL data",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetFunctionUrlConfigOutput(&lambda.GetFunctionUrlConfigOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetFunctionUrlConfigOutput(&lambda.GetFunctionUrlConfigOutput{
 				FunctionUrl:      aws.String("https://abc123.lambda-url.us-west-2.on.aws/"),
 				FunctionArn:      aws.String("arn:aws:lambda:us-west-2:123456789012:function:test-function"),
 				AuthType:         types.FunctionUrlAuthTypeNone,
@@ -119,8 +120,8 @@ func createFunctionUrlDataSourceWithCorsTestCase(
 ) DataSourceFetchTestCase {
 	return DataSourceFetchTestCase{
 		Name: "successfully fetches function URL with CORS configuration",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetFunctionUrlConfigOutput(&lambda.GetFunctionUrlConfigOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetFunctionUrlConfigOutput(&lambda.GetFunctionUrlConfigOutput{
 				FunctionUrl:      aws.String("https://def456.lambda-url.us-west-2.on.aws/"),
 				FunctionArn:      aws.String("arn:aws:lambda:us-west-2:123456789012:function:test-function"),
 				AuthType:         types.FunctionUrlAuthTypeAwsIam,
@@ -191,8 +192,8 @@ func createFunctionUrlDataSourceWithInvokeModeTestCase(
 ) DataSourceFetchTestCase {
 	return DataSourceFetchTestCase{
 		Name: "successfully fetches function URL with invoke mode",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetFunctionUrlConfigOutput(&lambda.GetFunctionUrlConfigOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetFunctionUrlConfigOutput(&lambda.GetFunctionUrlConfigOutput{
 				FunctionUrl:      aws.String("https://ghi789.lambda-url.us-west-2.on.aws/"),
 				FunctionArn:      aws.String("arn:aws:lambda:us-west-2:123456789012:function:test-function"),
 				AuthType:         types.FunctionUrlAuthTypeNone,
@@ -233,8 +234,8 @@ func createFunctionUrlDataSourceWithQualifierTestCase(
 ) DataSourceFetchTestCase {
 	return DataSourceFetchTestCase{
 		Name: "successfully fetches function URL with qualifier",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetFunctionUrlConfigOutput(&lambda.GetFunctionUrlConfigOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetFunctionUrlConfigOutput(&lambda.GetFunctionUrlConfigOutput{
 				FunctionUrl:      aws.String("https://jkl012.lambda-url.us-west-2.on.aws/"),
 				FunctionArn:      aws.String("arn:aws:lambda:us-west-2:123456789012:function:test-function:prod"),
 				AuthType:         types.FunctionUrlAuthTypeNone,
@@ -278,8 +279,8 @@ func createFunctionUrlDataSourceWithRegionFilterTestCase(
 ) DataSourceFetchTestCase {
 	return DataSourceFetchTestCase{
 		Name: "successfully fetches function URL with region filter",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetFunctionUrlConfigOutput(&lambda.GetFunctionUrlConfigOutput{
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetFunctionUrlConfigOutput(&lambda.GetFunctionUrlConfigOutput{
 				FunctionUrl:      aws.String("https://mno345.lambda-url.eu-west-1.on.aws/"),
 				FunctionArn:      aws.String("arn:aws:lambda:eu-west-1:123456789012:function:test-function"),
 				AuthType:         types.FunctionUrlAuthTypeNone,
@@ -323,8 +324,8 @@ func createFunctionUrlDataSourceFetchErrorTestCase(
 ) DataSourceFetchTestCase {
 	return DataSourceFetchTestCase{
 		Name: "handles get function URL config error",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetFunctionUrlConfigError(errors.New("Function URL not found")),
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetFunctionUrlConfigError(errors.New("Function URL not found")),
 		),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},
@@ -350,8 +351,8 @@ func createFunctionUrlDataSourceMissingNameTestCase(
 ) DataSourceFetchTestCase {
 	return DataSourceFetchTestCase{
 		Name: "handles missing function name",
-		ServiceFactory: createLambdaServiceMockFactory(
-			WithGetFunctionUrlConfigOutput(&lambda.GetFunctionUrlConfigOutput{}),
+		ServiceFactory: lambdamock.CreateLambdaServiceMockFactory(
+			lambdamock.WithGetFunctionUrlConfigOutput(&lambda.GetFunctionUrlConfigOutput{}),
 		),
 		ConfigStore: utils.NewAWSConfigStore(
 			[]string{},

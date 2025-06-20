@@ -7,6 +7,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -32,7 +34,7 @@ func (s *LambdaCodeSigningConfigResourceUpdateSuite) Test_update_lambda_code_sig
 		},
 	)
 
-	testCases := []plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		updateCodeSigningConfigTestCase(providerCtx, loader),
 	}
 
@@ -46,12 +48,12 @@ func (s *LambdaCodeSigningConfigResourceUpdateSuite) Test_update_lambda_code_sig
 func updateCodeSigningConfigTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	cscArn := "arn:aws:lambda:us-west-2:123456789012:code-signing-config:csc-1234567890abcdef0"
 	cscId := "csc-1234567890abcdef0"
 
-	service := createLambdaServiceMock(
-		WithUpdateCodeSigningConfigOutput(&lambda.UpdateCodeSigningConfigOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithUpdateCodeSigningConfigOutput(&lambda.UpdateCodeSigningConfigOutput{
 			CodeSigningConfig: &types.CodeSigningConfig{
 				CodeSigningConfigArn: aws.String(cscArn),
 				CodeSigningConfigId:  aws.String(cscId),
@@ -110,9 +112,9 @@ func updateCodeSigningConfigTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "update code signing config",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,

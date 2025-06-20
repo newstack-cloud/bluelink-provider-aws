@@ -9,6 +9,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -33,7 +35,7 @@ func (s *LambdaEventInvokeConfigResourceCreateSuite) Test_create_lambda_event_in
 		},
 	)
 
-	testCases := []plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		createBasicEventInvokeConfigTestCase(providerCtx, loader),
 		createEventInvokeConfigWithDestinationsTestCase(providerCtx, loader),
 		createEventInvokeConfigFailureTestCase(providerCtx, loader),
@@ -49,12 +51,12 @@ func (s *LambdaEventInvokeConfigResourceCreateSuite) Test_create_lambda_event_in
 func createBasicEventInvokeConfigTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	functionArn := "arn:aws:lambda:us-east-1:123456789012:function:test-function"
 	lastModified := time.Now()
 
-	service := createLambdaServiceMock(
-		WithPutFunctionEventInvokeConfigOutput(&lambda.PutFunctionEventInvokeConfigOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithPutFunctionEventInvokeConfigOutput(&lambda.PutFunctionEventInvokeConfigOutput{
 			FunctionArn:              aws.String(functionArn),
 			MaximumRetryAttempts:     aws.Int32(1),
 			MaximumEventAgeInSeconds: aws.Int32(300),
@@ -71,9 +73,9 @@ func createBasicEventInvokeConfigTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create basic event invoke config",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -135,12 +137,12 @@ func createBasicEventInvokeConfigTestCase(
 func createEventInvokeConfigWithDestinationsTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	functionArn := "arn:aws:lambda:us-east-1:123456789012:function:test-function"
 	lastModified := time.Now()
 
-	service := createLambdaServiceMock(
-		WithPutFunctionEventInvokeConfigOutput(&lambda.PutFunctionEventInvokeConfigOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithPutFunctionEventInvokeConfigOutput(&lambda.PutFunctionEventInvokeConfigOutput{
 			FunctionArn:              aws.String(functionArn),
 			MaximumRetryAttempts:     aws.Int32(2),
 			MaximumEventAgeInSeconds: aws.Int32(1800),
@@ -179,9 +181,9 @@ func createEventInvokeConfigWithDestinationsTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create event invoke config with destinations",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -254,9 +256,9 @@ func createEventInvokeConfigWithDestinationsTestCase(
 func createEventInvokeConfigFailureTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithPutFunctionEventInvokeConfigError(fmt.Errorf("failed to create event invoke config")),
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithPutFunctionEventInvokeConfigError(fmt.Errorf("failed to create event invoke config")),
 	)
 
 	specData := &core.MappingNode{
@@ -266,9 +268,9 @@ func createEventInvokeConfigFailureTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create event invoke config failure",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,

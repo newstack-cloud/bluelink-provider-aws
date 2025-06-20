@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
 	"github.com/newstack-cloud/celerity/libs/plugin-framework/sdk/pluginutils"
@@ -36,7 +37,7 @@ func (u *functionVersionCreate) Prepare(
 func (u *functionVersionCreate) Execute(
 	ctx context.Context,
 	saveOpCtx pluginutils.SaveOperationContext,
-	lambdaService Service,
+	lambdaService lambdaservice.Service,
 ) (pluginutils.SaveOperationContext, error) {
 	newSaveOpCtx := pluginutils.SaveOperationContext{
 		Data: saveOpCtx.Data,
@@ -102,7 +103,7 @@ func extractFunctionARNAndVersion(saveOpCtx pluginutils.SaveOperationContext) (s
 func (u *functionVersionPutProvisionedConcurrencyConfig) Execute(
 	ctx context.Context,
 	saveOpCtx pluginutils.SaveOperationContext,
-	lambdaService Service,
+	lambdaService lambdaservice.Service,
 ) (pluginutils.SaveOperationContext, error) {
 	_, err := lambdaService.PutProvisionedConcurrencyConfig(ctx, u.input)
 	return saveOpCtx, err

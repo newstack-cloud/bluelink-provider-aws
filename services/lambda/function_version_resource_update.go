@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
 	"github.com/newstack-cloud/celerity/libs/plugin-framework/sdk/pluginutils"
@@ -53,7 +54,7 @@ func (l *lambdaFunctionVersionResourceActions) Update(
 		return nil, err
 	}
 
-	updateOperations := []pluginutils.SaveOperation[Service]{
+	updateOperations := []pluginutils.SaveOperation[lambdaservice.Service]{
 		&functionVersionPutProvisionedConcurrencyConfig{},
 		&functionRuntimeManagementConfigUpdate{
 			path:                 "$.runtimePolicy",

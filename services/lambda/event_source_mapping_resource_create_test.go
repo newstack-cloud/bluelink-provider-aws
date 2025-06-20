@@ -7,6 +7,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -31,7 +33,7 @@ func (s *LambdaEventSourceMappingResourceCreateSuite) Test_create_lambda_event_s
 		},
 	)
 
-	testCases := []plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		createBasicEventSourceMappingTestCase(providerCtx, loader),
 		createKinesisEventSourceMappingTestCase(providerCtx, loader),
 		createKafkaEventSourceMappingTestCase(providerCtx, loader),
@@ -49,13 +51,13 @@ func (s *LambdaEventSourceMappingResourceCreateSuite) Test_create_lambda_event_s
 func createBasicEventSourceMappingTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	uuid := "test-uuid-123"
 	eventSourceMappingArn := "arn:aws:lambda:us-west-2:123456789012:event-source-mapping:test-uuid-123"
 	functionArn := "arn:aws:lambda:us-west-2:123456789012:function:test-function"
 
-	service := createLambdaServiceMock(
-		WithCreateEventSourceMappingOutput(&lambda.CreateEventSourceMappingOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithCreateEventSourceMappingOutput(&lambda.CreateEventSourceMappingOutput{
 			UUID:                  aws.String(uuid),
 			EventSourceMappingArn: aws.String(eventSourceMappingArn),
 			FunctionArn:           aws.String(functionArn),
@@ -73,9 +75,9 @@ func createBasicEventSourceMappingTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create basic SQS event source mapping",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -135,13 +137,13 @@ func createBasicEventSourceMappingTestCase(
 func createKinesisEventSourceMappingTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	uuid := "test-kinesis-uuid"
 	eventSourceMappingArn := "arn:aws:lambda:us-west-2:123456789012:event-source-mapping:test-kinesis-uuid"
 	functionArn := "arn:aws:lambda:us-west-2:123456789012:function:test-kinesis-function"
 
-	service := createLambdaServiceMock(
-		WithCreateEventSourceMappingOutput(&lambda.CreateEventSourceMappingOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithCreateEventSourceMappingOutput(&lambda.CreateEventSourceMappingOutput{
 			UUID:                           aws.String(uuid),
 			EventSourceMappingArn:          aws.String(eventSourceMappingArn),
 			FunctionArn:                    aws.String(functionArn),
@@ -177,9 +179,9 @@ func createKinesisEventSourceMappingTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create kinesis event source mapping with maximum configuration",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -247,13 +249,13 @@ func createKinesisEventSourceMappingTestCase(
 func createKafkaEventSourceMappingTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	uuid := "test-kafka-uuid"
 	eventSourceMappingArn := "arn:aws:lambda:us-west-2:123456789012:event-source-mapping:test-kafka-uuid"
 	functionArn := "arn:aws:lambda:us-west-2:123456789012:function:test-kafka-function"
 
-	service := createLambdaServiceMock(
-		WithCreateEventSourceMappingOutput(&lambda.CreateEventSourceMappingOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithCreateEventSourceMappingOutput(&lambda.CreateEventSourceMappingOutput{
 			UUID:                  aws.String(uuid),
 			EventSourceMappingArn: aws.String(eventSourceMappingArn),
 			FunctionArn:           aws.String(functionArn),
@@ -296,9 +298,9 @@ func createKafkaEventSourceMappingTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create kafka event source mapping with filter criteria",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -360,13 +362,13 @@ func createKafkaEventSourceMappingTestCase(
 func createEventSourceMappingWithDestinationConfigTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	uuid := "test-dest-uuid"
 	eventSourceMappingArn := "arn:aws:lambda:us-west-2:123456789012:event-source-mapping:test-dest-uuid"
 	functionArn := "arn:aws:lambda:us-west-2:123456789012:function:test-dest-function"
 
-	service := createLambdaServiceMock(
-		WithCreateEventSourceMappingOutput(&lambda.CreateEventSourceMappingOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithCreateEventSourceMappingOutput(&lambda.CreateEventSourceMappingOutput{
 			UUID:                  aws.String(uuid),
 			EventSourceMappingArn: aws.String(eventSourceMappingArn),
 			FunctionArn:           aws.String(functionArn),
@@ -400,9 +402,9 @@ func createEventSourceMappingWithDestinationConfigTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create event source mapping with destination config",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -464,13 +466,13 @@ func createEventSourceMappingWithDestinationConfigTestCase(
 func createEventSourceMappingWithTagsTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	uuid := "test-tagged-uuid"
 	eventSourceMappingArn := "arn:aws:lambda:us-west-2:123456789012:event-source-mapping:test-tagged-uuid"
 	functionArn := "arn:aws:lambda:us-west-2:123456789012:function:test-tagged-function"
 
-	service := createLambdaServiceMock(
-		WithCreateEventSourceMappingOutput(&lambda.CreateEventSourceMappingOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithCreateEventSourceMappingOutput(&lambda.CreateEventSourceMappingOutput{
 			UUID:                  aws.String(uuid),
 			EventSourceMappingArn: aws.String(eventSourceMappingArn),
 			FunctionArn:           aws.String(functionArn),
@@ -478,7 +480,7 @@ func createEventSourceMappingWithTagsTestCase(
 			EventSourceArn:        aws.String("arn:aws:sqs:us-west-2:123456789012:test-tagged-queue"),
 			BatchSize:             aws.Int32(15),
 		}),
-		WithTagResourceOutput(&lambda.TagResourceOutput{}),
+		lambdamock.WithTagResourceOutput(&lambda.TagResourceOutput{}),
 	)
 
 	specData := &core.MappingNode{
@@ -511,9 +513,9 @@ func createEventSourceMappingWithTagsTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create event source mapping with tags",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,

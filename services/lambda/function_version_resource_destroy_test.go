@@ -7,6 +7,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -31,7 +33,7 @@ func (s *LambdaFunctionVersionResourceDestroySuite) Test_destroy() {
 		},
 	)
 
-	testCases := []plugintestutils.ResourceDestroyTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service]{
 		createSuccessfulFunctionVersionDestroyTestCase(providerCtx, loader),
 		createFailingFunctionVersionDestroyTestCase(providerCtx, loader),
 	}
@@ -46,17 +48,17 @@ func (s *LambdaFunctionVersionResourceDestroySuite) Test_destroy() {
 func createSuccessfulFunctionVersionDestroyTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDestroyTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithDeleteFunctionOutput(&lambda.DeleteFunctionOutput{}),
+) plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithDeleteFunctionOutput(&lambda.DeleteFunctionOutput{}),
 	)
 
 	expectedFunctionARN := "arn:aws:lambda:us-east-1:123456789012:function:test-function"
 	expectedVersion := "1"
 
-	return plugintestutils.ResourceDestroyTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "successfully deletes function version",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -90,17 +92,17 @@ func createSuccessfulFunctionVersionDestroyTestCase(
 func createFailingFunctionVersionDestroyTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDestroyTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithDeleteFunctionError(errors.New("failed to delete function version")),
+) plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithDeleteFunctionError(errors.New("failed to delete function version")),
 	)
 
 	expectedFunctionARN := "arn:aws:lambda:us-east-1:123456789012:function:test-function"
 	expectedVersion := "1"
 
-	return plugintestutils.ResourceDestroyTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDestroyTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "fails to delete function version",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,

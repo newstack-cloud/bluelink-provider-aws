@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -334,16 +335,16 @@ func (l *lambdaFunctionResourceActions) addAdditionalConfigurationsToSpec(
 	ctx context.Context,
 	functionARN string,
 	specFields map[string]*core.MappingNode,
-	lambdaService Service,
+	lambdaService lambdaservice.Service,
 ) error {
-	extractors := []pluginutils.AdditionalValueExtractor[Service]{
+	extractors := []pluginutils.AdditionalValueExtractor[lambdaservice.Service]{
 		{
 			Name: "code signing config",
 			Extract: func(
 				ctx context.Context,
 				filters *provider.ResolvedDataSourceFilters,
 				specFields map[string]*core.MappingNode,
-				lambdaService Service,
+				lambdaService lambdaservice.Service,
 			) error {
 				return l.addCodeSigningConfigToSpec(ctx, filters, specFields, lambdaService)
 			},
@@ -354,7 +355,7 @@ func (l *lambdaFunctionResourceActions) addAdditionalConfigurationsToSpec(
 				ctx context.Context,
 				filters *provider.ResolvedDataSourceFilters,
 				specFields map[string]*core.MappingNode,
-				lambdaService Service,
+				lambdaService lambdaservice.Service,
 			) error {
 				return l.addRecursionConfigToSpec(ctx, filters, specFields, lambdaService)
 			},
@@ -365,7 +366,7 @@ func (l *lambdaFunctionResourceActions) addAdditionalConfigurationsToSpec(
 				ctx context.Context,
 				filters *provider.ResolvedDataSourceFilters,
 				specFields map[string]*core.MappingNode,
-				lambdaService Service,
+				lambdaService lambdaservice.Service,
 			) error {
 				return l.addConcurrencyConfigToSpec(ctx, filters, specFields, lambdaService)
 			},
@@ -410,7 +411,7 @@ func (l *lambdaFunctionResourceActions) addCodeSigningConfigToSpec(
 	ctx context.Context,
 	filters *provider.ResolvedDataSourceFilters,
 	specFields map[string]*core.MappingNode,
-	lambdaService Service,
+	lambdaService lambdaservice.Service,
 ) error {
 	nameOrARN := extractFunctionNameOrARNFromFilters(filters)
 	codeSigningConfigOutput, err := lambdaService.GetFunctionCodeSigningConfig(
@@ -436,7 +437,7 @@ func (l *lambdaFunctionResourceActions) addRecursionConfigToSpec(
 	ctx context.Context,
 	filters *provider.ResolvedDataSourceFilters,
 	specFields map[string]*core.MappingNode,
-	lambdaService Service,
+	lambdaService lambdaservice.Service,
 ) error {
 	nameOrARN := extractFunctionNameOrARNFromFilters(filters)
 	recursionConfigOutput, err := lambdaService.GetFunctionRecursionConfig(
@@ -462,7 +463,7 @@ func (l *lambdaFunctionResourceActions) addConcurrencyConfigToSpec(
 	ctx context.Context,
 	filters *provider.ResolvedDataSourceFilters,
 	specFields map[string]*core.MappingNode,
-	lambdaService Service,
+	lambdaService lambdaservice.Service,
 ) error {
 	nameOrARN := extractFunctionNameOrARNFromFilters(filters)
 	concurrencyConfigOutput, err := lambdaService.GetFunctionConcurrency(

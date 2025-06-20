@@ -8,6 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -32,7 +34,7 @@ func (s *LambdaFunctionUrlResourceCreateSuite) Test_create_lambda_function_url()
 		},
 	)
 
-	testCases := []plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		createBasicFunctionUrlTestCase(providerCtx, loader),
 		createFunctionUrlWithCorsTestCase(providerCtx, loader),
 		createFunctionUrlWithAuthTypeTestCase(providerCtx, loader),
@@ -52,11 +54,11 @@ func (s *LambdaFunctionUrlResourceCreateSuite) Test_create_lambda_function_url()
 func createBasicFunctionUrlTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	functionUrl := "https://test-function-url.lambda-url.us-west-2.on.aws/"
 
-	service := createLambdaServiceMock(
-		WithCreateFunctionUrlConfigOutput(&lambda.CreateFunctionUrlConfigOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithCreateFunctionUrlConfigOutput(&lambda.CreateFunctionUrlConfigOutput{
 			FunctionUrl: aws.String(functionUrl),
 		}),
 	)
@@ -67,9 +69,9 @@ func createBasicFunctionUrlTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create basic function URL",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -120,11 +122,11 @@ func createBasicFunctionUrlTestCase(
 func createFunctionUrlWithCorsTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	functionUrl := "https://test-function-url.lambda-url.us-west-2.on.aws/"
 
-	service := createLambdaServiceMock(
-		WithCreateFunctionUrlConfigOutput(&lambda.CreateFunctionUrlConfigOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithCreateFunctionUrlConfigOutput(&lambda.CreateFunctionUrlConfigOutput{
 			FunctionUrl: aws.String(functionUrl),
 		}),
 	)
@@ -163,9 +165,9 @@ func createFunctionUrlWithCorsTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create function URL with CORS",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -227,11 +229,11 @@ func createFunctionUrlWithCorsTestCase(
 func createFunctionUrlWithAuthTypeTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	functionUrl := "https://test-function-url.lambda-url.us-west-2.on.aws/"
 
-	service := createLambdaServiceMock(
-		WithCreateFunctionUrlConfigOutput(&lambda.CreateFunctionUrlConfigOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithCreateFunctionUrlConfigOutput(&lambda.CreateFunctionUrlConfigOutput{
 			FunctionUrl: aws.String(functionUrl),
 		}),
 	)
@@ -243,9 +245,9 @@ func createFunctionUrlWithAuthTypeTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create function URL with auth type",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -299,11 +301,11 @@ func createFunctionUrlWithAuthTypeTestCase(
 func createFunctionUrlWithInvokeModeTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	functionUrl := "https://test-function-url.lambda-url.us-west-2.on.aws/"
 
-	service := createLambdaServiceMock(
-		WithCreateFunctionUrlConfigOutput(&lambda.CreateFunctionUrlConfigOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithCreateFunctionUrlConfigOutput(&lambda.CreateFunctionUrlConfigOutput{
 			FunctionUrl: aws.String(functionUrl),
 		}),
 	)
@@ -315,9 +317,9 @@ func createFunctionUrlWithInvokeModeTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create function URL with invoke mode",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -372,11 +374,11 @@ func createFunctionUrlWithInvokeModeTestCase(
 func createFunctionUrlWithQualifierTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	functionUrl := "https://test-function-url.lambda-url.us-west-2.on.aws/"
 
-	service := createLambdaServiceMock(
-		WithCreateFunctionUrlConfigOutput(&lambda.CreateFunctionUrlConfigOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithCreateFunctionUrlConfigOutput(&lambda.CreateFunctionUrlConfigOutput{
 			FunctionUrl: aws.String(functionUrl),
 		}),
 	)
@@ -388,9 +390,9 @@ func createFunctionUrlWithQualifierTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create function URL with qualifier",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -445,11 +447,11 @@ func createFunctionUrlWithQualifierTestCase(
 func createComplexFunctionUrlTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
 	functionUrl := "https://test-function-url.lambda-url.us-west-2.on.aws/"
 
-	service := createLambdaServiceMock(
-		WithCreateFunctionUrlConfigOutput(&lambda.CreateFunctionUrlConfigOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithCreateFunctionUrlConfigOutput(&lambda.CreateFunctionUrlConfigOutput{
 			FunctionUrl: aws.String(functionUrl),
 		}),
 	)
@@ -483,9 +485,9 @@ func createComplexFunctionUrlTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create complex function URL with all features",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,
@@ -556,9 +558,9 @@ func createComplexFunctionUrlTestCase(
 func createFunctionUrlFailureTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceDeployTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithCreateFunctionUrlConfigError(fmt.Errorf("function not found")),
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithCreateFunctionUrlConfigError(fmt.Errorf("function not found")),
 	)
 
 	specData := &core.MappingNode{
@@ -567,9 +569,9 @@ func createFunctionUrlFailureTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceDeployTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "create function URL failure",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ServiceMockCalls: &service.MockCalls,

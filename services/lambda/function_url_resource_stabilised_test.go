@@ -7,6 +7,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -30,7 +32,7 @@ func (s *LambdaFunctionUrlResourceStabilisedSuite) Test_stabilised() {
 		},
 	)
 
-	testCases := []plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, lambdaservice.Service]{
 		stabilisedFunctionUrlExistsTestCase(providerCtx, loader),
 		stabilisedFunctionUrlNotExistsTestCase(providerCtx, loader),
 		stabilisedFunctionUrlWithQualifierTestCase(providerCtx, loader),
@@ -46,9 +48,9 @@ func (s *LambdaFunctionUrlResourceStabilisedSuite) Test_stabilised() {
 func stabilisedFunctionUrlExistsTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithGetFunctionUrlConfigOutput(&lambda.GetFunctionUrlConfigOutput{
+) plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetFunctionUrlConfigOutput(&lambda.GetFunctionUrlConfigOutput{
 			FunctionUrl: aws.String("https://test-function-url.lambda-url.us-west-2.on.aws/"),
 			AuthType:    types.FunctionUrlAuthTypeNone,
 		}),
@@ -61,9 +63,9 @@ func stabilisedFunctionUrlExistsTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "function URL exists and is stabilised",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ConfigStore: utils.NewAWSConfigStore(
@@ -85,9 +87,9 @@ func stabilisedFunctionUrlExistsTestCase(
 func stabilisedFunctionUrlNotExistsTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithGetFunctionUrlConfigError(&types.ResourceNotFoundException{
+) plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetFunctionUrlConfigError(&types.ResourceNotFoundException{
 			Message: aws.String("Function URL not found"),
 		}),
 	)
@@ -99,9 +101,9 @@ func stabilisedFunctionUrlNotExistsTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "function URL does not exist and is not stabilised",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ConfigStore: utils.NewAWSConfigStore(
@@ -123,9 +125,9 @@ func stabilisedFunctionUrlNotExistsTestCase(
 func stabilisedFunctionUrlWithQualifierTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithGetFunctionUrlConfigOutput(&lambda.GetFunctionUrlConfigOutput{
+) plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetFunctionUrlConfigOutput(&lambda.GetFunctionUrlConfigOutput{
 			FunctionUrl: aws.String("https://test-function-url.lambda-url.us-west-2.on.aws/"),
 			AuthType:    types.FunctionUrlAuthTypeAwsIam,
 		}),
@@ -139,9 +141,9 @@ func stabilisedFunctionUrlWithQualifierTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "function URL with qualifier exists and is stabilised",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ConfigStore: utils.NewAWSConfigStore(

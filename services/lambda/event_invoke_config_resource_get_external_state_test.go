@@ -8,6 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -31,7 +33,7 @@ func (s *LambdaEventInvokeConfigResourceGetExternalStateSuite) Test_get_external
 		},
 	)
 
-	testCases := []plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		getExternalStateEventInvokeConfigBasicTestCase(providerCtx, loader),
 		getExternalStateEventInvokeConfigCompleteTestCase(providerCtx, loader),
 		getExternalStateEventInvokeConfigNotFoundTestCase(providerCtx, loader),
@@ -47,21 +49,21 @@ func (s *LambdaEventInvokeConfigResourceGetExternalStateSuite) Test_get_external
 func getExternalStateEventInvokeConfigBasicTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
 	functionArn := "arn:aws:lambda:us-east-1:123456789012:function:test-function"
 	lastModified := time.Now()
 
-	service := createLambdaServiceMock(
-		WithGetFunctionEventInvokeConfigOutput(&lambda.GetFunctionEventInvokeConfigOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetFunctionEventInvokeConfigOutput(&lambda.GetFunctionEventInvokeConfigOutput{
 			FunctionArn:          aws.String(functionArn),
 			MaximumRetryAttempts: aws.Int32(1),
 			LastModified:         &lastModified,
 		}),
 	)
 
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "get external state event invoke config basic",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ConfigStore: utils.NewAWSConfigStore(
@@ -94,12 +96,12 @@ func getExternalStateEventInvokeConfigBasicTestCase(
 func getExternalStateEventInvokeConfigCompleteTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
 	functionArn := "arn:aws:lambda:us-east-1:123456789012:function:test-function"
 	lastModified := time.Now()
 
-	service := createLambdaServiceMock(
-		WithGetFunctionEventInvokeConfigOutput(&lambda.GetFunctionEventInvokeConfigOutput{
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetFunctionEventInvokeConfigOutput(&lambda.GetFunctionEventInvokeConfigOutput{
 			FunctionArn:              aws.String(functionArn),
 			MaximumRetryAttempts:     aws.Int32(2),
 			MaximumEventAgeInSeconds: aws.Int32(1800),
@@ -115,9 +117,9 @@ func getExternalStateEventInvokeConfigCompleteTestCase(
 		}),
 	)
 
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "get external state event invoke config complete",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ConfigStore: utils.NewAWSConfigStore(
@@ -165,16 +167,16 @@ func getExternalStateEventInvokeConfigCompleteTestCase(
 func getExternalStateEventInvokeConfigNotFoundTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock(
-		WithGetFunctionEventInvokeConfigError(&types.ResourceNotFoundException{
+) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetFunctionEventInvokeConfigError(&types.ResourceNotFoundException{
 			Message: aws.String("Function event invoke config not found"),
 		}),
 	)
 
-	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "get external state event invoke config not found",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ConfigStore: utils.NewAWSConfigStore(

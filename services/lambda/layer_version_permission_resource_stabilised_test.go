@@ -5,6 +5,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -28,7 +30,7 @@ func (s *LambdaLayerVersionPermissionsResourceStabilisedSuite) Test_stabilised_l
 		},
 	)
 
-	testCases := []plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, Service]{
+	testCases := []plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, lambdaservice.Service]{
 		stabilisedBasicLayerVersionPermissionTestCase(providerCtx, loader),
 	}
 
@@ -42,8 +44,8 @@ func (s *LambdaLayerVersionPermissionsResourceStabilisedSuite) Test_stabilised_l
 func stabilisedBasicLayerVersionPermissionTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, Service] {
-	service := createLambdaServiceMock()
+) plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, lambdaservice.Service] {
+	service := lambdamock.CreateLambdaServiceMock()
 
 	// Create test data for layer version permission stabilisation check
 	specData := &core.MappingNode{
@@ -55,9 +57,9 @@ func stabilisedBasicLayerVersionPermissionTestCase(
 		},
 	}
 
-	return plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, Service]{
+	return plugintestutils.ResourceHasStabilisedTestCase[*aws.Config, lambdaservice.Service]{
 		Name: "layer version permission is always stabilised",
-		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) Service {
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
 			return service
 		},
 		ConfigStore: utils.NewAWSConfigStore(
