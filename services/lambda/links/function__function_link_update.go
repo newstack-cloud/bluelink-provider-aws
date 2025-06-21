@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity/libs/blueprint/core"
 	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
@@ -81,43 +79,7 @@ func (l *lambdaFunctionFunctionLinkActions) addFunctionPermissionsAndEnvVars(
 	otherFunctionARN string,
 	lambdaService lambdaservice.Service,
 ) (*provider.LinkUpdateResourceOutput, error) {
-	codeSigningConfigSpec := pluginutils.GetCurrentStateSpecDataFromResourceInfo(
-		input.OtherResourceInfo,
-	)
-	codeSigningConfigARN, hasCodeSigningConfigARN := pluginutils.GetValueByPath(
-		"$.codeSigningConfigArn",
-		codeSigningConfigSpec,
-	)
-	if !hasCodeSigningConfigARN {
-		return nil, fmt.Errorf(
-			"code signing config ARN could not be retrieved from code signing config",
-		)
-	}
-
-	_, err := lambdaService.PutFunctionCodeSigningConfig(
-		ctx,
-		&lambda.PutFunctionCodeSigningConfigInput{
-			FunctionName:         aws.String(functionARN),
-			CodeSigningConfigArn: aws.String(core.StringValue(codeSigningConfigARN)),
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return &provider.LinkUpdateResourceOutput{
-		LinkData: &core.MappingNode{
-			Fields: map[string]*core.MappingNode{
-				input.ResourceInfo.ResourceName: {
-					Fields: map[string]*core.MappingNode{
-						"codeSigningConfigArn": core.MappingNodeFromString(
-							core.StringValue(codeSigningConfigARN),
-						),
-					},
-				},
-			},
-		},
-	}, nil
+	return nil, nil
 }
 
 func (l *lambdaFunctionFunctionLinkActions) removeFunctionPermissionsAndEnvVars(
@@ -126,21 +88,7 @@ func (l *lambdaFunctionFunctionLinkActions) removeFunctionPermissionsAndEnvVars(
 	linkedToFunctionARN string,
 	lambdaService lambdaservice.Service,
 ) (*provider.LinkUpdateResourceOutput, error) {
-	_, err := lambdaService.DeleteFunctionCodeSigningConfig(
-		ctx,
-		&lambda.DeleteFunctionCodeSigningConfigInput{
-			FunctionName: aws.String(functionARN),
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return &provider.LinkUpdateResourceOutput{
-		LinkData: &core.MappingNode{
-			Fields: map[string]*core.MappingNode{},
-		},
-	}, nil
+	return nil, nil
 }
 
 func (l *lambdaFunctionFunctionLinkActions) UpdateResourceB(
