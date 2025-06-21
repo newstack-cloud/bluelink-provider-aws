@@ -1,4 +1,6 @@
-**YAML**
+**YAML Basic IAM Role**
+
+This example demonstrates how to create a basic IAM role with a single service principal.
 
 ```yaml
 resources:
@@ -11,19 +13,15 @@ resources:
         app: lambda
     spec:
       roleName: lambda-execution-role
-      assumeRolePolicyDocument: |
-        {
-          "Version": "2012-10-17",
-          "Statement": [
-            {
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "lambda.amazonaws.com"
-              },
-              "Action": "sts:AssumeRole"
-            }
-          ]
-        }
+      assumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
       managedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       tags:

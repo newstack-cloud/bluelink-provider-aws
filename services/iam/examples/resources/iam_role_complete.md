@@ -1,4 +1,6 @@
-**YAML**
+**YAML Complete IAM Role**
+
+This example demonstrates how to create a comprehensive IAM role with all available configuration options.
 
 ```yaml
 resources:
@@ -13,27 +15,19 @@ resources:
     spec:
       roleName: comprehensive-service-role
       description: A comprehensive example role with all configuration options
-      assumeRolePolicyDocument: |
-        {
-          "Version": "2012-10-17",
-          "Statement": [
-            {
-              "Effect": "Allow",
-              "Principal": {
-                "Service": [
-                  "lambda.amazonaws.com",
-                  "ec2.amazonaws.com"
-                ]
-              },
-              "Action": "sts:AssumeRole",
-              "Condition": {
-                "StringEquals": {
-                  "sts:ExternalId": "unique-external-id"
-                }
-              }
-            }
-          ]
-        }
+      assumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+            Condition:
+              StringEquals:
+                sts:ExternalId: unique-external-id
       path: /service-roles/
       maxSessionDuration: 7200
       managedPolicyArns:
@@ -42,40 +36,28 @@ resources:
         - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
       policies:
         - policyName: CustomDynamoDBAccess
-          policyDocument: |
-            {
-              "Version": "2012-10-17",
-              "Statement": [
-                {
-                  "Effect": "Allow",
-                  "Action": [
-                    "dynamodb:GetItem",
-                    "dynamodb:PutItem",
-                    "dynamodb:UpdateItem",
-                    "dynamodb:DeleteItem",
-                    "dynamodb:Query",
-                    "dynamodb:Scan"
-                  ],
-                  "Resource": "arn:aws:dynamodb:*:*:table/MyTable"
-                }
-              ]
-            }
+          policyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource: arn:aws:dynamodb:*:*:table/MyTable
         - policyName: CustomSQSAccess
-          policyDocument: |
-            {
-              "Version": "2012-10-17",
-              "Statement": [
-                {
-                  "Effect": "Allow",
-                  "Action": [
-                    "sqs:SendMessage",
-                    "sqs:ReceiveMessage",
-                    "sqs:DeleteMessage"
-                  ],
-                  "Resource": "arn:aws:sqs:*:*:my-queue"
-                }
-              ]
-            }
+          policyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                Resource: arn:aws:sqs:*:*:my-queue
       permissionsBoundary: arn:aws:iam::123456789012:policy/DeveloperBoundary
       tags:
         Environment: Production
