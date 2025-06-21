@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/newstack-cloud/celerity-provider-aws/provider"
+	iamservice "github.com/newstack-cloud/celerity-provider-aws/services/iam/service"
 	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/celerity-provider-aws/utils"
 	"github.com/newstack-cloud/celerity/libs/plugin-framework/plugin"
@@ -29,6 +30,7 @@ func main() {
 	hostInfoContainer := pluginutils.NewHostInfoContainer()
 	providerServer := providerv1.NewProviderPlugin(
 		provider.NewProvider(
+			iamservice.NewService,
 			lambdaservice.NewService,
 			utils.NewAWSConfigStore(
 				os.Environ(),

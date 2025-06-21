@@ -3,22 +3,23 @@ module github.com/newstack-cloud/celerity-provider-aws
 go 1.23.4
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.36.3
+	github.com/aws/aws-sdk-go-v2 v1.36.5
 	github.com/aws/aws-sdk-go-v2/config v1.29.15
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.68
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.30
+	github.com/aws/aws-sdk-go-v2/service/iam v1.42.2
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.71.2
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.20
-	github.com/aws/smithy-go v1.22.2
-	github.com/newstack-cloud/celerity/libs/blueprint v0.22.0
-	github.com/newstack-cloud/celerity/libs/plugin-framework v0.0.0-20250620115125-232617df45be
+	github.com/aws/smithy-go v1.22.4
+	github.com/newstack-cloud/celerity/libs/blueprint v0.23.0
+	github.com/newstack-cloud/celerity/libs/plugin-framework v0.0.0-20250621183332-82e29bb046b7
 	github.com/stretchr/testify v1.10.0
 )
 
 require (
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.10 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.34 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.34 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.36 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.36 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.12.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.15 // indirect

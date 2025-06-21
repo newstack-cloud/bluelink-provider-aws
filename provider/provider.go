@@ -4,6 +4,8 @@ import (
 	"regexp"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/newstack-cloud/celerity-provider-aws/services/iam"
+	iamservice "github.com/newstack-cloud/celerity-provider-aws/services/iam/service"
 	"github.com/newstack-cloud/celerity-provider-aws/services/lambda"
 	lambdalinks "github.com/newstack-cloud/celerity-provider-aws/services/lambda/links"
 	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
@@ -16,6 +18,7 @@ import (
 )
 
 func NewProvider(
+	iamServiceFactory pluginutils.ServiceFactory[*aws.Config, iamservice.Service],
 	lambdaServiceFactory pluginutils.ServiceFactory[*aws.Config, lambdaservice.Service],
 	awsConfigStore *utils.AWSConfigStore,
 ) provider.Provider {
@@ -23,6 +26,10 @@ func NewProvider(
 		ProviderNamespace:        "aws",
 		ProviderConfigDefinition: providerConfigDefinition(),
 		Resources: map[string]provider.Resource{
+			"aws/iam/role": iam.RoleResource(
+				iamServiceFactory,
+				awsConfigStore,
+			),
 			"aws/lambda/function": lambda.FunctionResource(
 				lambdaServiceFactory,
 				awsConfigStore,
