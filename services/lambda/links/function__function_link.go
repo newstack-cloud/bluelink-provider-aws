@@ -10,9 +10,11 @@ import (
 	"github.com/newstack-cloud/celerity/libs/plugin-framework/sdk/providerv1"
 )
 
-// FunctionCodeSigningConfigLink returns a link implementation for
-// a link from a lambda function to a code signing config.
-func FunctionCodeSigningConfigLink(
+// FunctionFunctionLink returns a link implementation for
+// a link from a lambda function to another lambda function.
+// The first lambda function will be configured with permissions
+// and environment variables to be able to invoke the second lambda function.
+func FunctionFunctionLink(
 	linkServiceDeps pluginutils.LinkServiceDeps[
 		*aws.Config,
 		lambdaservice.Service,
@@ -20,21 +22,24 @@ func FunctionCodeSigningConfigLink(
 		lambdaservice.Service,
 	],
 ) provider.Link {
-	description, _ := descriptions.ReadFile("descriptions/function__code_signing_config.md")
+	description, _ := descriptions.ReadFile("descriptions/function__function.md")
 
-	actions := &lambdaFunctionCodeSigningConfigLinkActions{
+	actions := &lambdaFunctionFunctionLinkActions{
 		lambdaServiceFactory: linkServiceDeps.ResourceAService.ServiceFactory,
 		awsConfigStore:       linkServiceDeps.ResourceAService.ConfigStore,
 	}
 
 	return &providerv1.LinkDefinition{
-		ResourceTypeA:                   "aws/lambda/function",
-		ResourceTypeB:                   "aws/lambda/codeSigningConfig",
-		Kind:                            provider.LinkKindHard,
-		PriorityResource:                provider.LinkPriorityResourceB,
-		PlainTextSummary:                "A link from a lambda function to a code signing config.",
+		ResourceTypeA: "aws/lambda/function",
+		ResourceTypeB: "aws/lambda/function",
+		// It doesn't matter which lambda function is created first,
+		// the caller function will be configured to be able to invoke
+		// the callee function once both have been created.
+		Kind:                            provider.LinkKindSoft,
+		PriorityResource:                provider.LinkPriorityResourceNone,
+		PlainTextSummary:                "A link that configures a lambda function to be able to invoke another lambda function.",
 		FormattedDescription:            string(description),
-		AnnotationDefinitions:           lambdaFunctionCodeSigningConfigLinkAnnotations(),
+		AnnotationDefinitions:           lambdaFunctionFunctionLinkAnnotations(),
 		StageChangesFunc:                actions.StageChanges,
 		UpdateResourceAFunc:             actions.UpdateResourceA,
 		UpdateResourceBFunc:             actions.UpdateResourceB,
@@ -42,12 +47,12 @@ func FunctionCodeSigningConfigLink(
 	}
 }
 
-type lambdaFunctionCodeSigningConfigLinkActions struct {
+type lambdaFunctionFunctionLinkActions struct {
 	lambdaServiceFactory pluginutils.ServiceFactory[*aws.Config, lambdaservice.Service]
 	awsConfigStore       pluginutils.ServiceConfigStore[*aws.Config]
 }
 
-func (l *lambdaFunctionCodeSigningConfigLinkActions) getLambdaService(
+func (l *lambdaFunctionFunctionLinkActions) getLambdaService(
 	ctx context.Context,
 	providerContext provider.Context,
 ) (lambdaservice.Service, error) {
