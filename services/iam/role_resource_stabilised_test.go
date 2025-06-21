@@ -51,15 +51,7 @@ func stabilisedBasicRoleTestCase(
 	// Create test data for role stabilisation check
 	specData := &core.MappingNode{
 		Fields: map[string]*core.MappingNode{
-			"arn": core.MappingNodeFromString("arn:aws:iam::123456789012:role/TestRole"),
-			"assumeRolePolicyDocument": core.MappingNodeFromString(`{
-				"Version": "2012-10-17",
-				"Statement": [{
-					"Effect": "Allow",
-					"Principal": {"Service": "lambda.amazonaws.com"},
-					"Action": "sts:AssumeRole"
-				}]
-			}`),
+			"arn":         core.MappingNodeFromString("arn:aws:iam::123456789012:role/TestRole"),
 			"description": core.MappingNodeFromString("Test role for Lambda execution"),
 		},
 	}
@@ -100,14 +92,6 @@ func stabilisedCompleteRoleTestCase(
 			"description":        core.MappingNodeFromString("A complete test role"),
 			"maxSessionDuration": core.MappingNodeFromInt(7200),
 			"path":               core.MappingNodeFromString("/test/"),
-			"assumeRolePolicyDocument": core.MappingNodeFromString(`{
-				"Version": "2012-10-17",
-				"Statement": [{
-					"Effect": "Allow",
-					"Principal": {"Service": "lambda.amazonaws.com"},
-					"Action": "sts:AssumeRole"
-				}]
-			}`),
 			"managedPolicyArns": {
 				Items: []*core.MappingNode{
 					core.MappingNodeFromString("arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"),
