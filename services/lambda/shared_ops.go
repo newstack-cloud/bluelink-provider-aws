@@ -313,3 +313,44 @@ func changesToPutRuntimeMgmtConfigInput(
 
 	return input, hasUpdates
 }
+
+// setCorsValue is a reusable function that sets CORS configuration on a Lambda function URL input.
+// It can be used with both CreateFunctionUrlConfigInput and UpdateFunctionUrlConfigInput.
+func setCorsValue(value *core.MappingNode, corsSetter func(*types.Cors)) {
+	cors := &types.Cors{}
+	if allowCredentials, exists := pluginutils.GetValueByPath("$.allowCredentials", value); exists {
+		cors.AllowCredentials = aws.Bool(core.BoolValue(allowCredentials))
+	}
+	if allowHeaders, exists := pluginutils.GetValueByPath("$.allowHeaders", value); exists {
+		headers := make([]string, len(allowHeaders.Items))
+		for i, header := range allowHeaders.Items {
+			headers[i] = core.StringValue(header)
+		}
+		cors.AllowHeaders = headers
+	}
+	if allowMethods, exists := pluginutils.GetValueByPath("$.allowMethods", value); exists {
+		methods := make([]string, len(allowMethods.Items))
+		for i, method := range allowMethods.Items {
+			methods[i] = core.StringValue(method)
+		}
+		cors.AllowMethods = methods
+	}
+	if allowOrigins, exists := pluginutils.GetValueByPath("$.allowOrigins", value); exists {
+		origins := make([]string, len(allowOrigins.Items))
+		for i, origin := range allowOrigins.Items {
+			origins[i] = core.StringValue(origin)
+		}
+		cors.AllowOrigins = origins
+	}
+	if exposeHeaders, exists := pluginutils.GetValueByPath("$.exposeHeaders", value); exists {
+		headers := make([]string, len(exposeHeaders.Items))
+		for i, header := range exposeHeaders.Items {
+			headers[i] = core.StringValue(header)
+		}
+		cors.ExposeHeaders = headers
+	}
+	if maxAge, exists := pluginutils.GetValueByPath("$.maxAge", value); exists {
+		cors.MaxAge = aws.Int32(int32(core.IntValue(maxAge)))
+	}
+	corsSetter(cors)
+}
