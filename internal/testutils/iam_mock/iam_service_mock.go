@@ -58,6 +58,68 @@ type iamServiceMock struct {
 	putRolePermissionsBoundaryError     error
 	deleteRolePermissionsBoundaryOutput *iam.DeleteRolePermissionsBoundaryOutput
 	deleteRolePermissionsBoundaryError  error
+
+	// User-related mock fields
+	createUserOutput *iam.CreateUserOutput
+	createUserError  error
+	getUserOutput    *iam.GetUserOutput
+	getUserError     error
+	updateUserOutput *iam.UpdateUserOutput
+	updateUserError  error
+	deleteUserOutput *iam.DeleteUserOutput
+	deleteUserError  error
+
+	// User policy attachment-related mock fields
+	attachUserPolicyOutput         *iam.AttachUserPolicyOutput
+	attachUserPolicyError          error
+	detachUserPolicyOutput         *iam.DetachUserPolicyOutput
+	detachUserPolicyError          error
+	listAttachedUserPoliciesOutput *iam.ListAttachedUserPoliciesOutput
+	listAttachedUserPoliciesError  error
+
+	// User policy operations
+	putUserPolicyOutput    *iam.PutUserPolicyOutput
+	putUserPolicyError     error
+	deleteUserPolicyOutput *iam.DeleteUserPolicyOutput
+	deleteUserPolicyError  error
+	listUserPoliciesOutput *iam.ListUserPoliciesOutput
+	listUserPoliciesError  error
+
+	// User tag operations
+	tagUserOutput      *iam.TagUserOutput
+	tagUserError       error
+	untagUserOutput    *iam.UntagUserOutput
+	untagUserError     error
+	listUserTagsOutput *iam.ListUserTagsOutput
+	listUserTagsError  error
+
+	// User permissions boundary operations
+	putUserPermissionsBoundaryOutput    *iam.PutUserPermissionsBoundaryOutput
+	putUserPermissionsBoundaryError     error
+	deleteUserPermissionsBoundaryOutput *iam.DeleteUserPermissionsBoundaryOutput
+	deleteUserPermissionsBoundaryError  error
+
+	// User policy operations
+	getUserPolicyOutput *iam.GetUserPolicyOutput
+	getUserPolicyError  error
+
+	// Group operations
+	addUserToGroupOutput      *iam.AddUserToGroupOutput
+	addUserToGroupError       error
+	removeUserFromGroupOutput *iam.RemoveUserFromGroupOutput
+	removeUserFromGroupError  error
+	listGroupsForUserOutput   *iam.ListGroupsForUserOutput
+	listGroupsForUserError    error
+
+	// Login profile operations
+	createLoginProfileOutput *iam.CreateLoginProfileOutput
+	createLoginProfileError  error
+	getLoginProfileOutput    *iam.GetLoginProfileOutput
+	getLoginProfileError     error
+	updateLoginProfileOutput *iam.UpdateLoginProfileOutput
+	updateLoginProfileError  error
+	deleteLoginProfileOutput *iam.DeleteLoginProfileOutput
+	deleteLoginProfileError  error
 }
 
 type iamServiceMockOption func(*iamServiceMock)
@@ -304,6 +366,298 @@ func WithDeleteRolePermissionsBoundaryError(err error) iamServiceMockOption {
 	}
 }
 
+// Mock configuration options for User operations
+
+func WithCreateUserOutput(output *iam.CreateUserOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.createUserOutput = output
+	}
+}
+
+func WithCreateUserError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.createUserError = err
+	}
+}
+
+func WithGetUserOutput(output *iam.GetUserOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.getUserOutput = output
+	}
+}
+
+func WithGetUserError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.getUserError = err
+	}
+}
+
+func WithUpdateUserOutput(output *iam.UpdateUserOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.updateUserOutput = output
+	}
+}
+
+func WithUpdateUserError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.updateUserError = err
+	}
+}
+
+func WithDeleteUserOutput(output *iam.DeleteUserOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.deleteUserOutput = output
+	}
+}
+
+func WithDeleteUserError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.deleteUserError = err
+	}
+}
+
+// Mock configuration options for User Policy Attachment operations
+
+func WithAttachUserPolicyOutput(output *iam.AttachUserPolicyOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.attachUserPolicyOutput = output
+	}
+}
+
+func WithAttachUserPolicyError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.attachUserPolicyError = err
+	}
+}
+
+func WithDetachUserPolicyOutput(output *iam.DetachUserPolicyOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.detachUserPolicyOutput = output
+	}
+}
+
+func WithDetachUserPolicyError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.detachUserPolicyError = err
+	}
+}
+
+func WithListAttachedUserPoliciesOutput(output *iam.ListAttachedUserPoliciesOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.listAttachedUserPoliciesOutput = output
+	}
+}
+
+func WithListAttachedUserPoliciesError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.listAttachedUserPoliciesError = err
+	}
+}
+
+// Mock configuration options for User Policy operations
+
+func WithPutUserPolicyOutput(output *iam.PutUserPolicyOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.putUserPolicyOutput = output
+	}
+}
+
+func WithPutUserPolicyError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.putUserPolicyError = err
+	}
+}
+
+func WithDeleteUserPolicyOutput(output *iam.DeleteUserPolicyOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.deleteUserPolicyOutput = output
+	}
+}
+
+func WithDeleteUserPolicyError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.deleteUserPolicyError = err
+	}
+}
+
+func WithListUserPoliciesOutput(output *iam.ListUserPoliciesOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.listUserPoliciesOutput = output
+	}
+}
+
+func WithListUserPoliciesError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.listUserPoliciesError = err
+	}
+}
+
+// Mock configuration options for User Tag operations
+
+func WithTagUserOutput(output *iam.TagUserOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.tagUserOutput = output
+	}
+}
+
+func WithTagUserError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.tagUserError = err
+	}
+}
+
+func WithUntagUserOutput(output *iam.UntagUserOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.untagUserOutput = output
+	}
+}
+
+func WithUntagUserError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.untagUserError = err
+	}
+}
+
+func WithListUserTagsOutput(output *iam.ListUserTagsOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.listUserTagsOutput = output
+	}
+}
+
+func WithListUserTagsError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.listUserTagsError = err
+	}
+}
+
+// Mock configuration options for User Permissions Boundary operations
+
+func WithPutUserPermissionsBoundaryOutput(output *iam.PutUserPermissionsBoundaryOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.putUserPermissionsBoundaryOutput = output
+	}
+}
+
+func WithPutUserPermissionsBoundaryError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.putUserPermissionsBoundaryError = err
+	}
+}
+
+func WithDeleteUserPermissionsBoundaryOutput(output *iam.DeleteUserPermissionsBoundaryOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.deleteUserPermissionsBoundaryOutput = output
+	}
+}
+
+func WithDeleteUserPermissionsBoundaryError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.deleteUserPermissionsBoundaryError = err
+	}
+}
+
+// Mock configuration options for User Policy operations
+
+func WithGetUserPolicyOutput(output *iam.GetUserPolicyOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.getUserPolicyOutput = output
+	}
+}
+
+func WithGetUserPolicyError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.getUserPolicyError = err
+	}
+}
+
+// Mock configuration options for Group operations
+
+func WithAddUserToGroupOutput(output *iam.AddUserToGroupOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.addUserToGroupOutput = output
+	}
+}
+
+func WithAddUserToGroupError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.addUserToGroupError = err
+	}
+}
+
+func WithRemoveUserFromGroupOutput(output *iam.RemoveUserFromGroupOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.removeUserFromGroupOutput = output
+	}
+}
+
+func WithRemoveUserFromGroupError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.removeUserFromGroupError = err
+	}
+}
+
+func WithListGroupsForUserOutput(output *iam.ListGroupsForUserOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.listGroupsForUserOutput = output
+	}
+}
+
+func WithListGroupsForUserError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.listGroupsForUserError = err
+	}
+}
+
+// Mock configuration options for Login Profile operations
+
+func WithCreateLoginProfileOutput(output *iam.CreateLoginProfileOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.createLoginProfileOutput = output
+	}
+}
+
+func WithCreateLoginProfileError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.createLoginProfileError = err
+	}
+}
+
+func WithGetLoginProfileOutput(output *iam.GetLoginProfileOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.getLoginProfileOutput = output
+	}
+}
+
+func WithGetLoginProfileError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.getLoginProfileError = err
+	}
+}
+
+func WithUpdateLoginProfileOutput(output *iam.UpdateLoginProfileOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.updateLoginProfileOutput = output
+	}
+}
+
+func WithUpdateLoginProfileError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.updateLoginProfileError = err
+	}
+}
+
+func WithDeleteLoginProfileOutput(output *iam.DeleteLoginProfileOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.deleteLoginProfileOutput = output
+	}
+}
+
+func WithDeleteLoginProfileError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.deleteLoginProfileError = err
+	}
+}
+
 // Service interface implementation methods
 
 func (m *iamServiceMock) CreateRole(
@@ -457,4 +811,231 @@ func (m *iamServiceMock) DeleteRolePermissionsBoundary(
 ) (*iam.DeleteRolePermissionsBoundaryOutput, error) {
 	m.RegisterCall(ctx, params)
 	return m.deleteRolePermissionsBoundaryOutput, m.deleteRolePermissionsBoundaryError
+}
+
+func (m *iamServiceMock) CreateUser(
+	ctx context.Context,
+	params *iam.CreateUserInput,
+	optFns ...func(*iam.Options),
+) (*iam.CreateUserOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.createUserOutput, m.createUserError
+}
+
+func (m *iamServiceMock) GetUser(
+	ctx context.Context,
+	params *iam.GetUserInput,
+	optFns ...func(*iam.Options),
+) (*iam.GetUserOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.getUserOutput, m.getUserError
+}
+
+func (m *iamServiceMock) UpdateUser(
+	ctx context.Context,
+	params *iam.UpdateUserInput,
+	optFns ...func(*iam.Options),
+) (*iam.UpdateUserOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.updateUserOutput, m.updateUserError
+}
+
+func (m *iamServiceMock) DeleteUser(
+	ctx context.Context,
+	params *iam.DeleteUserInput,
+	optFns ...func(*iam.Options),
+) (*iam.DeleteUserOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.deleteUserOutput, m.deleteUserError
+}
+
+func (m *iamServiceMock) AttachUserPolicy(
+	ctx context.Context,
+	params *iam.AttachUserPolicyInput,
+	optFns ...func(*iam.Options),
+) (*iam.AttachUserPolicyOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.attachUserPolicyOutput, m.attachUserPolicyError
+}
+
+func (m *iamServiceMock) DetachUserPolicy(
+	ctx context.Context,
+	params *iam.DetachUserPolicyInput,
+	optFns ...func(*iam.Options),
+) (*iam.DetachUserPolicyOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.detachUserPolicyOutput, m.detachUserPolicyError
+}
+
+func (m *iamServiceMock) ListAttachedUserPolicies(
+	ctx context.Context,
+	params *iam.ListAttachedUserPoliciesInput,
+	optFns ...func(*iam.Options),
+) (*iam.ListAttachedUserPoliciesOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.listAttachedUserPoliciesOutput, m.listAttachedUserPoliciesError
+}
+
+func (m *iamServiceMock) PutUserPolicy(
+	ctx context.Context,
+	params *iam.PutUserPolicyInput,
+	optFns ...func(*iam.Options),
+) (*iam.PutUserPolicyOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.putUserPolicyOutput, m.putUserPolicyError
+}
+
+func (m *iamServiceMock) DeleteUserPolicy(
+	ctx context.Context,
+	params *iam.DeleteUserPolicyInput,
+	optFns ...func(*iam.Options),
+) (*iam.DeleteUserPolicyOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.deleteUserPolicyOutput, m.deleteUserPolicyError
+}
+
+func (m *iamServiceMock) ListUserPolicies(
+	ctx context.Context,
+	params *iam.ListUserPoliciesInput,
+	optFns ...func(*iam.Options),
+) (*iam.ListUserPoliciesOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.listUserPoliciesOutput, m.listUserPoliciesError
+}
+
+func (m *iamServiceMock) TagUser(
+	ctx context.Context,
+	params *iam.TagUserInput,
+	optFns ...func(*iam.Options),
+) (*iam.TagUserOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.tagUserOutput, m.tagUserError
+}
+
+func (m *iamServiceMock) UntagUser(
+	ctx context.Context,
+	params *iam.UntagUserInput,
+	optFns ...func(*iam.Options),
+) (*iam.UntagUserOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.untagUserOutput, m.untagUserError
+}
+
+func (m *iamServiceMock) ListUserTags(
+	ctx context.Context,
+	params *iam.ListUserTagsInput,
+	optFns ...func(*iam.Options),
+) (*iam.ListUserTagsOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.listUserTagsOutput, m.listUserTagsError
+}
+
+func (m *iamServiceMock) PutUserPermissionsBoundary(
+	ctx context.Context,
+	params *iam.PutUserPermissionsBoundaryInput,
+	optFns ...func(*iam.Options),
+) (*iam.PutUserPermissionsBoundaryOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.putUserPermissionsBoundaryOutput, m.putUserPermissionsBoundaryError
+}
+
+func (m *iamServiceMock) DeleteUserPermissionsBoundary(
+	ctx context.Context,
+	params *iam.DeleteUserPermissionsBoundaryInput,
+	optFns ...func(*iam.Options),
+) (*iam.DeleteUserPermissionsBoundaryOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.deleteUserPermissionsBoundaryOutput, m.deleteUserPermissionsBoundaryError
+}
+
+func (m *iamServiceMock) GetUserPolicy(
+	ctx context.Context,
+	params *iam.GetUserPolicyInput,
+	optFns ...func(*iam.Options),
+) (*iam.GetUserPolicyOutput, error) {
+	m.RegisterCall(ctx, params)
+
+	// Handle different policy names
+	if params.PolicyName != nil {
+		switch aws.ToString(params.PolicyName) {
+		case "S3Access":
+			return &iam.GetUserPolicyOutput{
+				UserName:       params.UserName,
+				PolicyName:     aws.String("S3Access"),
+				PolicyDocument: aws.String(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:GetObject","s3:PutObject"],"Resource":["arn:aws:s3:::my-bucket/*"]}]}`),
+			}, nil
+		case "DynamoDBAccess":
+			return &iam.GetUserPolicyOutput{
+				UserName:       params.UserName,
+				PolicyName:     aws.String("DynamoDBAccess"),
+				PolicyDocument: aws.String(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["dynamodb:PutItem","dynamodb:GetItem"],"Resource":["arn:aws:dynamodb:::table/my-table"]}]}`),
+			}, nil
+		}
+	}
+
+	// Fallback to the default mock response
+	return m.getUserPolicyOutput, m.getUserPolicyError
+}
+
+func (m *iamServiceMock) AddUserToGroup(
+	ctx context.Context,
+	params *iam.AddUserToGroupInput,
+	optFns ...func(*iam.Options),
+) (*iam.AddUserToGroupOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.addUserToGroupOutput, m.addUserToGroupError
+}
+
+func (m *iamServiceMock) RemoveUserFromGroup(
+	ctx context.Context,
+	params *iam.RemoveUserFromGroupInput,
+	optFns ...func(*iam.Options),
+) (*iam.RemoveUserFromGroupOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.removeUserFromGroupOutput, m.removeUserFromGroupError
+}
+
+func (m *iamServiceMock) ListGroupsForUser(
+	ctx context.Context,
+	params *iam.ListGroupsForUserInput,
+	optFns ...func(*iam.Options),
+) (*iam.ListGroupsForUserOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.listGroupsForUserOutput, m.listGroupsForUserError
+}
+
+func (m *iamServiceMock) CreateLoginProfile(
+	ctx context.Context,
+	params *iam.CreateLoginProfileInput,
+	optFns ...func(*iam.Options),
+) (*iam.CreateLoginProfileOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.createLoginProfileOutput, m.createLoginProfileError
+}
+
+func (m *iamServiceMock) GetLoginProfile(
+	ctx context.Context,
+	params *iam.GetLoginProfileInput,
+	optFns ...func(*iam.Options),
+) (*iam.GetLoginProfileOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.getLoginProfileOutput, m.getLoginProfileError
+}
+
+func (m *iamServiceMock) UpdateLoginProfile(
+	ctx context.Context,
+	params *iam.UpdateLoginProfileInput,
+	optFns ...func(*iam.Options),
+) (*iam.UpdateLoginProfileOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.updateLoginProfileOutput, m.updateLoginProfileError
+}
+
+func (m *iamServiceMock) DeleteLoginProfile(
+	ctx context.Context,
+	params *iam.DeleteLoginProfileInput,
+	optFns ...func(*iam.Options),
+) (*iam.DeleteLoginProfileOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.deleteLoginProfileOutput, m.deleteLoginProfileError
 }

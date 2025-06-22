@@ -98,6 +98,9 @@ var (
 	// IAMRoleNameGenerator generates names for IAM roles (64 char limit).
 	IAMRoleNameGenerator = DefaultUniqueNameGenerator(64)
 
+	// IAMUserNameGenerator generates names for IAM users (64 char limit).
+	IAMUserNameGenerator = DefaultUniqueNameGenerator(64)
+
 	// LambdaFunctionNameGenerator generates names for Lambda functions (64 char limit).
 	LambdaFunctionNameGenerator = DefaultUniqueNameGenerator(64)
 
