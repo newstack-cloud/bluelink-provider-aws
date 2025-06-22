@@ -15,7 +15,8 @@ import (
 )
 
 type userUpdateBasic struct {
-	userName string
+	userName        string
+	updateUserInput *iam.UpdateUserInput
 }
 
 func (u *userUpdateBasic) Name() string {
@@ -28,9 +29,22 @@ func (u *userUpdateBasic) Prepare(
 	changes *provider.Changes,
 ) (bool, pluginutils.SaveOperationContext, error) {
 	// Check if there are any basic property changes that require an update
-	// For users, the main updateable property is the path, but it requires recreation
-	// Most user properties are either computed or require recreation
-	return false, saveOpCtx, nil
+	hasChanges := false
+	u.updateUserInput = &iam.UpdateUserInput{
+		UserName: aws.String(u.userName),
+	}
+
+	// Check for path changes
+	for _, fieldChange := range changes.ModifiedFields {
+		if fieldChange.FieldPath == "spec.path" {
+			if path, exists := pluginutils.GetValueByPath("$.path", specData); exists {
+				u.updateUserInput.NewPath = aws.String(core.StringValue(path))
+				hasChanges = true
+			}
+		}
+	}
+
+	return hasChanges, saveOpCtx, nil
 }
 
 func (u *userUpdateBasic) Execute(
@@ -38,7 +52,12 @@ func (u *userUpdateBasic) Execute(
 	saveOpCtx pluginutils.SaveOperationContext,
 	iamService iamservice.Service,
 ) (pluginutils.SaveOperationContext, error) {
-	// Currently no basic properties that can be updated without recreation
+	if u.updateUserInput != nil {
+		_, err := iamService.UpdateUser(ctx, u.updateUserInput)
+		if err != nil {
+			return saveOpCtx, fmt.Errorf("failed to update user: %w", err)
+		}
+	}
 	return saveOpCtx, nil
 }
 
