@@ -3,6 +3,24 @@
 This example demonstrates how to create a comprehensive IAM role with all available configuration options.
 
 ```yaml
+values:
+  customDynamoDBAccessPolicy:
+    type: object
+    value:
+      policyName: CustomDynamoDBAccess
+      policyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - dynamodb:GetItem
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
+              - dynamodb:DeleteItem
+              - dynamodb:Query
+              - dynamodb:Scan
+            Resource: arn:aws:dynamodb:*:*:table/MyTable
+
 resources:
   comprehensiveRole:
     type: aws/iam/role
@@ -35,19 +53,7 @@ resources:
         - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
         - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
       policies:
-        - policyName: CustomDynamoDBAccess
-          policyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - dynamodb:GetItem
-                  - dynamodb:PutItem
-                  - dynamodb:UpdateItem
-                  - dynamodb:DeleteItem
-                  - dynamodb:Query
-                  - dynamodb:Scan
-                Resource: arn:aws:dynamodb:*:*:table/MyTable
+        - ${values.customDynamoDBAccessPolicy}
         - policyName: CustomSQSAccess
           policyDocument:
             Version: "2012-10-17"

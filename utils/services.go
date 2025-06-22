@@ -28,6 +28,7 @@ func AWSServiceList() string {
 var Services = map[string][]string{
 	"account":  {},
 	"lambda":   {},
+	"iam":      {},
 	"dynamodb": {},
 	"sqs":      {},
 }

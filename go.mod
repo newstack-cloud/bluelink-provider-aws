@@ -11,8 +11,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.71.2
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.20
 	github.com/aws/smithy-go v1.22.4
-	github.com/newstack-cloud/celerity/libs/blueprint v0.23.0
-	github.com/newstack-cloud/celerity/libs/plugin-framework v0.0.0-20250621183332-82e29bb046b7
+	github.com/matoous/go-nanoid/v2 v2.1.0
+	github.com/newstack-cloud/celerity/libs/blueprint v0.24.0
+	github.com/newstack-cloud/celerity/libs/plugin-framework v0.0.0-20250622145747-4f221f374f5a
 	github.com/stretchr/testify v1.10.0
 )
 
@@ -28,7 +29,6 @@ require (
 	github.com/coreos/go-json v0.0.0-20231102161613-e49c8866685a // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/matoous/go-nanoid/v2 v2.1.0 // indirect
 	github.com/newstack-cloud/celerity/libs/common v0.3.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
