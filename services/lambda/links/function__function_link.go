@@ -4,10 +4,10 @@ import (
 	"context"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	lambdaservice "github.com/newstack-cloud/bluelink-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
 	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/pluginutils"
 	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/providerv1"
-	lambdaservice "github.com/newstack-cloud/bluelink-provider-aws/services/lambda/service"
 )
 
 // FunctionFunctionLink returns a link implementation for

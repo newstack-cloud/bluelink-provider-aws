@@ -7,9 +7,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	smithyendpoints "github.com/aws/smithy-go/endpoints"
+	"github.com/newstack-cloud/bluelink-provider-aws/utils"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/core"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
-	"github.com/newstack-cloud/bluelink-provider-aws/utils"
 )
 
 // Service is an interface that represents the functionality of the AWS IAM service
