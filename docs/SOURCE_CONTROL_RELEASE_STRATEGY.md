@@ -24,7 +24,7 @@ e.g. 0.1.0, 1.0.0-next.1
 3. Review the release notes and change log changes in the release PR, update the release notes as necessary.
 4. Once the release notes are ready, merge the release PR into main.
 5. The release-please GitHub actions workflow will create a release tag and a draft release. The creation of the tag will trigger the release publishing workflow.
-6. The release publishing workflow will build all the artifacts for the provider, generate a `docs.json` file for the plugin (to be consumed by the Celerity Registry) and publish the release or pre-release in GitHub.
+6. The release publishing workflow will build all the artifacts for the provider, generate a `docs.json` file for the plugin (to be consumed by the Bluelink Registry) and publish the release or pre-release in GitHub.
 
 ## Pre-releases
 

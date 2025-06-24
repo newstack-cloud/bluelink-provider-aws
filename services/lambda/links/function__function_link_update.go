@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
-	"github.com/newstack-cloud/celerity/libs/blueprint/core"
-	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
-	"github.com/newstack-cloud/celerity/libs/blueprint/state"
-	"github.com/newstack-cloud/celerity/libs/plugin-framework/sdk/pluginutils"
+	"github.com/newstack-cloud/bluelink/libs/blueprint/core"
+	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
+	"github.com/newstack-cloud/bluelink/libs/blueprint/state"
+	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/pluginutils"
+	lambdaservice "github.com/newstack-cloud/bluelink-provider-aws/services/lambda/service"
 )
 
 func (l *lambdaFunctionFunctionLinkActions) UpdateResourceA(

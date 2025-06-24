@@ -10,7 +10,7 @@ a base for more advanced tooling to allow for efficient searches for decisions a
 
 ### Commit types
 
-**The following commit types are supported in the Celerity Provider for AWS:**
+**The following commit types are supported in the Bluelink Provider for AWS:**
 
 - `fix:` - Should be used for any bug fixes.
 - `build:` - Should be used for functionality related to building the application.

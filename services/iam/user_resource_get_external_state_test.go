@@ -8,13 +8,13 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
 	"github.com/aws/smithy-go"
-	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
-	iammock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/iam_mock"
-	iamservice "github.com/newstack-cloud/celerity-provider-aws/services/iam/service"
-	"github.com/newstack-cloud/celerity-provider-aws/utils"
-	"github.com/newstack-cloud/celerity/libs/blueprint/core"
-	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
-	"github.com/newstack-cloud/celerity/libs/plugin-framework/sdk/plugintestutils"
+	"github.com/newstack-cloud/bluelink-provider-aws/internal/testutils"
+	iammock "github.com/newstack-cloud/bluelink-provider-aws/internal/testutils/iam_mock"
+	iamservice "github.com/newstack-cloud/bluelink-provider-aws/services/iam/service"
+	"github.com/newstack-cloud/bluelink-provider-aws/utils"
+	"github.com/newstack-cloud/bluelink/libs/blueprint/core"
+	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
+	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/plugintestutils"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -139,7 +139,7 @@ func createUserWithAllFeaturesTestCase(
 		{
 			Fields: map[string]*core.MappingNode{
 				"key":   core.MappingNodeFromString("Project"),
-				"value": core.MappingNodeFromString("celerity"),
+				"value": core.MappingNodeFromString("bluelink"),
 			},
 		},
 	}
@@ -155,7 +155,7 @@ func createUserWithAllFeaturesTestCase(
 					Tags: []types.Tag{
 						{Key: aws.String("Environment"), Value: aws.String("test")},
 						{Key: aws.String("Department"), Value: aws.String("engineering")},
-						{Key: aws.String("Project"), Value: aws.String("celerity")},
+						{Key: aws.String("Project"), Value: aws.String("bluelink")},
 					},
 					PermissionsBoundary: &types.AttachedPermissionsBoundary{
 						PermissionsBoundaryArn:  aws.String("arn:aws:iam::123456789012:policy/UserPermissionsBoundary"),
@@ -204,7 +204,7 @@ func createUserWithAllFeaturesTestCase(
 				Tags: []types.Tag{
 					{Key: aws.String("Environment"), Value: aws.String("test")},
 					{Key: aws.String("Department"), Value: aws.String("engineering")},
-					{Key: aws.String("Project"), Value: aws.String("celerity")},
+					{Key: aws.String("Project"), Value: aws.String("bluelink")},
 				},
 			}),
 		)

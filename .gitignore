@@ -45,7 +45,7 @@ tmp
 bin
 
 # A file name used for the compiled binary when testing during development.
-celerity-provider-aws
+bluelink-provider-aws
 
 # Yarn depedencies and generated node files used for commitlint tooling.
 .yarn

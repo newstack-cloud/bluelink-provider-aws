@@ -1,6 +1,6 @@
 package lambdalinks
 
-import "github.com/newstack-cloud/celerity/libs/blueprint/provider"
+import "github.com/newstack-cloud/bluelink/libs/blueprint/provider"
 
 func lambdaFunctionCodeSigningConfigLinkAnnotations() map[string]*provider.LinkAnnotationDefinition {
 	// The relationship between a lambda function and a code signing config

@@ -3,7 +3,7 @@ package lambda
 import (
 	"fmt"
 
-	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
+	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
 )
 
 func lambdaSchemaTags(resourceType string) *provider.ResourceDefinitionsSchema {

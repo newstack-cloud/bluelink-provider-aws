@@ -1,4 +1,4 @@
-AWS provider for the Celerity Deploy Engine including resources, data sources, links and custom variable types for interacting with AWS services.
+AWS provider for the Bluelink Deploy Engine including resources, data sources, links and custom variable types for interacting with AWS services.
 
 ## AWS Authentication and Configuration
 
@@ -20,7 +20,7 @@ Provider configuration can be used to customise aspects of multiple sources for 
 
 Credentials can be provided by using the `accessKeyId` and `secretAccessKey` fields in the provider configuration, optionally with a `sessionToken` field for temporary credentials.
 
-Example usage in a `celerity.deploy.jsonc` file:
+Example usage in a `bluelink.deploy.jsonc` file:
 
 ```javascript
 {
@@ -57,7 +57,7 @@ $ export AWS_ACCESS_KEY_ID=my-access-key-id
 $ export AWS_SECRET_ACCESS_KEY=my-secret-key
 $ export AWS_SESSION_TOKEN=my-session-token # optional
 $ export AWS_REGION=eu-west-1
-$ celerity stage-changes
+$ bluelink stage-changes
 ```
 
 Additional environment variables can be used to configure authorization such as `AWS_PROFILE`, `AWS_CONFIG_FILE` and `AWS_SHARED_CREDENTIALS_FILE`.
@@ -70,7 +70,7 @@ If a named profile is not specified, the `default` profile will be used. You can
 
 The locations of the shared credentials and configuration files can be configured using the `shared_credentials_file` and `shared_config_files` config fields or the `AWS_SHARED_CREDENTIALS_FILE` and `AWS_CONFIG_FILE` environment variables.
 
-Example usage in a `celerity.deploy.jsonc` file:
+Example usage in a `bluelink.deploy.jsonc` file:
 
 ```javascript
 {
@@ -86,13 +86,13 @@ Example usage in a `celerity.deploy.jsonc` file:
 
 ### Container Credentials
 
-If you're running the Celerity Deploy Engine in a container on a service such as ECS or CodeBuild and have a configured [IAM Task Role](http://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-iam-roles.html), the AWS provider can use the container's Task Role. This is made possible by the use of the `AWS_CONTAINER_CREDENTIALS_RELATIVE_URI` and `AWS_CONTAINER_CREDENTIALS_FULL_URI` environment variables being automatically set by the container runtime service or set manually in special use cases.
+If you're running the Bluelink Deploy Engine in a container on a service such as ECS or CodeBuild and have a configured [IAM Task Role](http://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-iam-roles.html), the AWS provider can use the container's Task Role. This is made possible by the use of the `AWS_CONTAINER_CREDENTIALS_RELATIVE_URI` and `AWS_CONTAINER_CREDENTIALS_FULL_URI` environment variables being automatically set by the container runtime service or set manually in special use cases.
 
-If you're running the Celerity Deploy Engine on EKS and have configured [IAM Roles for Service Accounts](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html), the AWS provider can use the pod's role. This is made possible by the `AWS_ROLE_ARN` and `AWS_WEB_IDENTITY_TOKEN_FILE` environment variables that are automatically set by the Kubernetes service or manually set in special use cases.
+If you're running the Bluelink Deploy Engine on EKS and have configured [IAM Roles for Service Accounts](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html), the AWS provider can use the pod's role. This is made possible by the `AWS_ROLE_ARN` and `AWS_WEB_IDENTITY_TOKEN_FILE` environment variables that are automatically set by the Kubernetes service or manually set in special use cases.
 
 ### EC2 Instance Profile Credentials
 
-When the Celerity Deploy Engine is running on an EC2 with an IAM Instance Profile set, the AWS provider can source credentials from the [EC2 Instance Metadata lambdaservice.Service](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html). IMDS v1 and v2 are both supported.
+When the Bluelink Deploy Engine is running on an EC2 with an IAM Instance Profile set, the AWS provider can source credentials from the [EC2 Instance Metadata lambdaservice.Service](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html). IMDS v1 and v2 are both supported.
 
 A custom endpoint for the metadata service can be configured with the `ec2_metadata_service_endpoint` config field or the `AWS_EC2_METADATA_SERVICE_ENDPOINT` environment variable.
 
@@ -100,7 +100,7 @@ A custom endpoint for the metadata service can be configured with the `ec2_metad
 
 When the `assumeRole.roleArn` config field is set, the AWS provider will attempt to assume the provided role using the supplied credentials.
 
-Example usage in a `celerity.deploy.jsonc` file:
+Example usage in a `bluelink.deploy.jsonc` file:
 
 ```javascript
 {
@@ -118,7 +118,7 @@ Example usage in a `celerity.deploy.jsonc` file:
 
 When the `assumeRoleWithWebIdentity.roleArn` config field is set and a web identity token is provided, the AWS provider will attempt to assume the provided role using the supplied credentials.
 
-Example usage in a `celerity.deploy.jsonc` file:
+Example usage in a `bluelink.deploy.jsonc` file:
 
 ```javascript
 {

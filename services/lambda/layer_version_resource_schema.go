@@ -1,7 +1,7 @@
 package lambda
 
 import (
-	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
+	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
 )
 
 func lambdaLayerVersionResourceSchema() *provider.ResourceDefinitionsSchema {

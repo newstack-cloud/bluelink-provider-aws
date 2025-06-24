@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	iamservice "github.com/newstack-cloud/celerity-provider-aws/services/iam/service"
-	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
-	"github.com/newstack-cloud/celerity-provider-aws/utils"
-	"github.com/newstack-cloud/celerity/libs/blueprint/core"
+	iamservice "github.com/newstack-cloud/bluelink-provider-aws/services/iam/service"
+	lambdaservice "github.com/newstack-cloud/bluelink-provider-aws/services/lambda/service"
+	"github.com/newstack-cloud/bluelink-provider-aws/utils"
+	"github.com/newstack-cloud/bluelink/libs/blueprint/core"
 	"github.com/stretchr/testify/suite"
 )
 

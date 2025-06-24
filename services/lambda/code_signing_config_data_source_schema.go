@@ -1,6 +1,6 @@
 package lambda
 
-import "github.com/newstack-cloud/celerity/libs/blueprint/provider"
+import "github.com/newstack-cloud/bluelink/libs/blueprint/provider"
 
 func lambdaCodeSigningConfigDataSourceSchema() map[string]*provider.DataSourceSpecSchema {
 	return map[string]*provider.DataSourceSpecSchema{

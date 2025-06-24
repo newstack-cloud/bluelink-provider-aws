@@ -1,6 +1,6 @@
 package lambda
 
-import "github.com/newstack-cloud/celerity/libs/blueprint/provider"
+import "github.com/newstack-cloud/bluelink/libs/blueprint/provider"
 
 func lambdaLayerVersionDataSourceSchema() map[string]*provider.DataSourceSpecSchema {
 	return map[string]*provider.DataSourceSpecSchema{

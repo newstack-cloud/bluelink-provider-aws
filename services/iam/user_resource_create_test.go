@@ -7,14 +7,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
-	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
-	iammock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/iam_mock"
-	iamservice "github.com/newstack-cloud/celerity-provider-aws/services/iam/service"
-	"github.com/newstack-cloud/celerity-provider-aws/utils"
-	"github.com/newstack-cloud/celerity/libs/blueprint/core"
-	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
-	"github.com/newstack-cloud/celerity/libs/blueprint/schema"
-	"github.com/newstack-cloud/celerity/libs/plugin-framework/sdk/plugintestutils"
+	"github.com/newstack-cloud/bluelink-provider-aws/internal/testutils"
+	iammock "github.com/newstack-cloud/bluelink-provider-aws/internal/testutils/iam_mock"
+	iamservice "github.com/newstack-cloud/bluelink-provider-aws/services/iam/service"
+	"github.com/newstack-cloud/bluelink-provider-aws/utils"
+	"github.com/newstack-cloud/bluelink/libs/blueprint/core"
+	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
+	"github.com/newstack-cloud/bluelink/libs/blueprint/schema"
+	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/plugintestutils"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -751,7 +751,7 @@ func createUserWithGeneratedNameTestCase(
 	providerCtx provider.Context,
 	loader *testutils.MockAWSConfigLoader,
 ) plugintestutils.ResourceDeployTestCase[*aws.Config, iamservice.Service] {
-	generatedName := "celerity-generated-user-abcd1234"
+	generatedName := "bluelink-generated-user-abcd1234"
 	resourceARN := "arn:aws:iam::123456789012:user/" + generatedName
 	userId := "AIDA1234567890123463"
 

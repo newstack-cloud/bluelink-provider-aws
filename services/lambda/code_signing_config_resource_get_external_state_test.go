@@ -7,14 +7,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
-	"github.com/newstack-cloud/celerity-provider-aws/internal/testutils"
-	lambdamock "github.com/newstack-cloud/celerity-provider-aws/internal/testutils/lambda_mock"
-	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
-	"github.com/newstack-cloud/celerity-provider-aws/utils"
-	"github.com/newstack-cloud/celerity/libs/blueprint/core"
-	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
-	"github.com/newstack-cloud/celerity/libs/plugin-framework/sdk/plugintestutils"
-	"github.com/newstack-cloud/celerity/libs/plugin-framework/sdk/pluginutils"
+	"github.com/newstack-cloud/bluelink-provider-aws/internal/testutils"
+	lambdamock "github.com/newstack-cloud/bluelink-provider-aws/internal/testutils/lambda_mock"
+	lambdaservice "github.com/newstack-cloud/bluelink-provider-aws/services/lambda/service"
+	"github.com/newstack-cloud/bluelink-provider-aws/utils"
+	"github.com/newstack-cloud/bluelink/libs/blueprint/core"
+	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
+	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/plugintestutils"
+	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/pluginutils"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -192,7 +192,7 @@ func createGetExternalStateCodeSigningConfigWithTagsTestCase(
 ) plugintestutils.ResourceGetExternalStateTestCase[*aws.Config, lambdaservice.Service] {
 	tags := map[string]string{
 		"Environment": "test",
-		"Project":     "celerity",
+		"Project":     "bluelink",
 		"Service":     "lambda",
 	}
 
@@ -239,7 +239,7 @@ func createGetExternalStateCodeSigningConfigWithTagsTestCase(
 							{
 								Fields: map[string]*core.MappingNode{
 									"key":   core.MappingNodeFromString("Project"),
-									"value": core.MappingNodeFromString("celerity"),
+									"value": core.MappingNodeFromString("bluelink"),
 								},
 							},
 							{

@@ -6,9 +6,9 @@ import (
 	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/newstack-cloud/celerity/libs/blueprint/core"
-	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
-	"github.com/newstack-cloud/celerity/libs/plugin-framework/sdk/pluginutils"
+	"github.com/newstack-cloud/bluelink/libs/blueprint/core"
+	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
+	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/pluginutils"
 )
 
 // AWSConfigCreator is a function that produces an AWS config
@@ -63,7 +63,7 @@ func (s *AWSConfigStore) FromProviderContext(
 	providerContext provider.Context,
 	meta map[string]*core.MappingNode,
 ) (*aws.Config, error) {
-	// A session ID is passed from the client (e.g. Celerity CLI) to the host
+	// A session ID is passed from the client (e.g. Bluelink CLI) to the host
 	// and then to plugins through the context variables.
 	// In the AWS provider, we use the session ID to cache AWS config
 	// to avoid having to rebuild the config for each request to a plugin

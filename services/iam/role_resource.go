@@ -8,11 +8,11 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 
-	iamservice "github.com/newstack-cloud/celerity-provider-aws/services/iam/service"
-	"github.com/newstack-cloud/celerity-provider-aws/utils"
-	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
-	"github.com/newstack-cloud/celerity/libs/plugin-framework/sdk/pluginutils"
-	"github.com/newstack-cloud/celerity/libs/plugin-framework/sdk/providerv1"
+	iamservice "github.com/newstack-cloud/bluelink-provider-aws/services/iam/service"
+	"github.com/newstack-cloud/bluelink-provider-aws/utils"
+	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
+	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/pluginutils"
+	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/providerv1"
 )
 
 //go:embed examples/resources/*.md

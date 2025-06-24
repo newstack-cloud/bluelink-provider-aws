@@ -1,4 +1,4 @@
-module github.com/newstack-cloud/celerity-provider-aws
+module github.com/newstack-cloud/bluelink-provider-aws
 
 go 1.23.4
 
@@ -12,8 +12,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.20
 	github.com/aws/smithy-go v1.22.4
 	github.com/matoous/go-nanoid/v2 v2.1.0
-	github.com/newstack-cloud/celerity/libs/blueprint v0.24.0
-	github.com/newstack-cloud/celerity/libs/plugin-framework v0.0.0-20250622145747-4f221f374f5a
+	github.com/newstack-cloud/bluelink/libs/blueprint v0.24.1
+	github.com/newstack-cloud/bluelink/libs/plugin-framework v0.0.0-20250624153400-b3cd906a01a8
 	github.com/stretchr/testify v1.10.0
 )
 
@@ -29,7 +29,7 @@ require (
 	github.com/coreos/go-json v0.0.0-20231102161613-e49c8866685a // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/newstack-cloud/celerity/libs/common v0.3.1 // indirect
+	github.com/newstack-cloud/bluelink/libs/common v0.3.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/tailscale/hujson v0.0.0-20250226034555-ec1d1c113d33 // indirect

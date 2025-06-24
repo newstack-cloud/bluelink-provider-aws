@@ -7,14 +7,14 @@ import (
 	"log"
 	"os"
 
-	"github.com/newstack-cloud/celerity-provider-aws/provider"
-	iamservice "github.com/newstack-cloud/celerity-provider-aws/services/iam/service"
-	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
-	"github.com/newstack-cloud/celerity-provider-aws/utils"
-	"github.com/newstack-cloud/celerity/libs/plugin-framework/plugin"
-	"github.com/newstack-cloud/celerity/libs/plugin-framework/pluginservicev1"
-	"github.com/newstack-cloud/celerity/libs/plugin-framework/sdk/pluginutils"
-	"github.com/newstack-cloud/celerity/libs/plugin-framework/sdk/providerv1"
+	"github.com/newstack-cloud/bluelink-provider-aws/provider"
+	iamservice "github.com/newstack-cloud/bluelink-provider-aws/services/iam/service"
+	lambdaservice "github.com/newstack-cloud/bluelink-provider-aws/services/lambda/service"
+	"github.com/newstack-cloud/bluelink-provider-aws/utils"
+	"github.com/newstack-cloud/bluelink/libs/plugin-framework/plugin"
+	"github.com/newstack-cloud/bluelink/libs/plugin-framework/pluginservicev1"
+	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/pluginutils"
+	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/providerv1"
 )
 
 //go:embed provider_description.md
@@ -50,13 +50,13 @@ func main() {
 			PluginVersion:        "0.1.0",
 			DisplayName:          "AWS",
 			FormattedDescription: string(providerDescription),
-			RepositoryUrl:        "https://github.com/newstack-cloud/celerity-provider-aws",
+			RepositoryUrl:        "https://github.com/newstack-cloud/bluelink-provider-aws",
 			Author:               "NewStack Cloud Limited",
 		},
 		ProtocolVersion: "1.0",
 	}
 
-	fmt.Println("Starting Celerity AWS Provider Plugin Server...")
+	fmt.Println("Starting Bluelink AWS Provider Plugin Server...")
 	close, err := plugin.ServeProviderV1(
 		context.Background(),
 		providerServer,

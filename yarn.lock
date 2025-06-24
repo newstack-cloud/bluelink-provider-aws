@@ -413,9 +413,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"celerity-provider-aws@workspace:.":
+"bluelink-provider-aws@workspace:.":
   version: 0.0.0-use.local
-  resolution: "celerity-provider-aws@workspace:."
+  resolution: "bluelink-provider-aws@workspace:."
   dependencies:
     "@commitlint/cli": "npm:^17.0.0"
     "@commitlint/config-conventional": "npm:^17.0.0"

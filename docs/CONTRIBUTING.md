@@ -1,4 +1,4 @@
-# Contributing to Celerity Provider for AWS
+# Contributing to Bluelink Provider for AWS
 
 ## Setup
 

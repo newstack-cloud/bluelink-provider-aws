@@ -4,10 +4,10 @@ import (
 	"context"
 
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
-	lambdaservice "github.com/newstack-cloud/celerity-provider-aws/services/lambda/service"
-	"github.com/newstack-cloud/celerity/libs/blueprint/core"
-	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
-	"github.com/newstack-cloud/celerity/libs/plugin-framework/sdk/pluginutils"
+	"github.com/newstack-cloud/bluelink/libs/blueprint/core"
+	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
+	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/pluginutils"
+	lambdaservice "github.com/newstack-cloud/bluelink-provider-aws/services/lambda/service"
 )
 
 type functionConfigUpdate struct {

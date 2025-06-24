@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	gonanoid "github.com/matoous/go-nanoid/v2"
-	"github.com/newstack-cloud/celerity/libs/blueprint/provider"
+	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
 )
 
 // UniqueNameGenerator is a function type for generating unique names.
