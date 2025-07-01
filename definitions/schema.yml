@@ -1,0 +1,185 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+title: Service Definitions Schema
+type: object
+required:
+  - version
+  - resourceDefinitions
+  - dataSourceDefinitions
+  - linkDefinitions
+properties:
+  version:
+    type: string
+    enum:
+      - "1.0.0"
+  resourceDefinitions:
+    type: array
+    items:
+      type: object
+      required:
+        [
+          type,
+          label,
+          requiredFields,
+          computedFields,
+          operations,
+          tags,
+          docLinks,
+          propertyDocLinks,
+        ]
+      properties:
+        type:
+          type: string
+        label:
+          type: string
+        requiredFields:
+          type: array
+          items:
+            type: string
+        computedFields:
+          type: array
+          items:
+            type: string
+        operations:
+          type: object
+          properties:
+            create:
+              type: array
+              items:
+                type: string
+            update:
+              type: array
+              items:
+                type: string
+            destroy:
+              type: array
+              items:
+                type: string
+            getExternalState:
+              type: array
+              items:
+                type: string
+        tags:
+          type: object
+          required: [saveTags, removeTags]
+          properties:
+            saveTags:
+              type: string
+            removeTags:
+              type: string
+        docLinks:
+          type: array
+          items:
+            type: string
+        propertyDocLinks:
+          type: object
+          additionalProperties:
+            type: string
+        notes:
+          type: string
+
+  dataSourceDefinitions:
+    type: array
+    items:
+      type: object
+      required: [type, filterableFields, docLinks]
+      properties:
+        type:
+          type: string
+        filterableFields:
+          type: array
+          items:
+            type: string
+        docLinks:
+          type: array
+          items:
+            type: string
+        notes:
+          type: string
+
+  linkDefinitions:
+    type: array
+    items:
+      type: object
+      required:
+        [
+          resourceTypeA,
+          resourceTypeB,
+          kind,
+          priorityResource,
+          summary,
+          annotations,
+          operations,
+          docLinks,
+        ]
+      properties:
+        resourceTypeA:
+          type: string
+        resourceTypeB:
+          type: string
+        kind:
+          type: string
+        priorityResource:
+          type: string
+        summary:
+          type: string
+        annotations:
+          type: array
+          items:
+            type: string
+        operations:
+          type: object
+          properties:
+            updateResourceA:
+              type: object
+              properties:
+                create:
+                  type: array
+                  items:
+                    type: string
+                update:
+                  type: array
+                  items:
+                    type: string
+                destroy:
+                  type: array
+                  items:
+                    type: string
+            updateResourceB:
+              type: object
+              properties:
+                create:
+                  type: array
+                  items:
+                    type: string
+                update:
+                  type: array
+                  items:
+                    type: string
+                destroy:
+                  type: array
+                  items:
+                    type: string
+            updateIntermediaryResources:
+              type: object
+              additionalProperties:
+                type: object
+                description: "A mapping of intermediary resource types to their operations."
+                properties:
+                  create:
+                    type: array
+                    items:
+                      type: string
+                  update:
+                    type: array
+                    items:
+                      type: string
+                  destroy:
+                    type: array
+                    items:
+                      type: string
+        docLinks:
+          type: array
+          items:
+            type: string
+        notes:
+          type: string

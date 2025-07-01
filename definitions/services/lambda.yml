@@ -1,0 +1,90 @@
+version: "1.0.0"
+resourceDefinitions:
+  - type: aws/lambda/function
+    label: AWS Lambda Function
+    requiredFields:
+      - role
+      - handler
+      - code
+    computedFields:
+      - arn
+      - snapStartResponseApplyOn
+      - snapStartResponseOptimizationStatus
+    operations:
+      create:
+        - CreateFunction
+        - PutFunctionConcurrency
+        - PutFunctionRecursionConfig
+        - PutRuntimeManagementConfig
+      update:
+        - UpdateFunctionConfiguration
+        - UpdateFunctionCode
+        - PutFunctionCodeSigningConfig
+        - PutFunctionConcurrency
+        - PutFunctionRecursionConfig
+        - PutRuntimeManagementConfig
+      destroy:
+        - DeleteFunction
+      getExternalState:
+        - GetFunction
+    tagss:
+      saveTags: TagResource
+      removeTags: UntagResource
+    docLinks:
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_CreateFunction.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_UpdateFunctionConfiguration.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_UpdateFunctionCode.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_PutFunctionCodeSigningConfig.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_PutFunctionConcurrency.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_PutFunctionRecursionConfig.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_PutRuntimeManagementConfig.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_DeleteFunction.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_GetFunction.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_TagResource.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_UntagResource.html
+      - https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-lambda-function.html
+    propertyDocLinks:
+      code: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-lambda-function-code.html
+      deadLetterConfig: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-lambda-function-deadletterconfig.html
+      environment: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-lambda-function-environment.html
+      ephemeralStorage: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-lambda-function-ephemeralstorage.html
+      fileSystemConfig: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-lambda-function-filesystemconfig.html
+      imageConfig: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-lambda-function-imageconfig.html
+      loggingConfig: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-lambda-function-loggingconfig.html
+      runtimeManagementConfig: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-lambda-function-runtimemanagementconfig.html
+      snapStart: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-lambda-function-snapstart.html
+      tags: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-lambda-function-tag.html
+      tracingConfig: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-lambda-function-tracingconfig.html
+      vpcConfig: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-lambda-function-vpcconfig.html
+
+dataSourceDefinitions:
+  - type: aws/lambda/function
+    filterableFields:
+      - arn
+      - name
+      - qualifier
+      - region
+    docLinks:
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_GetFunction.html
+      - https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/lambda_function
+
+linkDefinitions:
+  - resourceTypeA: aws/lambda/function
+    resourceTypeB: aws/lambda/codeSigningConfig
+    kind: hard
+    priorityResource: B
+    summary: A link from a lambda function to a code signing config.
+    annotations: []
+    operations:
+      updateResourceA:
+        create:
+          - PutFunctionCodeSigningConfig
+        update:
+          - PutFunctionCodeSigningConfig
+        destroy:
+          - DeleteFunctionCodeSigningConfig
+      updateResourceB: {}
+      updateIntermediaryResources: {}
+    docLinks:
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_PutFunctionCodeSigningConfig.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_DeleteFunctionCodeSigningConfig.html
