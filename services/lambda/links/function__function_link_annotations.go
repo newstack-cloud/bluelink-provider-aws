@@ -27,8 +27,8 @@ func lambdaFunctionFunctionLinkAnnotations() map[string]*provider.LinkAnnotation
 			DefaultValue: core.ScalarFromBool(true),
 			Required:     false,
 		},
-		"aws/lambda/function::aws.lambda.<targetFunction>.envVarName": {
-			Name:  "aws.lambda.function.envVarName",
+		"aws/lambda/function::aws.lambda.function.<targetFunction>.envVarName": {
+			Name:  "aws.lambda.function.<targetFunction>.envVarName",
 			Label: "Environment Variable Name",
 			Type:  core.ScalarTypeString,
 			Description: "The name of the environment variable to populate in the linked from lambda function " +

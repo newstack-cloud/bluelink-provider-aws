@@ -56,6 +56,217 @@ resourceDefinitions:
       tags: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-lambda-function-tag.html
       tracingConfig: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-lambda-function-tracingconfig.html
       vpcConfig: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-lambda-function-vpcconfig.html
+  - type: aws/lambda/alias
+    label: AWS Lambda Alias
+    requiredFields:
+      - functionName
+      - functionVersion
+      - name
+    computedFields:
+      - arn
+    operations:
+      create:
+        - CreateAlias
+      update:
+        - UpdateAlias
+      destroy:
+        - DeleteAlias
+      getExternalState:
+        - GetAlias
+    tags:
+      saveTags: TagResource
+      removeTags: UntagResource
+    docLinks:
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_CreateAlias.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_UpdateAlias.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_DeleteAlias.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_GetAlias.html
+      - https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-lambda-alias.html
+    propertyDocLinks:
+      routingConfig: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-lambda-alias-routingconfig.html
+  - type: aws/lambda/functionUrl
+    label: AWS Lambda Function URL
+    requiredFields:
+      - functionName
+      - authType
+    computedFields:
+      - functionUrl
+      - urlId
+    operations:
+      create:
+        - CreateFunctionUrlConfig
+      update:
+        - UpdateFunctionUrlConfig
+      destroy:
+        - DeleteFunctionUrlConfig
+      getExternalState:
+        - GetFunctionUrlConfig
+    tags:
+      saveTags: TagResource
+      removeTags: UntagResource
+    docLinks:
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_CreateFunctionUrlConfig.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_UpdateFunctionUrlConfig.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_DeleteFunctionUrlConfig.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_GetFunctionUrlConfig.html
+      - https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-lambda-functionurlconfig.html
+    propertyDocLinks:
+      cors: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-lambda-functionurlconfig-cors.html
+  - type: aws/lambda/functionVersion
+    label: AWS Lambda Function Version
+    requiredFields:
+      - functionName
+    computedFields:
+      - version
+      - arn
+    operations:
+      create:
+        - PublishVersion
+      update:
+        - UpdateFunctionConfiguration
+      destroy:
+        - DeleteFunction
+      getExternalState:
+        - GetFunction
+    tags:
+      saveTags: TagResource
+      removeTags: UntagResource
+    docLinks:
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_PublishVersion.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_UpdateFunctionConfiguration.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_DeleteFunction.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_GetFunction.html
+      - https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-lambda-version.html
+  - type: aws/lambda/layerVersion
+    label: AWS Lambda Layer Version
+    requiredFields:
+      - layerName
+      - content
+      - compatibleRuntimes
+    computedFields:
+      - arn
+      - version
+    operations:
+      create:
+        - PublishLayerVersion
+      update:
+        - UpdateLayerVersion
+      destroy:
+        - DeleteLayerVersion
+      getExternalState:
+        - GetLayerVersion
+    tags:
+      saveTags: TagResource
+      removeTags: UntagResource
+    docLinks:
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_PublishLayerVersion.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_UpdateLayerVersion.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_DeleteLayerVersion.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_GetLayerVersion.html
+      - https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-lambda-layerversion.html
+  - type: aws/lambda/layerVersionPermission
+    label: AWS Lambda Layer Version Permission
+    requiredFields:
+      - layerName
+      - versionNumber
+      - principal
+      - action
+    computedFields:
+      - statementId
+    operations:
+      create:
+        - AddLayerVersionPermission
+      update:
+        - AddLayerVersionPermission
+      destroy:
+        - RemoveLayerVersionPermission
+      getExternalState:
+        - GetLayerVersionPolicy
+    tags:
+      saveTags: TagResource
+      removeTags: UntagResource
+    docLinks:
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_AddLayerVersionPermission.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_RemoveLayerVersionPermission.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_GetLayerVersionPolicy.html
+      - https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-lambda-layerversionpermission.html
+  - type: aws/lambda/eventInvokeConfig
+    label: AWS Lambda Event Invoke Config
+    requiredFields:
+      - functionName
+      - qualifier
+    computedFields:
+      - destinationConfig
+    operations:
+      create:
+        - PutFunctionEventInvokeConfig
+      update:
+        - UpdateFunctionEventInvokeConfig
+      destroy:
+        - DeleteFunctionEventInvokeConfig
+      getExternalState:
+        - GetFunctionEventInvokeConfig
+    tags:
+      saveTags: TagResource
+      removeTags: UntagResource
+    docLinks:
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_PutFunctionEventInvokeConfig.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_UpdateFunctionEventInvokeConfig.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_DeleteFunctionEventInvokeConfig.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_GetFunctionEventInvokeConfig.html
+      - https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-lambda-eventinvokeconfig.html
+  - type: aws/lambda/eventSourceMapping
+    label: AWS Lambda Event Source Mapping
+    requiredFields:
+      - functionName
+      - eventSourceArn
+      - startingPosition
+    computedFields:
+      - uuid
+    operations:
+      create:
+        - CreateEventSourceMapping
+      update:
+        - UpdateEventSourceMapping
+      destroy:
+        - DeleteEventSourceMapping
+      getExternalState:
+        - GetEventSourceMapping
+    tags:
+      saveTags: TagResource
+      removeTags: UntagResource
+    docLinks:
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_CreateEventSourceMapping.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_UpdateEventSourceMapping.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_DeleteEventSourceMapping.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_GetEventSourceMapping.html
+      - https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-lambda-eventsourcemapping.html
+  - type: aws/lambda/codeSigningConfig
+    label: AWS Lambda Code Signing Config
+    requiredFields:
+      - description
+      - allowedPublishers
+      - codeSigningPolicies
+    computedFields:
+      - arn
+    operations:
+      create:
+        - CreateCodeSigningConfig
+      update:
+        - UpdateCodeSigningConfig
+      destroy:
+        - DeleteCodeSigningConfig
+      getExternalState:
+        - GetCodeSigningConfig
+    tags:
+      saveTags: TagResource
+      removeTags: UntagResource
+    docLinks:
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_CreateCodeSigningConfig.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_UpdateCodeSigningConfig.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_DeleteCodeSigningConfig.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_GetCodeSigningConfig.html
+      - https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-lambda-codesigningconfig.html
 
 dataSourceDefinitions:
   - type: aws/lambda/function
@@ -67,6 +278,35 @@ dataSourceDefinitions:
     docLinks:
       - https://docs.aws.amazon.com/lambda/latest/dg/API_GetFunction.html
       - https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/lambda_function
+  - type: aws/lambda/alias
+    filterableFields:
+      - functionName
+      - name
+      - qualifier
+    docLinks:
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_GetAlias.html
+      - https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/lambda_alias
+  - type: aws/lambda/functionUrl
+    filterableFields:
+      - functionName
+      - qualifier
+    docLinks:
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_GetFunctionUrlConfig.html
+      - https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/lambda_function_url
+  - type: aws/lambda/layerVersion
+    filterableFields:
+      - layerName
+      - version
+    docLinks:
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_GetLayerVersion.html
+      - https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/lambda_layer_version
+  - type: aws/lambda/codeSigningConfig
+    filterableFields:
+      - arn
+      - description
+    docLinks:
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_GetCodeSigningConfig.html
+      - https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/lambda_code_signing_config
 
 linkDefinitions:
   - resourceTypeA: aws/lambda/function
@@ -88,3 +328,44 @@ linkDefinitions:
     docLinks:
       - https://docs.aws.amazon.com/lambda/latest/dg/API_PutFunctionCodeSigningConfig.html
       - https://docs.aws.amazon.com/lambda/latest/dg/API_DeleteFunctionCodeSigningConfig.html
+  - resourceTypeA: aws/lambda/function
+    resourceTypeB: aws/lambda/function
+    kind: soft
+    priorityResource: none
+    summary: A link that configures a lambda function to be able to invoke another lambda function.
+    annotations:
+      - aws.lambda.function.populateEnvVars
+      - aws.lambda.function.<targetFunction>.populateEnvVars
+      - aws.lambda.function.<targetFunction>.envVarName
+    operations:
+      updateResourceA:
+        create:
+          - UpdateFunctionConfiguration
+        update:
+          - UpdateFunctionConfiguration
+        destroy:
+          - UpdateFunctionConfiguration
+      updateResourceB: {}
+      updateIntermediaryResources:
+        aws/iam/role:
+          create:
+            - PutRolePolicy
+          update:
+            - PutRolePolicy
+          destroy:
+            - DeleteRolePolicy
+          intermediaryType: existing
+          intermediaryExternalIdSource: resourceA.spec.role
+    docLinks:
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_Invoke.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_EnvironmentVariable.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_UpdateFunctionConfiguration.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_GetFunction.html
+      - https://docs.aws.amazon.com/lambda/latest/dg/API_GetPolicy.html
+    notes: |
+      The IAM role for a lambda function is a dependency of the lambda function,
+      that will be another resource defined in the same blueprint.
+      The implementation should source the role from resource A in the relationship
+      and update the role with the necessary permissions to invoke the target function (resource B).
+      Despite it being an intermediary resource, the link is not responsible for creating or deleting the role.
+ 

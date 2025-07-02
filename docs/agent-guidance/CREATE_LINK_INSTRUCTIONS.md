@@ -2,11 +2,11 @@
 
 ### Overview
 
-You need to create a new `${resourceTypeA}::${resourceTypeB}` link for the `${service}` service in the `services/${service}` package directory.
+You need to create a new `${resourceTypeA}::${resourceTypeB}` link for the `${service}` service, if `${resourceTypeA}` and `${resourceTypeB}` and in the same service, it should be created in the `services/${service}` package directory. If `${resourceTypeA}` and `${resourceTypeB}` are in different services, it should be created in the `inter-service-links/` package directory.
+
 A resource enables users of Celerity to connect resources using link selectors and labels in blueprint files, links provide a powerful abstraction that allows users to define both simple and complex relationships between resources through declarative link selectors.
 
-The links needs to be implemented following existing patterns and conventions in link implementations so far either in the `services/${service}/links` package or in another service implementation under the `services` directory in the `links` subdirectory.
-
+The links needs to be implemented following existing patterns and conventions in link implementations so far either in the `services/${service}/links` package or in another service implementation in the `inter-service-links` directory or under the `services` directory in the `links` subdirectory.
 
 ### Plan
 
@@ -29,7 +29,9 @@ The links needs to be implemented following existing patterns and conventions in
 ### Sources
 
 You should use the service definition schema as a source of truth to guide the implementation of the link.
-The service definition schema is located in the `definitions/services/${service}.yml` file and the structure of the schema is defined in the `definitions/schema.yml` file.
+If `${resourceTypeA}` and `${resourceTypeB}` are a part of the same service, the service definition schema is located in the `definitions/services/${service}.yml` file. 
+If `${resourceTypeA}` and `${resourceTypeB}` are a part of different services, the service definition schema is located in the `definitions/inter-service/${serviceA}-${serviceB}.yaml` file.
+The structure of the service definition schema is defined in the `definitions/schema.yml` file.
 
 To determine the service call actions that are required in the link implementation, you should use the AWS API Reference docs for the `${service}` service. You can also use the AWS SDK v2 for Go docs to accurately determine the service call actions required.
 
@@ -90,6 +92,24 @@ The contents of the `<..>` placeholder can be anything but it must always point 
 This must be considered when creating link implementations and using the annotations in the change staging and update operations.
 
 See `services/lambda/links/function__function_link_annotations.go` for an example of how to define link annotations with dynamic keys.
+
+### About Intermediary Resources
+
+As per the schema in `definitions/schema.yml`, intermediary resources are either `managed` or `existing`.
+Managed resources are created and deleted by the link, while existing resources are expected to be present in the blueprint and are only updated by the link.
+
+When creating a link implementation, the implementation of `UpdateIntermediaryResources` must fetch intermediary resources of the `existing` type from the external system and update them with the necessary changes. However, if the resource is not in the same blueprint as the link, the implementation should return an error, clearly explaining that the resource is not in the same blueprint as the link and that links can only update intermediary resources that are in the same blueprint as the link.
+The format of the error message should be:
+
+```
+"intermediary resource of type '${intermediaryResourceType}' is not present in the same blueprint as this link (${linkTypeIdentifier}). Links can only update intermediary resources that are defined in the same blueprint. Please define the resource in this blueprint or remove the link and manually configure the relationship."
+```
+
+To determine whether or not an existing intermediary resource is present in the same blueprint as the link, you should use the `ResourceLookupService` in the input struct to fetch the resource by blueprint instance ID, type and external ID (as defined in the schema). The external ID will be derived from the spec of one of the two resources in the link relationship (e.g. the ARN of the role for the lambda function link).
+
+For `managed` resources, the `ResourceDeployService` in the input struct should be used to manage creation, updates and the deletion of the resource.
+
+_The "input struct" refers to the second argument of the `UpdateIntermediaryResources` method of a link._
 
 ### Extra notes
 

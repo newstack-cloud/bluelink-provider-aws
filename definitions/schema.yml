@@ -163,7 +163,7 @@ properties:
               type: object
               additionalProperties:
                 type: object
-                description: "A mapping of intermediary resource types to their operations."
+                description: "A mapping of intermediary resource types to their operations and configuration."
                 properties:
                   create:
                     type: array
@@ -177,6 +177,26 @@ properties:
                     type: array
                     items:
                       type: string
+                  config:
+                    type: object
+                    required: [intermediaryType]
+                    properties:
+                      intermediaryType:
+                        type: string
+                        description: |
+                          The type of intermediary resource, either 'managed' or 'existing'.
+                          Managed resources are created and deleted by the link, while existing resources are expected to be
+                          present in the blueprint and are only updated by the link.
+                        enum: ['managed', 'existing']
+                      config:
+                        type: object
+                        additionalProperties:
+                          type: string
+                      intermediaryExternalIdSource:
+                        type: string
+                        description: |
+                          When the intermediary resource is of type 'existing', this field should be set to the source of the external ID of the intermediary resource.
+                          This should be of the form `resource(A|B).spec.<field>`.
         docLinks:
           type: array
           items:
