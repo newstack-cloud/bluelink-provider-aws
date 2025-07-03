@@ -70,6 +70,15 @@ You should implement thorough tests that cover both basic and complex uses of th
 
 You must provide tests for all the methods mentioned in the [Link Methods](#link-methods) section using the files defined in the [Link File Structure](#link-file-structure) section.
 
+**Testing ResourceDataMappings:**
+
+When testing link update methods, ensure your test cases verify that the `ResourceDataMappings` field is correctly populated when the link modifies resource fields. Test cases should include:
+- Verifying the correct mapping format (`{resourceName}::{resourceFieldPath}` -> `{linkFieldPath}`)
+- Ensuring mappings are only included for fields that are actually modified
+- Confirming that methods that don't modify resource fields don't include `ResourceDataMappings`
+
+See existing test implementations such as `services/lambda/links/function__code_signing_config_link_update_test.go` for examples of how to test the `ResourceDataMappings` field in your expected outputs.
+
 ### Rich Descriptions
 
 You should include a rich description that includes examples in the main link definition file.
@@ -110,6 +119,51 @@ To determine whether or not an existing intermediary resource is present in the 
 For `managed` resources, the `ResourceDeployService` in the input struct should be used to manage creation, updates and the deletion of the resource.
 
 _The "input struct" refers to the second argument of the `UpdateIntermediaryResources` method of a link._
+
+### Link to Resource Data Mappings
+
+As links are projections, in practise, they act as effects that update the state of the resources that are linked together or other existing resources in the same blueprint that are treated as intermediary resources that are required to "activate" the link. For this reason, drift detection would always detect changes to the state by link implementations as drift.
+
+Updates have been made to the plugin and blueprint frameworks to allow for overlaying link data onto the state of the resource before drift checks are performed. This is made possible by the `ResourceDataMappings` field that is returned in the output of the `UpdateResourceA`, `UpdateResourceB` and `UpdateIntermediaryResources` methods.
+
+The `ResourceDataMappings` field is a mapping of the form `{resourceName}::{resourceFieldPath}` to `{linkFieldPath}` where `{resourceName}` is the name of the resource as defined in the source blueprint file and `{resourceFieldPath}` is the path to the field in the resource that is being updated by the link. For example, `saveOrderFunction::spec.environment.variables.TABLE_NAME` -> `saveOrderFunction.environmentVariables.TABLE_NAME` indicates that the field `saveOrderFunction.environmentVariables.TABLE_NAME` modifies the `environment.variables.TABLE_NAME` field in the resource spec. `{resourceFieldPath}` is relative to the resource and will always start with `spec` as the root object.
+
+**When to include ResourceDataMappings:**
+
+- Include `ResourceDataMappings` when your link method modifies fields in a resource's spec that would otherwise be detected as drift
+- Only include mappings for fields that are actually being modified by the link
+- If a method doesn't modify any resource fields, omit the `ResourceDataMappings` field entirely (don't return an empty map)
+
+**Example patterns:**
+
+```go
+// When modifying a resource field
+return &provider.LinkUpdateResourceOutput{
+    LinkData: &core.MappingNode{
+        Fields: map[string]*core.MappingNode{
+            input.ResourceInfo.ResourceName: {
+                Fields: map[string]*core.MappingNode{
+                    "codeSigningConfigArn": core.MappingNodeFromString(arn),
+                },
+            },
+        },
+    },
+    ResourceDataMappings: map[string]string{
+        fmt.Sprintf("%s::spec.codeSigningConfigArn", input.ResourceInfo.ResourceName): 
+        fmt.Sprintf("%s.codeSigningConfigArn", input.ResourceInfo.ResourceName),
+    },
+}, nil
+
+// When not modifying any resource fields
+return &provider.LinkUpdateResourceOutput{
+    LinkData: &core.MappingNode{
+        Fields: map[string]*core.MappingNode{},
+    },
+    // No ResourceDataMappings field needed
+}, nil
+```
+
+You can find examples of how these resource data mappings should be defined in existing link implementations such as `services/lambda/links/function__code_signing_config_link_update.go`.
 
 ### Extra notes
 
