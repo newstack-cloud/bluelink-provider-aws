@@ -87,6 +87,14 @@ func (l *lambdaFunctionCodeSigningConfigLinkActions) addCodeSigningConfigToFunct
 		return nil, err
 	}
 
+	resourceFieldPath := fmt.Sprintf(
+		"%s::spec.codeSigningConfigArn",
+		input.ResourceInfo.ResourceName,
+	)
+	linkFieldPath := fmt.Sprintf(
+		"%s.codeSigningConfigArn",
+		input.ResourceInfo.ResourceName,
+	)
 	return &provider.LinkUpdateResourceOutput{
 		LinkData: &core.MappingNode{
 			Fields: map[string]*core.MappingNode{
@@ -98,6 +106,9 @@ func (l *lambdaFunctionCodeSigningConfigLinkActions) addCodeSigningConfigToFunct
 					},
 				},
 			},
+		},
+		ResourceDataMappings: map[string]string{
+			resourceFieldPath: linkFieldPath,
 		},
 	}, nil
 }

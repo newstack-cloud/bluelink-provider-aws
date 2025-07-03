@@ -126,6 +126,9 @@ func (s *FunctionCodeSigningConfigLinkUpdateSuite) createUpdateLinkFunctionTestC
 					},
 				},
 			},
+			ResourceDataMappings: map[string]string{
+				"test-function::spec.codeSigningConfigArn": "test-function.codeSigningConfigArn",
+			},
 		},
 		UpdateActionsCalled: map[string]any{
 			"PutFunctionCodeSigningConfig": &lambda.PutFunctionCodeSigningConfigInput{
