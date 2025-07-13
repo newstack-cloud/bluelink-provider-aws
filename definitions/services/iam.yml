@@ -158,3 +158,29 @@ resourceDefinitions:
       Special care should be taken to ensure the secret access key is not exposed in logs.
       UpdateAccessKey is used in the creation phase to change the status of the access key
       as on creation, access keys are always active by default.
+  - type: aws/iam/instanceProfile
+    label: AWS IAM Instance Profile
+    requiredFields: ["role"]
+    computedFields:
+      - arn
+    operations:
+      create:
+        - CreateInstanceProfile
+        - AddRoleToInstanceProfile
+      update:
+        - RemoveRoleFromInstanceProfile
+        - AddRoleToInstanceProfile
+      destroy:
+        - RemoveRoleFromInstanceProfile
+        - DeleteInstanceProfile
+    docLinks:
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_CreateInstanceProfile.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_AddRoleToInstanceProfile.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_RemoveRoleFromInstanceProfile.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_DeleteInstanceProfile.html
+      - https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-iam-instanceprofile.html
+    propertyDocLinks: {}
+    notes: |
+      The AWS CloudFormation resource type uses an array for roles
+      but only one role can be attached to an instance profile,
+      so it should be specified as a single string.
