@@ -820,7 +820,7 @@ func WithGetGroupPolicyError(err error) iamServiceMockOption {
 	}
 }
 
-// Group operation implementations
+// Group operation implementations.
 func (m *iamServiceMock) CreateGroup(
 	ctx context.Context,
 	params *iam.CreateGroupInput,
