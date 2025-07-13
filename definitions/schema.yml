@@ -22,7 +22,6 @@ properties:
           requiredFields,
           computedFields,
           operations,
-          tags,
           docLinks,
           propertyDocLinks,
         ]

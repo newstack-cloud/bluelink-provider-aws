@@ -99,3 +99,37 @@ resourceDefinitions:
       loginProfile: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-iam-user-loginprofile.html
       policies: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-iam-user-policy.html
       tags: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-iam-user-tag.html
+  - type: aws/iam/group
+    label: AWS IAM Group
+    requiredFields: []
+    computedFields:
+      - arn
+      - groupId
+    operations:
+      create:
+        - CreateGroup
+        - PutGroupPolicy
+        - AttachGroupPolicy
+      update:
+        - UpdateGroup
+        - PutGroupPolicy
+        - DeleteGroupPolicy
+        - AttachGroupPolicy
+        - DetachGroupPolicy
+      destroy:
+        - DetachGroupPolicy
+        - DeleteGroupPolicy
+        - DeleteGroup
+    docLinks:
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_CreateGroup.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_UpdateGroup.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_DeleteGroup.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_PutGroupPolicy.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_DeleteGroupPolicy.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_AttachGroupPolicy.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_DetachGroupPolicy.html
+      - https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-iam-group.html
+    propertyDocLinks:
+      policies: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-iam-group-policy.html
+    notes: |
+      IAM groups do not support tags.
