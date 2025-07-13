@@ -120,6 +120,34 @@ type iamServiceMock struct {
 	updateLoginProfileError  error
 	deleteLoginProfileOutput *iam.DeleteLoginProfileOutput
 	deleteLoginProfileError  error
+
+	// Group-related mock fields
+	createGroupOutput *iam.CreateGroupOutput
+	createGroupError  error
+	getGroupOutput    *iam.GetGroupOutput
+	getGroupError     error
+	updateGroupOutput *iam.UpdateGroupOutput
+	updateGroupError  error
+	deleteGroupOutput *iam.DeleteGroupOutput
+	deleteGroupError  error
+
+	// Group policy attachment-related mock fields
+	attachGroupPolicyOutput         *iam.AttachGroupPolicyOutput
+	attachGroupPolicyError          error
+	detachGroupPolicyOutput         *iam.DetachGroupPolicyOutput
+	detachGroupPolicyError          error
+	listAttachedGroupPoliciesOutput *iam.ListAttachedGroupPoliciesOutput
+	listAttachedGroupPoliciesError  error
+
+	// Group inline policy-related mock fields
+	putGroupPolicyOutput    *iam.PutGroupPolicyOutput
+	putGroupPolicyError     error
+	deleteGroupPolicyOutput *iam.DeleteGroupPolicyOutput
+	deleteGroupPolicyError  error
+	listGroupPoliciesOutput *iam.ListGroupPoliciesOutput
+	listGroupPoliciesError  error
+	getGroupPolicyOutput    *iam.GetGroupPolicyOutput
+	getGroupPolicyError     error
 }
 
 type iamServiceMockOption func(*iamServiceMock)
@@ -656,6 +684,240 @@ func WithDeleteLoginProfileError(err error) iamServiceMockOption {
 	return func(m *iamServiceMock) {
 		m.deleteLoginProfileError = err
 	}
+}
+
+// Mock configuration options for Group operations
+
+func WithCreateGroupOutput(output *iam.CreateGroupOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.createGroupOutput = output
+	}
+}
+
+func WithCreateGroupError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.createGroupError = err
+	}
+}
+
+func WithGetGroupOutput(output *iam.GetGroupOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.getGroupOutput = output
+	}
+}
+
+func WithGetGroupError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.getGroupError = err
+	}
+}
+
+func WithUpdateGroupOutput(output *iam.UpdateGroupOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.updateGroupOutput = output
+	}
+}
+
+func WithUpdateGroupError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.updateGroupError = err
+	}
+}
+
+func WithDeleteGroupOutput(output *iam.DeleteGroupOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.deleteGroupOutput = output
+	}
+}
+
+func WithDeleteGroupError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.deleteGroupError = err
+	}
+}
+
+func WithAttachGroupPolicyOutput(output *iam.AttachGroupPolicyOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.attachGroupPolicyOutput = output
+	}
+}
+
+func WithAttachGroupPolicyError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.attachGroupPolicyError = err
+	}
+}
+
+func WithDetachGroupPolicyOutput(output *iam.DetachGroupPolicyOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.detachGroupPolicyOutput = output
+	}
+}
+
+func WithDetachGroupPolicyError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.detachGroupPolicyError = err
+	}
+}
+
+func WithListAttachedGroupPoliciesOutput(output *iam.ListAttachedGroupPoliciesOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.listAttachedGroupPoliciesOutput = output
+	}
+}
+
+func WithListAttachedGroupPoliciesError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.listAttachedGroupPoliciesError = err
+	}
+}
+
+func WithPutGroupPolicyOutput(output *iam.PutGroupPolicyOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.putGroupPolicyOutput = output
+	}
+}
+
+func WithPutGroupPolicyError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.putGroupPolicyError = err
+	}
+}
+
+func WithDeleteGroupPolicyOutput(output *iam.DeleteGroupPolicyOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.deleteGroupPolicyOutput = output
+	}
+}
+
+func WithDeleteGroupPolicyError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.deleteGroupPolicyError = err
+	}
+}
+
+func WithListGroupPoliciesOutput(output *iam.ListGroupPoliciesOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.listGroupPoliciesOutput = output
+	}
+}
+
+func WithListGroupPoliciesError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.listGroupPoliciesError = err
+	}
+}
+
+func WithGetGroupPolicyOutput(output *iam.GetGroupPolicyOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.getGroupPolicyOutput = output
+	}
+}
+
+func WithGetGroupPolicyError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.getGroupPolicyError = err
+	}
+}
+
+// Group operation implementations
+func (m *iamServiceMock) CreateGroup(
+	ctx context.Context,
+	params *iam.CreateGroupInput,
+	optFns ...func(*iam.Options),
+) (*iam.CreateGroupOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.createGroupOutput, m.createGroupError
+}
+
+func (m *iamServiceMock) GetGroup(
+	ctx context.Context,
+	params *iam.GetGroupInput,
+	optFns ...func(*iam.Options),
+) (*iam.GetGroupOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.getGroupOutput, m.getGroupError
+}
+
+func (m *iamServiceMock) UpdateGroup(
+	ctx context.Context,
+	params *iam.UpdateGroupInput,
+	optFns ...func(*iam.Options),
+) (*iam.UpdateGroupOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.updateGroupOutput, m.updateGroupError
+}
+
+func (m *iamServiceMock) DeleteGroup(
+	ctx context.Context,
+	params *iam.DeleteGroupInput,
+	optFns ...func(*iam.Options),
+) (*iam.DeleteGroupOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.deleteGroupOutput, m.deleteGroupError
+}
+
+func (m *iamServiceMock) AttachGroupPolicy(
+	ctx context.Context,
+	params *iam.AttachGroupPolicyInput,
+	optFns ...func(*iam.Options),
+) (*iam.AttachGroupPolicyOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.attachGroupPolicyOutput, m.attachGroupPolicyError
+}
+
+func (m *iamServiceMock) DetachGroupPolicy(
+	ctx context.Context,
+	params *iam.DetachGroupPolicyInput,
+	optFns ...func(*iam.Options),
+) (*iam.DetachGroupPolicyOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.detachGroupPolicyOutput, m.detachGroupPolicyError
+}
+
+func (m *iamServiceMock) ListAttachedGroupPolicies(
+	ctx context.Context,
+	params *iam.ListAttachedGroupPoliciesInput,
+	optFns ...func(*iam.Options),
+) (*iam.ListAttachedGroupPoliciesOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.listAttachedGroupPoliciesOutput, m.listAttachedGroupPoliciesError
+}
+
+func (m *iamServiceMock) PutGroupPolicy(
+	ctx context.Context,
+	params *iam.PutGroupPolicyInput,
+	optFns ...func(*iam.Options),
+) (*iam.PutGroupPolicyOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.putGroupPolicyOutput, m.putGroupPolicyError
+}
+
+func (m *iamServiceMock) DeleteGroupPolicy(
+	ctx context.Context,
+	params *iam.DeleteGroupPolicyInput,
+	optFns ...func(*iam.Options),
+) (*iam.DeleteGroupPolicyOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.deleteGroupPolicyOutput, m.deleteGroupPolicyError
+}
+
+func (m *iamServiceMock) ListGroupPolicies(
+	ctx context.Context,
+	params *iam.ListGroupPoliciesInput,
+	optFns ...func(*iam.Options),
+) (*iam.ListGroupPoliciesOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.listGroupPoliciesOutput, m.listGroupPoliciesError
+}
+
+func (m *iamServiceMock) GetGroupPolicy(
+	ctx context.Context,
+	params *iam.GetGroupPolicyInput,
+	optFns ...func(*iam.Options),
+) (*iam.GetGroupPolicyOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.getGroupPolicyOutput, m.getGroupPolicyError
 }
 
 // Service interface implementation methods

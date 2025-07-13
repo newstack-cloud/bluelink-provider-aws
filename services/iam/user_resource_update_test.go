@@ -388,12 +388,12 @@ func createUserTagsUpdateTestCase(
 				UserName: aws.String("test-user"),
 				Tags: []types.Tag{
 					{
-						Key:   aws.String("Environment"),
-						Value: aws.String("production"),
-					},
-					{
 						Key:   aws.String("Department"),
 						Value: aws.String("engineering"),
+					},
+					{
+						Key:   aws.String("Environment"),
+						Value: aws.String("production"),
 					},
 				},
 			},

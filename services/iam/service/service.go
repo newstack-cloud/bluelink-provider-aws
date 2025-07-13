@@ -301,6 +301,86 @@ type Service interface {
 		params *iam.DeleteLoginProfileInput,
 		optFns ...func(*iam.Options),
 	) (*iam.DeleteLoginProfileOutput, error)
+
+	// CreateGroup creates a new group for your AWS account.
+	CreateGroup(
+		ctx context.Context,
+		params *iam.CreateGroupInput,
+		optFns ...func(*iam.Options),
+	) (*iam.CreateGroupOutput, error)
+
+	// GetGroup retrieves information about the specified group, including the group's
+	// path, GUID, ARN, and the group's creation date.
+	GetGroup(
+		ctx context.Context,
+		params *iam.GetGroupInput,
+		optFns ...func(*iam.Options),
+	) (*iam.GetGroupOutput, error)
+
+	// UpdateGroup updates the name and/or the path of the specified IAM group.
+	UpdateGroup(
+		ctx context.Context,
+		params *iam.UpdateGroupInput,
+		optFns ...func(*iam.Options),
+	) (*iam.UpdateGroupOutput, error)
+
+	// DeleteGroup deletes the specified IAM group. Unlike the AWS Management Console, when you
+	// delete a group programmatically, you must delete the items attached to the group manually,
+	// or the deletion fails.
+	DeleteGroup(
+		ctx context.Context,
+		params *iam.DeleteGroupInput,
+		optFns ...func(*iam.Options),
+	) (*iam.DeleteGroupOutput, error)
+
+	// AttachGroupPolicy attaches the specified managed policy to the specified group.
+	AttachGroupPolicy(
+		ctx context.Context,
+		params *iam.AttachGroupPolicyInput,
+		optFns ...func(*iam.Options),
+	) (*iam.AttachGroupPolicyOutput, error)
+
+	// DetachGroupPolicy removes the specified managed policy from the specified group.
+	DetachGroupPolicy(
+		ctx context.Context,
+		params *iam.DetachGroupPolicyInput,
+		optFns ...func(*iam.Options),
+	) (*iam.DetachGroupPolicyOutput, error)
+
+	// ListAttachedGroupPolicies lists all managed policies that are attached to the specified IAM group.
+	ListAttachedGroupPolicies(
+		ctx context.Context,
+		params *iam.ListAttachedGroupPoliciesInput,
+		optFns ...func(*iam.Options),
+	) (*iam.ListAttachedGroupPoliciesOutput, error)
+
+	// PutGroupPolicy adds or updates an inline policy document that is embedded in the specified IAM group.
+	PutGroupPolicy(
+		ctx context.Context,
+		params *iam.PutGroupPolicyInput,
+		optFns ...func(*iam.Options),
+	) (*iam.PutGroupPolicyOutput, error)
+
+	// DeleteGroupPolicy deletes the specified inline policy that is embedded in the specified IAM group.
+	DeleteGroupPolicy(
+		ctx context.Context,
+		params *iam.DeleteGroupPolicyInput,
+		optFns ...func(*iam.Options),
+	) (*iam.DeleteGroupPolicyOutput, error)
+
+	// ListGroupPolicies lists the names of the inline policies that are embedded in the specified IAM group.
+	ListGroupPolicies(
+		ctx context.Context,
+		params *iam.ListGroupPoliciesInput,
+		optFns ...func(*iam.Options),
+	) (*iam.ListGroupPoliciesOutput, error)
+
+	// GetGroupPolicy retrieves an inline policy document that is embedded in the specified IAM group.
+	GetGroupPolicy(
+		ctx context.Context,
+		params *iam.GetGroupPolicyInput,
+		optFns ...func(*iam.Options),
+	) (*iam.GetGroupPolicyOutput, error)
 }
 
 // NewService creates a new instance of the AWS IAM service

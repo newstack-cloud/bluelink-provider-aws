@@ -227,12 +227,12 @@ func createUserWithTagsTestCase(
 				Path:     aws.String("/"),
 				Tags: []types.Tag{
 					{
-						Key:   aws.String("Environment"),
-						Value: aws.String("test"),
-					},
-					{
 						Key:   aws.String("Department"),
 						Value: aws.String("engineering"),
+					},
+					{
+						Key:   aws.String("Environment"),
+						Value: aws.String("test"),
 					},
 				},
 			},
