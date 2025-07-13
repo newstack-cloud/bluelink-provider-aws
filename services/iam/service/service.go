@@ -409,6 +409,42 @@ type Service interface {
 		params *iam.ListAccessKeysInput,
 		optFns ...func(*iam.Options),
 	) (*iam.ListAccessKeysOutput, error)
+
+	// CreateInstanceProfile creates a new instance profile for your AWS account.
+	CreateInstanceProfile(
+		ctx context.Context,
+		params *iam.CreateInstanceProfileInput,
+		optFns ...func(*iam.Options),
+	) (*iam.CreateInstanceProfileOutput, error)
+
+	// GetInstanceProfile retrieves information about the specified instance profile, including the instance profile's
+	// path, GUID, ARN, and the role associated with the instance profile.
+	GetInstanceProfile(
+		ctx context.Context,
+		params *iam.GetInstanceProfileInput,
+		optFns ...func(*iam.Options),
+	) (*iam.GetInstanceProfileOutput, error)
+
+	// DeleteInstanceProfile deletes the specified instance profile. The instance profile must not have an associated role.
+	DeleteInstanceProfile(
+		ctx context.Context,
+		params *iam.DeleteInstanceProfileInput,
+		optFns ...func(*iam.Options),
+	) (*iam.DeleteInstanceProfileOutput, error)
+
+	// AddRoleToInstanceProfile adds the specified IAM role to the specified instance profile.
+	AddRoleToInstanceProfile(
+		ctx context.Context,
+		params *iam.AddRoleToInstanceProfileInput,
+		optFns ...func(*iam.Options),
+	) (*iam.AddRoleToInstanceProfileOutput, error)
+
+	// RemoveRoleFromInstanceProfile removes the specified IAM role from the specified instance profile.
+	RemoveRoleFromInstanceProfile(
+		ctx context.Context,
+		params *iam.RemoveRoleFromInstanceProfileInput,
+		optFns ...func(*iam.Options),
+	) (*iam.RemoveRoleFromInstanceProfileOutput, error)
 }
 
 // NewService creates a new instance of the AWS IAM service

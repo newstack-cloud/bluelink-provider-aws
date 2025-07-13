@@ -158,6 +158,18 @@ type iamServiceMock struct {
 	deleteAccessKeyError  error
 	listAccessKeysOutput  *iam.ListAccessKeysOutput
 	listAccessKeysError   error
+
+	// Instance profile-related mock fields
+	createInstanceProfileOutput         *iam.CreateInstanceProfileOutput
+	createInstanceProfileError          error
+	getInstanceProfileOutput            *iam.GetInstanceProfileOutput
+	getInstanceProfileError             error
+	deleteInstanceProfileOutput         *iam.DeleteInstanceProfileOutput
+	deleteInstanceProfileError          error
+	addRoleToInstanceProfileOutput      *iam.AddRoleToInstanceProfileOutput
+	addRoleToInstanceProfileError       error
+	removeRoleFromInstanceProfileOutput *iam.RemoveRoleFromInstanceProfileOutput
+	removeRoleFromInstanceProfileError  error
 }
 
 type iamServiceMockOption func(*iamServiceMock)
@@ -879,6 +891,67 @@ func WithListAccessKeysError(err error) iamServiceMockOption {
 	}
 }
 
+// Instance profile mock configuration options
+func WithCreateInstanceProfileOutput(output *iam.CreateInstanceProfileOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.createInstanceProfileOutput = output
+	}
+}
+
+func WithCreateInstanceProfileError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.createInstanceProfileError = err
+	}
+}
+
+func WithGetInstanceProfileOutput(output *iam.GetInstanceProfileOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.getInstanceProfileOutput = output
+	}
+}
+
+func WithGetInstanceProfileError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.getInstanceProfileError = err
+	}
+}
+
+func WithDeleteInstanceProfileOutput(output *iam.DeleteInstanceProfileOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.deleteInstanceProfileOutput = output
+	}
+}
+
+func WithDeleteInstanceProfileError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.deleteInstanceProfileError = err
+	}
+}
+
+func WithAddRoleToInstanceProfileOutput(output *iam.AddRoleToInstanceProfileOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.addRoleToInstanceProfileOutput = output
+	}
+}
+
+func WithAddRoleToInstanceProfileError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.addRoleToInstanceProfileError = err
+	}
+}
+
+func WithRemoveRoleFromInstanceProfileOutput(output *iam.RemoveRoleFromInstanceProfileOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.removeRoleFromInstanceProfileOutput = output
+	}
+}
+
+func WithRemoveRoleFromInstanceProfileError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.removeRoleFromInstanceProfileError = err
+	}
+}
+
 // Group operation implementations.
 func (m *iamServiceMock) CreateGroup(
 	ctx context.Context,
@@ -1396,4 +1469,50 @@ func (m *iamServiceMock) ListAccessKeys(
 ) (*iam.ListAccessKeysOutput, error) {
 	m.RegisterCall(ctx, params)
 	return m.listAccessKeysOutput, m.listAccessKeysError
+}
+
+// Instance profile methods.
+func (m *iamServiceMock) CreateInstanceProfile(
+	ctx context.Context,
+	params *iam.CreateInstanceProfileInput,
+	optFns ...func(*iam.Options),
+) (*iam.CreateInstanceProfileOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.createInstanceProfileOutput, m.createInstanceProfileError
+}
+
+func (m *iamServiceMock) GetInstanceProfile(
+	ctx context.Context,
+	params *iam.GetInstanceProfileInput,
+	optFns ...func(*iam.Options),
+) (*iam.GetInstanceProfileOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.getInstanceProfileOutput, m.getInstanceProfileError
+}
+
+func (m *iamServiceMock) DeleteInstanceProfile(
+	ctx context.Context,
+	params *iam.DeleteInstanceProfileInput,
+	optFns ...func(*iam.Options),
+) (*iam.DeleteInstanceProfileOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.deleteInstanceProfileOutput, m.deleteInstanceProfileError
+}
+
+func (m *iamServiceMock) AddRoleToInstanceProfile(
+	ctx context.Context,
+	params *iam.AddRoleToInstanceProfileInput,
+	optFns ...func(*iam.Options),
+) (*iam.AddRoleToInstanceProfileOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.addRoleToInstanceProfileOutput, m.addRoleToInstanceProfileError
+}
+
+func (m *iamServiceMock) RemoveRoleFromInstanceProfile(
+	ctx context.Context,
+	params *iam.RemoveRoleFromInstanceProfileInput,
+	optFns ...func(*iam.Options),
+) (*iam.RemoveRoleFromInstanceProfileOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.removeRoleFromInstanceProfileOutput, m.removeRoleFromInstanceProfileError
 }

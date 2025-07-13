@@ -42,6 +42,10 @@ func NewProvider(
 				iamServiceFactory,
 				awsConfigStore,
 			),
+			"aws/iam/instanceProfile": iam.InstanceProfileResource(
+				iamServiceFactory,
+				awsConfigStore,
+			),
 			"aws/lambda/function": lambda.FunctionResource(
 				lambdaServiceFactory,
 				awsConfigStore,
