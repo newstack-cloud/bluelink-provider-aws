@@ -184,3 +184,45 @@ resourceDefinitions:
       The AWS CloudFormation resource type uses an array for roles
       but only one role can be attached to an instance profile,
       so it should be specified as a single string.
+  - type: aws/iam/managedPolicy
+    label: AWS IAM Managed Policy
+    requiredFields: ["policyName", "policyDocument"]
+    computedFields:
+      - arn
+      - id
+      - attachmentCount
+      - createDate
+      - defaultVersionId
+      - isAttachable
+      - permissionsBoundaryUsageCount
+      - updateDate
+    operations:
+      create:
+        - CreatePolicy
+      update:
+        - CreatePolicyVersion
+        - TagPolicy
+        - UntagPolicy
+      destroy:
+        - DeletePolicyVersion
+        - DeletePolicy
+    docLinks:
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_CreatePolicy.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_CreatePolicyVersion.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_TagPolicy.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_UntagPolicy.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_DeletePolicyVersion.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_DeletePolicy.html
+      - https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-iam-managedpolicy.html
+    propertyDocLinks:
+      policyDocument: https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html#access_policies-json
+    notes: |
+      Managed policies can only have up to 5 versions at a time.
+      Each update to a policy creates a new version.
+      Tagging and untagging a policy will not create new versions,
+      only changes to the policy document will create new versions.
+      Managed policies should not be attached to users, groups, or roles
+      as a part of the managed policy resource, instead they should be
+      attached via links or via the managed policies lists in the other resources,
+      and the other resources will need to remove the policy from their lists
+      before the managed policy resource is destroyed.
