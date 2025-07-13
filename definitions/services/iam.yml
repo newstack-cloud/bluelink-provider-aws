@@ -133,3 +133,28 @@ resourceDefinitions:
       policies: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-iam-group-policy.html
     notes: |
       IAM groups do not support tags.
+  - type: aws/iam/accessKey
+    label: AWS IAM Access Key
+    requiredFields: ["userName"]
+    computedFields:
+      - id
+      - secretAccessKey
+    operations:
+      create:
+        - CreateAccessKey
+        - UpdateAccessKey
+      update:
+        - UpdateAccessKey
+      destroy:
+        - DeleteAccessKey
+    docLinks:
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_CreateAccessKey.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_UpdateAccessKey.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_DeleteAccessKey.html
+      - https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-iam-accesskey.html
+    propertyDocLinks: {}
+    notes: |
+      The secret access key is only available for initial creation.
+      Special care should be taken to ensure the secret access key is not exposed in logs.
+      UpdateAccessKey is used in the creation phase to change the status of the access key
+      as on creation, access keys are always active by default.
