@@ -452,12 +452,88 @@ func (r *roleTagsUpdate) Execute(
 
 	// Add/update tags
 	if len(r.toAdd) > 0 {
+		// Sort tags by key before sending to AWS
+		sortedTags := sortTagsByKey(r.toAdd)
 		_, err := iamService.TagRole(ctx, &iam.TagRoleInput{
 			RoleName: aws.String(roleName),
-			Tags:     r.toAdd,
+			Tags:     sortedTags,
 		})
 		if err != nil {
 			return saveOpCtx, fmt.Errorf("failed to add tags: %w", err)
+		}
+	}
+
+	return saveOpCtx, nil
+}
+
+type rolePermissionsBoundaryUpdate struct {
+	toSet    *string
+	toRemove bool
+}
+
+func (r *rolePermissionsBoundaryUpdate) Name() string {
+	return "update permissions boundary"
+}
+
+func (r *rolePermissionsBoundaryUpdate) Prepare(
+	saveOpCtx pluginutils.SaveOperationContext,
+	specData *core.MappingNode,
+	changes *provider.Changes,
+) (bool, pluginutils.SaveOperationContext, error) {
+	// Check if permissions boundary was modified
+	permissionsBoundaryModified := false
+	for _, fieldChange := range changes.ModifiedFields {
+		if fieldChange.FieldPath == "spec.permissionsBoundary" {
+			permissionsBoundaryModified = true
+			break
+		}
+	}
+
+	if !permissionsBoundaryModified {
+		return false, saveOpCtx, nil
+	}
+
+	// Get new permissions boundary value
+	newPermissionsBoundary, exists := pluginutils.GetValueByPath("$.permissionsBoundary", specData)
+
+	// Determine if we need to set or remove the permissions boundary
+	if !exists || newPermissionsBoundary == nil {
+		// New value is nil or doesn't exist, remove the permissions boundary
+		r.toRemove = true
+		r.toSet = nil
+	} else {
+		// New value exists, set the permissions boundary
+		newValue := core.StringValue(newPermissionsBoundary)
+		r.toSet = &newValue
+		r.toRemove = false
+	}
+
+	return true, saveOpCtx, nil
+}
+
+func (r *rolePermissionsBoundaryUpdate) Execute(
+	ctx context.Context,
+	saveOpCtx pluginutils.SaveOperationContext,
+	iamService iamservice.Service,
+) (pluginutils.SaveOperationContext, error) {
+	roleName := saveOpCtx.ProviderUpstreamID
+
+	if r.toRemove {
+		// Remove permissions boundary
+		_, err := iamService.DeleteRolePermissionsBoundary(ctx, &iam.DeleteRolePermissionsBoundaryInput{
+			RoleName: aws.String(roleName),
+		})
+		if err != nil {
+			return saveOpCtx, fmt.Errorf("failed to remove permissions boundary for role %s: %w", roleName, err)
+		}
+	} else if r.toSet != nil {
+		// Set permissions boundary
+		_, err := iamService.PutRolePermissionsBoundary(ctx, &iam.PutRolePermissionsBoundaryInput{
+			RoleName:            aws.String(roleName),
+			PermissionsBoundary: aws.String(*r.toSet),
+		})
+		if err != nil {
+			return saveOpCtx, fmt.Errorf("failed to set permissions boundary for role %s: %w", roleName, err)
 		}
 	}
 

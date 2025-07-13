@@ -479,9 +479,10 @@ func (u *userTagsUpdate) Execute(
 
 	// Add/update tags
 	if len(u.toAdd) > 0 {
+		sortedTags := sortTagsByKey(u.toAdd)
 		_, err := iamService.TagUser(ctx, &iam.TagUserInput{
 			UserName: aws.String(u.userName),
-			Tags:     u.toAdd,
+			Tags:     sortedTags,
 		})
 		if err != nil {
 			return saveOpCtx, fmt.Errorf("failed to add tags: %w", err)

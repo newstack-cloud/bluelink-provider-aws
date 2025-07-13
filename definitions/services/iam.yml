@@ -44,19 +44,58 @@ resourceDefinitions:
       assumeRolePolicyDocument: https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html#access_policies-json
       policies: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-iam-role-policy.html
       tags: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-iam-role-tag.html
-  # - type: aws/iam/user
-  #   label: AWS IAM User
-  #   requiredFields: []
-  #   computedFields:
-  #     - arn
-  #     - userId
-  #   operations:
-  #     create:
-  #       - CreateUser
-  #       - CreateLoginProfile
-  #       - PutUserPolicy
-  #       - AttachUserPolicy
-  #       - PutUserPermissionsBoundary
-  #       - AddUserToGroup
-  #     update:
-  #       - 
+  - type: aws/iam/user
+    label: AWS IAM User
+    requiredFields: []
+    computedFields:
+      - arn
+      - userId
+    operations:
+      create:
+        - CreateUser
+        - CreateLoginProfile
+        - PutUserPolicy
+        - AttachUserPolicy
+        - PutUserPermissionsBoundary
+        - AddUserToGroup
+      update:
+        - UpdateUser
+        - CreateLoginProfile
+        - UpdateLoginProfile
+        - DeleteLoginProfile
+        - PutUserPolicy
+        - DeleteUserPolicy
+        - AttachUserPolicy
+        - DetachUserPolicy
+        - PutUserPermissionsBoundary
+        - DeleteUserPermissionsBoundary
+      destroy:
+        - DetachUserPolicy
+        - DeleteUserPolicy
+        - DeleteLoginProfile
+        - DeleteUserPermissionsBoundary
+        - DeleteUser
+      tags:
+        saveTags: TagUser
+        removeTags: UntagUser
+    docLinks:
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_CreateUser.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_UpdateUser.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_DeleteUser.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_PutUserPolicy.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_AttachUserPolicy.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_DetachUserPolicy.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_CreateLoginProfile.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_UpdateLoginProfile.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_DeleteLoginProfile.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_PutUserPermissionsBoundary.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_DeleteUserPermissionsBoundary.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_AddUserToGroup.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_TagUser.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_UntagUser.html
+      - https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-iam-user.html
+    propertyDocLinks:
+      assumeRolePolicyDocument: https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html#access_policies-json
+      loginProfile: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-iam-user-loginprofile.html
+      policies: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-iam-user-policy.html
+      tags: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-iam-user-tag.html

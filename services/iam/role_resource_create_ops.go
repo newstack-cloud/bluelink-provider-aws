@@ -193,3 +193,48 @@ func (r *roleManagedPoliciesCreate) Execute(
 
 	return saveOpCtx, nil
 }
+
+type rolePermissionsBoundaryCreate struct {
+	permissionsBoundary string
+}
+
+func (r *rolePermissionsBoundaryCreate) Name() string {
+	return "set permissions boundary"
+}
+
+func (r *rolePermissionsBoundaryCreate) Prepare(
+	saveOpCtx pluginutils.SaveOperationContext,
+	specData *core.MappingNode,
+	changes *provider.Changes,
+) (bool, pluginutils.SaveOperationContext, error) {
+	// Check if there is a permissions boundary to set
+	if permsBoundaryNode, ok := specData.Fields["permissionsBoundary"]; ok && permsBoundaryNode != nil {
+		r.permissionsBoundary = core.StringValue(permsBoundaryNode)
+		return true, saveOpCtx, nil
+	}
+	return false, saveOpCtx, nil
+}
+
+func (r *rolePermissionsBoundaryCreate) Execute(
+	ctx context.Context,
+	saveOpCtx pluginutils.SaveOperationContext,
+	iamService iamservice.Service,
+) (pluginutils.SaveOperationContext, error) {
+	// Get the role name from the created role
+	createRoleOutput, ok := saveOpCtx.Data["createRoleOutput"].(*iam.CreateRoleOutput)
+	if !ok {
+		return saveOpCtx, fmt.Errorf("createRoleOutput not found in save operation context")
+	}
+
+	roleName := aws.ToString(createRoleOutput.Role.RoleName)
+
+	_, err := iamService.PutRolePermissionsBoundary(ctx, &iam.PutRolePermissionsBoundaryInput{
+		RoleName:            aws.String(roleName),
+		PermissionsBoundary: aws.String(r.permissionsBoundary),
+	})
+	if err != nil {
+		return saveOpCtx, fmt.Errorf("failed to set permissions boundary for role %s: %w", roleName, err)
+	}
+
+	return saveOpCtx, nil
+}

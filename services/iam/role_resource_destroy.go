@@ -70,6 +70,16 @@ func (i *iamRoleResourceActions) Destroy(
 		}
 	}
 
+	// Remove permissions boundary if it exists
+	if permissionsBoundaryNode, exists := pluginutils.GetValueByPath("$.permissionsBoundary", input.ResourceState.SpecData); exists && permissionsBoundaryNode != nil {
+		_, err := iamService.DeleteRolePermissionsBoundary(ctx, &iam.DeleteRolePermissionsBoundaryInput{
+			RoleName: aws.String(roleName),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to delete permissions boundary for role %s: %w", roleName, err)
+		}
+	}
+
 	// Now attempt to delete the role
 	_, err = iamService.DeleteRole(ctx, &iam.DeleteRoleInput{
 		RoleName: aws.String(roleName),

@@ -41,6 +41,7 @@ func (s *IamRoleResourceDestroySuite) Test_destroy_iam_role() {
 		destroyRoleWithBothPolicyTypesTestCase(providerCtx, loader),
 		destroyRoleWithInlinePolicyFailureTestCase(providerCtx, loader),
 		destroyRoleWithManagedPolicyFailureTestCase(providerCtx, loader),
+		destroyRoleWithPermissionsBoundaryTestCase(providerCtx, loader),
 	}
 
 	plugintestutils.RunResourceDestroyTestCases(
@@ -737,6 +738,81 @@ func destroyRoleWithManagedPolicyFailureTestCase(
 					RoleName:  aws.String("TestRole"),
 					PolicyArn: aws.String("arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"),
 				},
+			},
+		},
+	}
+}
+
+func destroyRoleWithPermissionsBoundaryTestCase(
+	providerCtx provider.Context,
+	loader *testutils.MockAWSConfigLoader,
+) plugintestutils.ResourceDestroyTestCase[*aws.Config, iamservice.Service] {
+	service := iammock.CreateIamServiceMock(
+		iammock.WithDeleteRoleOutput(&iam.DeleteRoleOutput{}),
+	)
+
+	// Create test data for role destruction with permissions boundary
+	specData := &core.MappingNode{
+		Fields: map[string]*core.MappingNode{
+			"arn": core.MappingNodeFromString("arn:aws:iam::123456789012:role/TestRole"),
+			"assumeRolePolicyDocument": {
+				Fields: map[string]*core.MappingNode{
+					"Version": core.MappingNodeFromString("2012-10-17"),
+					"Statement": {
+						Items: []*core.MappingNode{
+							{
+								Fields: map[string]*core.MappingNode{
+									"Effect": core.MappingNodeFromString("Allow"),
+									"Principal": {
+										Fields: map[string]*core.MappingNode{
+											"Service": {
+												Items: []*core.MappingNode{
+													core.MappingNodeFromString("lambda.amazonaws.com"),
+												},
+											},
+										},
+									},
+									"Action": {
+										Items: []*core.MappingNode{
+											core.MappingNodeFromString("sts:AssumeRole"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			"permissionsBoundary": core.MappingNodeFromString("arn:aws:iam::123456789012:policy/PermissionsBoundary"),
+		},
+	}
+
+	return plugintestutils.ResourceDestroyTestCase[*aws.Config, iamservice.Service]{
+		Name: "destroy IAM role with permissions boundary",
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) iamservice.Service {
+			return service
+		},
+		ServiceMockCalls: &service.MockCalls,
+		ConfigStore: utils.NewAWSConfigStore(
+			[]string{},
+			utils.AWSConfigFromProviderContext,
+			loader,
+			utils.AWSConfigCacheKey,
+		),
+		Input: &provider.ResourceDestroyInput{
+			InstanceID: "test-instance-id",
+			ResourceID: "TestRole",
+			ResourceState: &state.ResourceState{
+				SpecData: specData,
+			},
+			ProviderContext: providerCtx,
+		},
+		DestroyActionsCalled: map[string]any{
+			"DeleteRolePermissionsBoundary": &iam.DeleteRolePermissionsBoundaryInput{
+				RoleName: aws.String("TestRole"),
+			},
+			"DeleteRole": &iam.DeleteRoleInput{
+				RoleName: aws.String("TestRole"),
 			},
 		},
 	}

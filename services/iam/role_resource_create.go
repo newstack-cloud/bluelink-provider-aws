@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
@@ -27,6 +28,7 @@ func (i *iamRoleResourceActions) Create(
 		newRoleCreate(i.uniqueNameGenerator),
 		&roleInlinePoliciesCreate{},
 		&roleManagedPoliciesCreate{},
+		&rolePermissionsBoundaryCreate{},
 	}
 
 	saveOpCtx := pluginutils.SaveOperationContext{
@@ -148,6 +150,16 @@ func setCreateRoleName(
 	input.RoleName = aws.String(core.StringValue(value))
 }
 
+// sortTagsByKey sorts a slice of types.Tag by their Key field
+func sortTagsByKey(tags []types.Tag) []types.Tag {
+	sorted := make([]types.Tag, len(tags))
+	copy(sorted, tags)
+	sort.Slice(sorted, func(i, j int) bool {
+		return aws.ToString(sorted[i].Key) < aws.ToString(sorted[j].Key)
+	})
+	return sorted
+}
+
 func setCreateRoleTags(
 	value *core.MappingNode,
 	input *iam.CreateRoleInput,
@@ -161,5 +173,6 @@ func setCreateRoleTags(
 			Value: aws.String(tagValue),
 		})
 	}
-	input.Tags = tags
+	// Sort tags by key before setting them
+	input.Tags = sortTagsByKey(tags)
 }

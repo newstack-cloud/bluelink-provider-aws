@@ -123,5 +123,5 @@ func setCreateUserTags(
 			Value: aws.String(tagValue),
 		})
 	}
-	input.Tags = tags
+	input.Tags = sortTagsByKey(tags)
 }

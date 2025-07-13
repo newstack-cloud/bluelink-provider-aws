@@ -41,6 +41,7 @@ func (s *IAMRoleResourceCreateSuite) Test_create_iam_role() {
 		createRoleWithInlinePoliciesTestCase(providerCtx, loader),
 		createRoleWithManagedPoliciesTestCase(providerCtx, loader),
 		createRoleWithGeneratedNameTestCase(providerCtx, loader),
+		createRoleWithPermissionsBoundaryTestCase(providerCtx, loader),
 	}
 
 	plugintestutils.RunResourceDeployTestCases(
@@ -794,6 +795,139 @@ func createRoleWithGeneratedNameTestCase(
 		// Note: We can't predict the exact role name due to nanoid generation,
 		// so we'll omit SaveActionsCalled for this test case
 		// The important thing is that the role gets created successfully
+	}
+}
+
+func createRoleWithPermissionsBoundaryTestCase(
+	providerCtx provider.Context,
+	loader *testutils.MockAWSConfigLoader,
+) plugintestutils.ResourceDeployTestCase[*aws.Config, iamservice.Service] {
+	resourceARN := "arn:aws:iam::123456789012:role/test-role-with-permissions-boundary"
+	roleId := "AROA1234567890123456"
+
+	service := iammock.CreateIamServiceMock(
+		iammock.WithCreateRoleOutput(&iam.CreateRoleOutput{
+			Role: &types.Role{
+				RoleName: aws.String("test-role-with-permissions-boundary"),
+				Arn:      aws.String(resourceARN),
+				RoleId:   aws.String(roleId),
+			},
+		}),
+		iammock.WithPutRolePermissionsBoundaryOutput(&iam.PutRolePermissionsBoundaryOutput{}),
+		iammock.WithAttachRolePolicyOutput(&iam.AttachRolePolicyOutput{}),
+	)
+
+	specData := &core.MappingNode{
+		Fields: map[string]*core.MappingNode{
+			"roleName": core.MappingNodeFromString("test-role-with-permissions-boundary"),
+			"assumeRolePolicyDocument": {
+				Fields: map[string]*core.MappingNode{
+					"Version": core.MappingNodeFromString("2012-10-17"),
+					"Statement": {
+						Items: []*core.MappingNode{
+							{
+								Fields: map[string]*core.MappingNode{
+									"Effect": core.MappingNodeFromString("Allow"),
+									"Principal": {
+										Fields: map[string]*core.MappingNode{
+											"Service": {
+												Items: []*core.MappingNode{
+													core.MappingNodeFromString("lambda.amazonaws.com"),
+												},
+											},
+										},
+									},
+									"Action": {
+										Items: []*core.MappingNode{
+											core.MappingNodeFromString("sts:AssumeRole"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			"permissionsBoundary": core.MappingNodeFromString("arn:aws:iam::123456789012:policy/test-permissions-boundary"),
+			"managedPolicyArns": {
+				Items: []*core.MappingNode{
+					core.MappingNodeFromString("arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"),
+					core.MappingNodeFromString("arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"),
+				},
+			},
+		},
+	}
+
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, iamservice.Service]{
+		Name: "create role with permissions boundary",
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) iamservice.Service {
+			return service
+		},
+		ServiceMockCalls: &service.MockCalls,
+		ConfigStore: utils.NewAWSConfigStore(
+			[]string{},
+			utils.AWSConfigFromProviderContext,
+			loader,
+			utils.AWSConfigCacheKey,
+		),
+		Input: &provider.ResourceDeployInput{
+			InstanceID: "test-instance-id",
+			ResourceID: "test-role-with-permissions-boundary-id",
+			Changes: &provider.Changes{
+				AppliedResourceInfo: provider.ResourceInfo{
+					ResourceID:   "test-role-with-permissions-boundary-id",
+					ResourceName: "test-role-with-permissions-boundary",
+					InstanceID:   "test-instance-id",
+					ResourceWithResolvedSubs: &provider.ResolvedResource{
+						Type: &schema.ResourceTypeWrapper{
+							Value: "aws/iam/role",
+						},
+						Spec: specData,
+					},
+				},
+				NewFields: []provider.FieldChange{
+					{
+						FieldPath: "spec.roleName",
+					},
+					{
+						FieldPath: "spec.assumeRolePolicyDocument",
+					},
+					{
+						FieldPath: "spec.permissionsBoundary",
+					},
+					{
+						FieldPath: "spec.managedPolicyArns",
+					},
+				},
+			},
+			ProviderContext: providerCtx,
+		},
+		ExpectedOutput: &provider.ResourceDeployOutput{
+			ComputedFieldValues: map[string]*core.MappingNode{
+				"spec.arn":    core.MappingNodeFromString(resourceARN),
+				"spec.roleId": core.MappingNodeFromString(roleId),
+			},
+		},
+		SaveActionsCalled: map[string]any{
+			"CreateRole": &iam.CreateRoleInput{
+				RoleName:                 aws.String("test-role-with-permissions-boundary"),
+				AssumeRolePolicyDocument: aws.String(`{"Statement":[{"Action":["sts:AssumeRole"],"Effect":"Allow","Principal":{"Service":["lambda.amazonaws.com"]}}],"Version":"2012-10-17"}`),
+			},
+			"PutRolePermissionsBoundary": &iam.PutRolePermissionsBoundaryInput{
+				RoleName:            aws.String("test-role-with-permissions-boundary"),
+				PermissionsBoundary: aws.String("arn:aws:iam::123456789012:policy/test-permissions-boundary"),
+			},
+			"AttachRolePolicy": []any{
+				&iam.AttachRolePolicyInput{
+					RoleName:  aws.String("test-role-with-permissions-boundary"),
+					PolicyArn: aws.String("arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"),
+				},
+				&iam.AttachRolePolicyInput{
+					RoleName:  aws.String("test-role-with-permissions-boundary"),
+					PolicyArn: aws.String("arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"),
+				},
+			},
+		},
 	}
 }
 
