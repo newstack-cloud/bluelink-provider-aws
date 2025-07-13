@@ -21,6 +21,7 @@ This checklist is for use by background agents (or human contributors) to track 
   - `Create`, `Update`, `Destroy`, `GetExternalState`, `Stabilised`
 - [ ] Method signatures match existing patterns.
 - [ ] Uses `pluginutils` helpers for value extraction and nil checks.
+- [ ] Uses `AllowedValues` instead of `Pattern` for string fields with static allowed values.
 
 ## 3. Test Coverage
 - [ ] Test files exist for each method.
@@ -52,6 +53,7 @@ This checklist is for use by background agents (or human contributors) to track 
 ## 7. Regression and Integration
 - [ ] All existing tests in the project pass (no regressions introduced).
 - [ ] Resource integrates cleanly with the rest of the provider (no import or dependency issues).
+- [ ] Resource is registered with the provider in `provider/provider.go`.
 
 ## 8. Linting and Formatting
 - [ ] Code passes linting (e.g., `gofmt`, `golint`, or project-specific linter).

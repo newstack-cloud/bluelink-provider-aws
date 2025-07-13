@@ -34,6 +34,14 @@ func NewProvider(
 				iamServiceFactory,
 				awsConfigStore,
 			),
+			"aws/iam/group": iam.GroupResource(
+				iamServiceFactory,
+				awsConfigStore,
+			),
+			"aws/iam/accessKey": iam.AccessKeyResource(
+				iamServiceFactory,
+				awsConfigStore,
+			),
 			"aws/lambda/function": lambda.FunctionResource(
 				lambdaServiceFactory,
 				awsConfigStore,

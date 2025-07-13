@@ -830,7 +830,7 @@ func WithGetGroupPolicyError(err error) iamServiceMockOption {
 	}
 }
 
-// Access key mock options
+// Access key mock options.
 func WithCreateAccessKeyOutput(output *iam.CreateAccessKeyOutput) iamServiceMockOption {
 	return func(m *iamServiceMock) {
 		m.createAccessKeyOutput = output
@@ -1361,7 +1361,7 @@ func (m *iamServiceMock) DeleteLoginProfile(
 	return m.deleteLoginProfileOutput, m.deleteLoginProfileError
 }
 
-// Access key methods
+// Access key methods.
 func (m *iamServiceMock) CreateAccessKey(
 	ctx context.Context,
 	params *iam.CreateAccessKeyInput,

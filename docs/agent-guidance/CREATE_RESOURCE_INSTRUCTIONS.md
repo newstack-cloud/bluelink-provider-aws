@@ -25,6 +25,7 @@ The resource needs to be implemented following existing patterns and conventions
 15. Apply any corrections as a result of the analysis from step 13 and 14.
 16. Study existing examples in the `services/${service}/examples/resources` directory.
 17. Add examples for the new resource to the `services/${service}/examples/resources` directory and integrate the examples into the main resource definition file.
+18. Ensure that the resource is registered with the provider in the `provider/provider.go` file.
 
 ### Sources
 
