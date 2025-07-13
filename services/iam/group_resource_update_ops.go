@@ -27,13 +27,23 @@ func (g *groupUpdate) Prepare(
 	specData *core.MappingNode,
 	changes *provider.Changes,
 ) (bool, pluginutils.SaveOperationContext, error) {
-	// Extract group name from ARN
-	arn := core.StringValue(specData.Fields["arn"])
-	if arn == "" {
+	// Extract group name from ARN in the current state
+	currentStateSpecData := pluginutils.GetCurrentResourceStateSpecData(changes)
+	if currentStateSpecData == nil {
+		return false, saveOpCtx, fmt.Errorf("current state spec data is required for group update")
+	}
+
+	arn, hasArn := pluginutils.GetValueByPath("$.arn", currentStateSpecData)
+	if !hasArn {
 		return false, saveOpCtx, fmt.Errorf("ARN is required for group update")
 	}
 
-	groupName, err := extractGroupNameFromARN(arn)
+	arnStr := core.StringValue(arn)
+	if arnStr == "" {
+		return false, saveOpCtx, fmt.Errorf("ARN is required for group update")
+	}
+
+	groupName, err := extractGroupNameFromARN(arnStr)
 	if err != nil {
 		return false, saveOpCtx, fmt.Errorf("failed to extract group name from ARN: %w", err)
 	}
@@ -41,8 +51,8 @@ func (g *groupUpdate) Prepare(
 	g.groupName = groupName
 
 	// Check if path needs to be updated
-	if pathNode, ok := specData.Fields["path"]; ok && pathNode != nil {
-		g.path = core.StringValue(pathNode)
+	if path, hasPath := pluginutils.GetValueByPath("$.path", specData); hasPath {
+		g.path = core.StringValue(path)
 		return true, saveOpCtx, nil
 	}
 
@@ -83,22 +93,30 @@ func (g *groupInlinePoliciesUpdate) Prepare(
 	// Compare current and desired inline policies
 	currentStateSpecData := pluginutils.GetCurrentResourceStateSpecData(changes)
 	currentPolicies, _ := pluginutils.GetValueByPath("$.policies", currentStateSpecData)
-	newPolicies := specData.Fields["policies"]
+	newPolicies, _ := pluginutils.GetValueByPath("$.policies", specData)
 
 	// Create maps for easier comparison
 	currentMap := make(map[string]*core.MappingNode)
 	if currentPolicies != nil {
 		for _, policy := range currentPolicies.Items {
-			policyName := core.StringValue(policy.Fields["policyName"])
-			currentMap[policyName] = policy
+			if policyName, hasPolicyName := pluginutils.GetValueByPath("$.policyName", policy); hasPolicyName {
+				policyNameStr := core.StringValue(policyName)
+				if policyNameStr != "" {
+					currentMap[policyNameStr] = policy
+				}
+			}
 		}
 	}
 
 	newMap := make(map[string]*core.MappingNode)
 	if newPolicies != nil {
 		for _, policy := range newPolicies.Items {
-			policyName := core.StringValue(policy.Fields["policyName"])
-			newMap[policyName] = policy
+			if policyName, hasPolicyName := pluginutils.GetValueByPath("$.policyName", policy); hasPolicyName {
+				policyNameStr := core.StringValue(policyName)
+				if policyNameStr != "" {
+					newMap[policyNameStr] = policy
+				}
+			}
 		}
 	}
 
@@ -142,8 +160,19 @@ func (g *groupInlinePoliciesUpdate) Execute(
 
 	// Add policies
 	for _, policy := range g.policiesToAdd {
-		policyName := core.StringValue(policy.Fields["policyName"])
-		policyDocNode := policy.Fields["policyDocument"]
+		policyName, hasPolicyName := pluginutils.GetValueByPath("$.policyName", policy)
+		if !hasPolicyName {
+			continue
+		}
+		policyNameStr := core.StringValue(policyName)
+		if policyNameStr == "" {
+			continue
+		}
+
+		policyDocNode, hasPolicyDoc := pluginutils.GetValueByPath("$.policyDocument", policy)
+		if !hasPolicyDoc {
+			continue
+		}
 
 		policyJSON, err := json.Marshal(policyDocNode)
 		if err != nil {
@@ -152,11 +181,11 @@ func (g *groupInlinePoliciesUpdate) Execute(
 
 		_, err = iamService.PutGroupPolicy(ctx, &iam.PutGroupPolicyInput{
 			GroupName:      aws.String(g.groupName),
-			PolicyName:     aws.String(policyName),
+			PolicyName:     aws.String(policyNameStr),
 			PolicyDocument: aws.String(string(policyJSON)),
 		})
 		if err != nil {
-			return saveOpCtx, fmt.Errorf("failed to put inline policy %s: %w", policyName, err)
+			return saveOpCtx, fmt.Errorf("failed to put inline policy %s: %w", policyNameStr, err)
 		}
 	}
 
@@ -181,14 +210,16 @@ func (g *groupManagedPoliciesUpdate) Prepare(
 	// Compare current and desired managed policies
 	currentStateSpecData := pluginutils.GetCurrentResourceStateSpecData(changes)
 	currentPolicies, _ := pluginutils.GetValueByPath("$.managedPolicyArns", currentStateSpecData)
-	newPolicies := specData.Fields["managedPolicyArns"]
+	newPolicies, _ := pluginutils.GetValueByPath("$.managedPolicyArns", specData)
 
 	// Create maps for easier comparison
 	currentMap := make(map[string]bool)
 	if currentPolicies != nil {
 		for _, policyArn := range currentPolicies.Items {
 			policyArnStr := core.StringValue(policyArn)
-			currentMap[policyArnStr] = true
+			if policyArnStr != "" {
+				currentMap[policyArnStr] = true
+			}
 		}
 	}
 
@@ -196,7 +227,9 @@ func (g *groupManagedPoliciesUpdate) Prepare(
 	if newPolicies != nil {
 		for _, policyArn := range newPolicies.Items {
 			policyArnStr := core.StringValue(policyArn)
-			newMap[policyArnStr] = true
+			if policyArnStr != "" {
+				newMap[policyArnStr] = true
+			}
 		}
 	}
 

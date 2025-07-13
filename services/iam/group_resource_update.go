@@ -21,24 +21,24 @@ func (i *iamGroupResourceActions) Update(
 		return nil, err
 	}
 
-	// Get the group ARN from the current state
+	// Safely get the group ARN from the current state
 	currentStateSpecData := pluginutils.GetCurrentResourceStateSpecData(input.Changes)
-	arnValue, err := core.GetPathValue(
-		"$.arn",
-		currentStateSpecData,
-		core.MappingNodeMaxTraverseDepth,
-	)
-	if err != nil {
-		return nil, err
+	if currentStateSpecData == nil {
+		return nil, fmt.Errorf("current state spec data is required for update operation")
 	}
 
-	arn := core.StringValue(arnValue)
-	if arn == "" {
+	arn, hasArn := pluginutils.GetValueByPath("$.arn", currentStateSpecData)
+	if !hasArn {
+		return nil, fmt.Errorf("ARN is required for update operation")
+	}
+
+	arnStr := core.StringValue(arn)
+	if arnStr == "" {
 		return nil, fmt.Errorf("ARN is required for update operation")
 	}
 
 	// Extract group name from ARN
-	groupName, err := extractGroupNameFromARN(arn)
+	groupName, err := extractGroupNameFromARN(arnStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract group name from ARN: %w", err)
 	}

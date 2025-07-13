@@ -135,8 +135,8 @@ func (g *groupInlinePoliciesCreate) Prepare(
 	changes *provider.Changes,
 ) (bool, pluginutils.SaveOperationContext, error) {
 	// Check if there are inline policies to create
-	if policiesNode, ok := specData.Fields["policies"]; ok && policiesNode != nil && len(policiesNode.Items) > 0 {
-		g.policies = policiesNode.Items
+	if policies, hasPolicies := pluginutils.GetValueByPath("$.policies", specData); hasPolicies && policies != nil && len(policies.Items) > 0 {
+		g.policies = policies.Items
 		return true, saveOpCtx, nil
 	}
 	return false, saveOpCtx, nil
@@ -157,8 +157,19 @@ func (g *groupInlinePoliciesCreate) Execute(
 
 	// Create each inline policy
 	for _, policyNode := range g.policies {
-		policyName := core.StringValue(policyNode.Fields["policyName"])
-		policyDocNode := policyNode.Fields["policyDocument"]
+		policyName, hasPolicyName := pluginutils.GetValueByPath("$.policyName", policyNode)
+		if !hasPolicyName {
+			continue
+		}
+		policyNameStr := core.StringValue(policyName)
+		if policyNameStr == "" {
+			continue
+		}
+
+		policyDocNode, hasPolicyDoc := pluginutils.GetValueByPath("$.policyDocument", policyNode)
+		if !hasPolicyDoc {
+			continue
+		}
 
 		policyJSON, err := json.Marshal(policyDocNode)
 		if err != nil {
@@ -167,11 +178,11 @@ func (g *groupInlinePoliciesCreate) Execute(
 
 		_, err = iamService.PutGroupPolicy(ctx, &iam.PutGroupPolicyInput{
 			GroupName:      aws.String(groupName),
-			PolicyName:     aws.String(policyName),
+			PolicyName:     aws.String(policyNameStr),
 			PolicyDocument: aws.String(string(policyJSON)),
 		})
 		if err != nil {
-			return saveOpCtx, fmt.Errorf("failed to put inline policy %s: %w", policyName, err)
+			return saveOpCtx, fmt.Errorf("failed to put inline policy %s: %w", policyNameStr, err)
 		}
 	}
 
@@ -192,8 +203,8 @@ func (g *groupManagedPoliciesCreate) Prepare(
 	changes *provider.Changes,
 ) (bool, pluginutils.SaveOperationContext, error) {
 	// Check if there are managed policies to attach
-	if managedPolicyArnsNode, ok := specData.Fields["managedPolicyArns"]; ok && managedPolicyArnsNode != nil && len(managedPolicyArnsNode.Items) > 0 {
-		g.managedPolicyArns = managedPolicyArnsNode.Items
+	if managedPolicyArns, hasManagedPolicyArns := pluginutils.GetValueByPath("$.managedPolicyArns", specData); hasManagedPolicyArns && managedPolicyArns != nil && len(managedPolicyArns.Items) > 0 {
+		g.managedPolicyArns = managedPolicyArns.Items
 		return true, saveOpCtx, nil
 	}
 	return false, saveOpCtx, nil
@@ -214,14 +225,17 @@ func (g *groupManagedPoliciesCreate) Execute(
 
 	// Attach each managed policy
 	for _, policyArnNode := range g.managedPolicyArns {
-		policyArn := core.StringValue(policyArnNode)
+		policyArnStr := core.StringValue(policyArnNode)
+		if policyArnStr == "" {
+			continue
+		}
 
 		_, err := iamService.AttachGroupPolicy(ctx, &iam.AttachGroupPolicyInput{
 			GroupName: aws.String(groupName),
-			PolicyArn: aws.String(policyArn),
+			PolicyArn: aws.String(policyArnStr),
 		})
 		if err != nil {
-			return saveOpCtx, fmt.Errorf("failed to attach managed policy %s: %w", policyArn, err)
+			return saveOpCtx, fmt.Errorf("failed to attach managed policy %s: %w", policyArnStr, err)
 		}
 	}
 

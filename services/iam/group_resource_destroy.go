@@ -9,6 +9,7 @@ import (
 	iamservice "github.com/newstack-cloud/bluelink-provider-aws/services/iam/service"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/core"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
+	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/pluginutils"
 )
 
 func (i *iamGroupResourceActions) Destroy(
@@ -20,14 +21,19 @@ func (i *iamGroupResourceActions) Destroy(
 		return err
 	}
 
-	// Get the group ARN from the resource state
-	arn := core.StringValue(input.ResourceState.SpecData.Fields["arn"])
-	if arn == "" {
+	// Safely get the group ARN from the resource state
+	arn, hasArn := pluginutils.GetValueByPath("$.arn", input.ResourceState.SpecData)
+	if !hasArn {
+		return fmt.Errorf("ARN is required for destroy operation")
+	}
+
+	arnStr := core.StringValue(arn)
+	if arnStr == "" {
 		return fmt.Errorf("ARN is required for destroy operation")
 	}
 
 	// Extract group name from ARN
-	groupName, err := extractGroupNameFromARN(arn)
+	groupName, err := extractGroupNameFromARN(arnStr)
 	if err != nil {
 		return fmt.Errorf("failed to extract group name from ARN: %w", err)
 	}
@@ -80,8 +86,16 @@ func (i *iamGroupResourceActions) detachAllManagedPolicies(
 		return fmt.Errorf("failed to list attached policies for group %s: %w", groupName, err)
 	}
 
+	// Safely check if AttachedPolicies is nil
+	if result == nil || result.AttachedPolicies == nil {
+		return nil
+	}
+
 	// Detach each managed policy
 	for _, policy := range result.AttachedPolicies {
+		if policy.PolicyArn == nil {
+			continue
+		}
 		_, err := iamService.DetachGroupPolicy(ctx, &iam.DetachGroupPolicyInput{
 			GroupName: aws.String(groupName),
 			PolicyArn: policy.PolicyArn,
@@ -107,8 +121,16 @@ func (i *iamGroupResourceActions) deleteAllInlinePolicies(
 		return fmt.Errorf("failed to list inline policies for group %s: %w", groupName, err)
 	}
 
+	// Safely check if PolicyNames is nil
+	if result == nil || result.PolicyNames == nil {
+		return nil
+	}
+
 	// Delete each inline policy
 	for _, policyName := range result.PolicyNames {
+		if policyName == "" {
+			continue
+		}
 		_, err := iamService.DeleteGroupPolicy(ctx, &iam.DeleteGroupPolicyInput{
 			GroupName:  aws.String(groupName),
 			PolicyName: aws.String(policyName),

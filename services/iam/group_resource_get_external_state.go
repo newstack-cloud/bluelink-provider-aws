@@ -12,6 +12,7 @@ import (
 	iamservice "github.com/newstack-cloud/bluelink-provider-aws/services/iam/service"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/core"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
+	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/pluginutils"
 )
 
 func (i *iamGroupResourceActions) GetExternalState(
@@ -23,14 +24,19 @@ func (i *iamGroupResourceActions) GetExternalState(
 		return nil, err
 	}
 
-	// Get the group ARN from the resource spec
-	arn := core.StringValue(input.CurrentResourceSpec.Fields["arn"])
-	if arn == "" {
+	// Safely get the group ARN from the resource spec
+	arn, hasArn := pluginutils.GetValueByPath("$.arn", input.CurrentResourceSpec)
+	if !hasArn {
+		return nil, fmt.Errorf("ARN is required for get external state operation")
+	}
+
+	arnStr := core.StringValue(arn)
+	if arnStr == "" {
 		return nil, fmt.Errorf("ARN is required for get external state operation")
 	}
 
 	// Extract group name from ARN
-	groupName, err := extractGroupNameFromARN(arn)
+	groupName, err := extractGroupNameFromARN(arnStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract group name from ARN: %w", err)
 	}
@@ -56,7 +62,7 @@ func (i *iamGroupResourceActions) GetExternalState(
 
 	group := getGroupOutput.Group
 
-	// Build the external state
+	// Build the external state safely
 	externalState := map[string]*core.MappingNode{
 		"arn":       core.MappingNodeFromString(aws.ToString(group.Arn)),
 		"groupId":   core.MappingNodeFromString(aws.ToString(group.GroupId)),
