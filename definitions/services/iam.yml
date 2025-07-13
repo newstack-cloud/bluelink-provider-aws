@@ -1,1 +1,42 @@
 version: "1.0.0"
+resourceDefinitions:
+  - type: aws/iam/role
+    label: AWS IAM Role
+    requiredFields:
+      - assumeRolePolicyDocument
+    computedFields:
+      - arn
+      - roleId
+    operations:
+      create:
+        - CreateRole
+        - PutRolePolicy
+        - AttachRolePolicy
+      update:
+        - UpdateRole
+        - PutRolePolicy
+        - DeleteRolePolicy
+        - AttachRolePolicy
+        - DetachRolePolicy
+      destroy:
+        - DetachRolePolicy
+        - DeleteRolePolicy
+        - DeleteRole
+      tags:
+        saveTags: TagRole
+        removeTags: UntagRole
+    docLinks:
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_CreateRole.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_UpdateRole.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_DeleteRole.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_PutRolePolicy.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_AttachRolePolicy.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_DetachRolePolicy.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_TagRole.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_UntagRole.html
+      - https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-iam-role.html
+    propertyDocLinks:
+      assumeRolePolicyDocument: https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html#access_policies-json
+      policies: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-iam-role-policy.html
+      tags: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-iam-role-tag.html
+    

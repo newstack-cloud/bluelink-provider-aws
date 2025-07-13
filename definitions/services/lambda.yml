@@ -27,7 +27,7 @@ resourceDefinitions:
         - DeleteFunction
       getExternalState:
         - GetFunction
-    tagss:
+    tags:
       saveTags: TagResource
       removeTags: UntagResource
     docLinks:
