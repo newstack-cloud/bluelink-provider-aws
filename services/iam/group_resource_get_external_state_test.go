@@ -134,21 +134,21 @@ func createGroupWithPoliciesGetExternalStateTestCase(
 			"groupId":   core.MappingNodeFromString(groupId),
 			"groupName": core.MappingNodeFromString("test-group-with-policies"),
 			"path":      core.MappingNodeFromString("/"),
-			"policies": &core.MappingNode{
+			"policies": {
 				Items: []*core.MappingNode{
 					{
 						Fields: map[string]*core.MappingNode{
 							"policyName": core.MappingNodeFromString("TestPolicy"),
-							"policyDocument": &core.MappingNode{
+							"policyDocument": {
 								Fields: map[string]*core.MappingNode{
 									"Version": core.MappingNodeFromString("2012-10-17"),
-									"Statement": &core.MappingNode{
+									"Statement": {
 										Items: []*core.MappingNode{
 											{
 												Fields: map[string]*core.MappingNode{
 													"Effect":   core.MappingNodeFromString("Allow"),
-													"Action":   &core.MappingNode{Items: []*core.MappingNode{core.MappingNodeFromString("s3:GetObject")}},
-													"Resource": &core.MappingNode{Items: []*core.MappingNode{core.MappingNodeFromString("*")}},
+													"Action":   {Items: []*core.MappingNode{core.MappingNodeFromString("s3:GetObject")}},
+													"Resource": {Items: []*core.MappingNode{core.MappingNodeFromString("*")}},
 												},
 											},
 										},
@@ -225,7 +225,7 @@ func createGroupWithManagedPoliciesGetExternalStateTestCase(
 			"groupId":   core.MappingNodeFromString(groupId),
 			"groupName": core.MappingNodeFromString("test-group-with-managed-policies"),
 			"path":      core.MappingNodeFromString("/"),
-			"managedPolicyArns": &core.MappingNode{
+			"managedPolicyArns": {
 				Items: []*core.MappingNode{
 					core.MappingNodeFromString("arn:aws:iam::aws:policy/ReadOnlyAccess"),
 				},
