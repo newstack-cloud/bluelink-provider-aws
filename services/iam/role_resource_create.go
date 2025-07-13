@@ -150,7 +150,7 @@ func setCreateRoleName(
 	input.RoleName = aws.String(core.StringValue(value))
 }
 
-// sortTagsByKey sorts a slice of types.Tag by their Key field
+// sortTagsByKey sorts a slice of types.Tag by their Key field.
 func sortTagsByKey(tags []types.Tag) []types.Tag {
 	sorted := make([]types.Tag, len(tags))
 	copy(sorted, tags)

@@ -19,27 +19,6 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-// Helper to compare two []types.Tag slices as sets (ignoring order)
-func assertTagsEqualIgnoreOrder(t *testing.T, expected, actual []types.Tag) {
-	t.Helper()
-	if len(expected) != len(actual) {
-		t.Fatalf("tag slices have different lengths: expected %d, got %d", len(expected), len(actual))
-	}
-	tagMap := make(map[string]string, len(expected))
-	for _, tag := range expected {
-		tagMap[*tag.Key] = *tag.Value
-	}
-	for _, tag := range actual {
-		val, ok := tagMap[*tag.Key]
-		if !ok {
-			t.Fatalf("unexpected tag key: %s", *tag.Key)
-		}
-		if val != *tag.Value {
-			t.Fatalf("tag value mismatch for key %s: expected %s, got %s", *tag.Key, val, *tag.Value)
-		}
-	}
-}
-
 type IamRoleResourceUpdateSuite struct {
 	suite.Suite
 }
