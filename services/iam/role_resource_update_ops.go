@@ -8,6 +8,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
+	"github.com/aws/aws-sdk-go-v2/service/iam/types"
 	iamservice "github.com/newstack-cloud/bluelink-provider-aws/services/iam/service"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/core"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
@@ -158,7 +159,9 @@ func changesToUpdateAssumeRolePolicyInput(
 }
 
 type roleInlinePoliciesUpdate struct {
-	policies []*core.MappingNode
+	toAdd    []*core.MappingNode
+	toUpdate []*core.MappingNode
+	toRemove []string
 }
 
 func (r *roleInlinePoliciesUpdate) Name() string {
@@ -183,13 +186,44 @@ func (r *roleInlinePoliciesUpdate) Prepare(
 		return false, saveOpCtx, nil
 	}
 
-	// Check if there are inline policies to update
-	if policiesNode, ok := specData.Fields["policies"]; ok && policiesNode != nil && len(policiesNode.Items) > 0 {
-		r.policies = policiesNode.Items
-		return true, saveOpCtx, nil
+	// Compare current and desired inline policies
+	currentStateSpecData := pluginutils.GetCurrentResourceStateSpecData(changes)
+	currentPolicies, _ := pluginutils.GetValueByPath("$.policies", currentStateSpecData)
+	newPolicies := specData.Fields["policies"]
+
+	// Create maps for easier comparison
+	currentMap := make(map[string]*core.MappingNode)
+	if currentPolicies != nil {
+		for _, policy := range currentPolicies.Items {
+			policyName := core.StringValue(policy.Fields["policyName"])
+			currentMap[policyName] = policy
+		}
 	}
 
-	return false, saveOpCtx, nil
+	newMap := make(map[string]*core.MappingNode)
+	if newPolicies != nil {
+		for _, policy := range newPolicies.Items {
+			policyName := core.StringValue(policy.Fields["policyName"])
+			newMap[policyName] = policy
+		}
+	}
+
+	// Determine what needs to be added, updated, or removed
+	for name, policy := range newMap {
+		if currentPolicy, exists := currentMap[name]; !exists {
+			r.toAdd = append(r.toAdd, policy)
+		} else if !policiesEqual(currentPolicy, policy) {
+			r.toUpdate = append(r.toUpdate, policy)
+		}
+	}
+
+	for name := range currentMap {
+		if _, exists := newMap[name]; !exists {
+			r.toRemove = append(r.toRemove, name)
+		}
+	}
+
+	return len(r.toAdd) > 0 || len(r.toUpdate) > 0 || len(r.toRemove) > 0, saveOpCtx, nil
 }
 
 func (r *roleInlinePoliciesUpdate) Execute(
@@ -199,8 +233,20 @@ func (r *roleInlinePoliciesUpdate) Execute(
 ) (pluginutils.SaveOperationContext, error) {
 	roleName := saveOpCtx.ProviderUpstreamID
 
-	// Update each inline policy
-	for _, policyNode := range r.policies {
+	// Remove policies
+	for _, policyName := range r.toRemove {
+		_, err := iamService.DeleteRolePolicy(ctx, &iam.DeleteRolePolicyInput{
+			RoleName:   aws.String(roleName),
+			PolicyName: aws.String(policyName),
+		})
+		if err != nil {
+			return saveOpCtx, fmt.Errorf("failed to delete inline policy %s: %w", policyName, err)
+		}
+	}
+
+	// Add and update policies (both use PutRolePolicy)
+	allPolicies := append(r.toAdd, r.toUpdate...)
+	for _, policyNode := range allPolicies {
 		policyName := core.StringValue(policyNode.Fields["policyName"])
 		policyDocNode := policyNode.Fields["policyDocument"]
 
@@ -215,7 +261,7 @@ func (r *roleInlinePoliciesUpdate) Execute(
 			PolicyDocument: aws.String(string(policyJSON)),
 		})
 		if err != nil {
-			return saveOpCtx, fmt.Errorf("failed to update inline policy %s: %w", policyName, err)
+			return saveOpCtx, fmt.Errorf("failed to put inline policy %s: %w", policyName, err)
 		}
 	}
 
@@ -223,7 +269,8 @@ func (r *roleInlinePoliciesUpdate) Execute(
 }
 
 type roleManagedPoliciesUpdate struct {
-	managedPolicyArns []string
+	toAttach []string
+	toDetach []string
 }
 
 func (r *roleManagedPoliciesUpdate) Name() string {
@@ -248,16 +295,39 @@ func (r *roleManagedPoliciesUpdate) Prepare(
 		return false, saveOpCtx, nil
 	}
 
-	// Check if there are managed policy ARNs to update
-	if managedPolicyArnsNode, ok := specData.Fields["managedPolicyArns"]; ok && managedPolicyArnsNode != nil && len(managedPolicyArnsNode.Items) > 0 {
-		r.managedPolicyArns = make([]string, len(managedPolicyArnsNode.Items))
-		for i, arnNode := range managedPolicyArnsNode.Items {
-			r.managedPolicyArns[i] = core.StringValue(arnNode)
+	// Compare current and desired managed policies
+	currentStateSpecData := pluginutils.GetCurrentResourceStateSpecData(changes)
+	currentPolicies, _ := pluginutils.GetValueByPath("$.managedPolicyArns", currentStateSpecData)
+	newPolicies := specData.Fields["managedPolicyArns"]
+
+	currentSet := make(map[string]bool)
+	if currentPolicies != nil {
+		for _, policyArn := range currentPolicies.Items {
+			currentSet[core.StringValue(policyArn)] = true
 		}
-		return true, saveOpCtx, nil
 	}
 
-	return false, saveOpCtx, nil
+	newSet := make(map[string]bool)
+	if newPolicies != nil {
+		for _, policyArn := range newPolicies.Items {
+			newSet[core.StringValue(policyArn)] = true
+		}
+	}
+
+	// Determine policies to attach and detach
+	for arn := range newSet {
+		if !currentSet[arn] {
+			r.toAttach = append(r.toAttach, arn)
+		}
+	}
+
+	for arn := range currentSet {
+		if !newSet[arn] {
+			r.toDetach = append(r.toDetach, arn)
+		}
+	}
+
+	return len(r.toAttach) > 0 || len(r.toDetach) > 0, saveOpCtx, nil
 }
 
 func (r *roleManagedPoliciesUpdate) Execute(
@@ -267,8 +337,19 @@ func (r *roleManagedPoliciesUpdate) Execute(
 ) (pluginutils.SaveOperationContext, error) {
 	roleName := saveOpCtx.ProviderUpstreamID
 
-	// Attach each managed policy
-	for _, policyArn := range r.managedPolicyArns {
+	// Detach policies
+	for _, policyArn := range r.toDetach {
+		_, err := iamService.DetachRolePolicy(ctx, &iam.DetachRolePolicyInput{
+			RoleName:  aws.String(roleName),
+			PolicyArn: aws.String(policyArn),
+		})
+		if err != nil {
+			return saveOpCtx, fmt.Errorf("failed to detach managed policy %s: %w", policyArn, err)
+		}
+	}
+
+	// Attach policies
+	for _, policyArn := range r.toAttach {
 		_, err := iamService.AttachRolePolicy(ctx, &iam.AttachRolePolicyInput{
 			RoleName:  aws.String(roleName),
 			PolicyArn: aws.String(policyArn),
@@ -280,3 +361,107 @@ func (r *roleManagedPoliciesUpdate) Execute(
 
 	return saveOpCtx, nil
 }
+
+type roleTagsUpdate struct {
+	toAdd    []types.Tag
+	toRemove []string
+}
+
+func (r *roleTagsUpdate) Name() string {
+	return "update tags"
+}
+
+func (r *roleTagsUpdate) Prepare(
+	saveOpCtx pluginutils.SaveOperationContext,
+	specData *core.MappingNode,
+	changes *provider.Changes,
+) (bool, pluginutils.SaveOperationContext, error) {
+
+	// Check if tags were modified
+	tagsModified := false
+	for _, fieldChange := range changes.ModifiedFields {
+		if fieldChange.FieldPath == "spec.tags" {
+			tagsModified = true
+			break
+		}
+	}
+
+	if !tagsModified {
+		return false, saveOpCtx, nil
+	}
+
+	// Compare current and desired tags
+	currentStateSpecData := pluginutils.GetCurrentResourceStateSpecData(changes)
+	currentTags, _ := pluginutils.GetValueByPath("$.tags", currentStateSpecData)
+	newTags := specData.Fields["tags"]
+
+	currentMap := make(map[string]string)
+	if currentTags != nil {
+		for _, tag := range currentTags.Items {
+			key := core.StringValue(tag.Fields["key"])
+			value := core.StringValue(tag.Fields["value"])
+			currentMap[key] = value
+		}
+	}
+
+	newMap := make(map[string]string)
+	if newTags != nil {
+		for _, tag := range newTags.Items {
+			key := core.StringValue(tag.Fields["key"])
+			value := core.StringValue(tag.Fields["value"])
+			newMap[key] = value
+		}
+	}
+
+	// Determine tags to add/update and remove
+	for key, value := range newMap {
+		if currentValue, exists := currentMap[key]; !exists || currentValue != value {
+			r.toAdd = append(r.toAdd, types.Tag{
+				Key:   aws.String(key),
+				Value: aws.String(value),
+			})
+		}
+	}
+
+	for key := range currentMap {
+		if _, exists := newMap[key]; !exists {
+			r.toRemove = append(r.toRemove, key)
+		}
+	}
+
+	return len(r.toAdd) > 0 || len(r.toRemove) > 0, saveOpCtx, nil
+}
+
+func (r *roleTagsUpdate) Execute(
+	ctx context.Context,
+	saveOpCtx pluginutils.SaveOperationContext,
+	iamService iamservice.Service,
+) (pluginutils.SaveOperationContext, error) {
+	roleName := saveOpCtx.ProviderUpstreamID
+
+	// Remove tags
+	if len(r.toRemove) > 0 {
+		_, err := iamService.UntagRole(ctx, &iam.UntagRoleInput{
+			RoleName: aws.String(roleName),
+			TagKeys:  r.toRemove,
+		})
+		if err != nil {
+			return saveOpCtx, fmt.Errorf("failed to remove tags: %w", err)
+		}
+	}
+
+	// Add/update tags
+	if len(r.toAdd) > 0 {
+		_, err := iamService.TagRole(ctx, &iam.TagRoleInput{
+			RoleName: aws.String(roleName),
+			Tags:     r.toAdd,
+		})
+		if err != nil {
+			return saveOpCtx, fmt.Errorf("failed to add tags: %w", err)
+		}
+	}
+
+	return saveOpCtx, nil
+}
+
+

@@ -48,6 +48,7 @@ func (i *iamRoleResourceActions) Update(
 		&roleUpdate{},
 		&roleInlinePoliciesUpdate{},
 		&roleManagedPoliciesUpdate{},
+		&roleTagsUpdate{},
 	}
 
 	hasUpdates, _, err := pluginutils.RunSaveOperations(

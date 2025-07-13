@@ -41,6 +41,9 @@ func (s *IamRoleResourceUpdateSuite) Test_update_iam_role() {
 		updateRoleMaxSessionDurationTestCase(providerCtx, loader),
 		updateRoleInlinePoliciesTestCase(providerCtx, loader),
 		updateRoleManagedPoliciesTestCase(providerCtx, loader),
+		updateRoleTagsTestCase(providerCtx, loader),
+		updateRoleRemoveInlinePoliciesTestCase(providerCtx, loader),
+		updateRoleDetachManagedPoliciesTestCase(providerCtx, loader),
 	}
 
 	plugintestutils.RunResourceDeployTestCases(
@@ -799,15 +802,9 @@ func updateRoleManagedPoliciesTestCase(
 			ProviderContext: providerCtx,
 		},
 		SaveActionsCalled: map[string]any{
-			"AttachRolePolicy": []any{
-				&iam.AttachRolePolicyInput{
-					RoleName:  aws.String("TestRole"),
-					PolicyArn: aws.String("arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"),
-				},
-				&iam.AttachRolePolicyInput{
-					RoleName:  aws.String("TestRole"),
-					PolicyArn: aws.String("arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"),
-				},
+			"AttachRolePolicy": &iam.AttachRolePolicyInput{
+				RoleName:  aws.String("TestRole"),
+				PolicyArn: aws.String("arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"),
 			},
 			"GetRole": &iam.GetRoleInput{
 				RoleName: aws.String("TestRole"),
@@ -816,6 +813,444 @@ func updateRoleManagedPoliciesTestCase(
 		ExpectedOutput: &provider.ResourceDeployOutput{
 			ComputedFieldValues: map[string]*core.MappingNode{
 				"spec.arn":    core.MappingNodeFromString("arn:aws:iam::123456789012:role/TestRole"),
+				"spec.roleId": core.MappingNodeFromString("AROA1234567890123456"),
+			},
+		},
+	}
+}
+
+func updateRoleTagsTestCase(
+	providerCtx provider.Context,
+	loader *testutils.MockAWSConfigLoader,
+) plugintestutils.ResourceDeployTestCase[*aws.Config, iamservice.Service] {
+	service := iammock.CreateIamServiceMock(
+		iammock.WithUntagRoleOutput(&iam.UntagRoleOutput{}),
+		iammock.WithTagRoleOutput(&iam.TagRoleOutput{}),
+		iammock.WithGetRoleOutput(&iam.GetRoleOutput{
+			Role: &types.Role{
+				RoleName: aws.String("test-role"),
+				Arn:      aws.String("arn:aws:iam::123456789012:role/test-role"),
+				RoleId:   aws.String("AROA1234567890123456"),
+				AssumeRolePolicyDocument: aws.String(`{
+					"Version": "2012-10-17",
+					"Statement": [{
+						"Effect": "Allow",
+						"Principal": {"Service": "lambda.amazonaws.com"},
+						"Action": "sts:AssumeRole"
+					}]
+				}`),
+			},
+		}),
+	)
+
+	// Current state with existing tags
+	currentStateSpecData := &core.MappingNode{
+		Fields: map[string]*core.MappingNode{
+			"arn":      core.MappingNodeFromString("arn:aws:iam::123456789012:role/test-role"),
+			"roleName": core.MappingNodeFromString("test-role"),
+			"tags": {
+				Items: []*core.MappingNode{
+					{
+						Fields: map[string]*core.MappingNode{
+							"key":   core.MappingNodeFromString("Environment"),
+							"value": core.MappingNodeFromString("test"),
+						},
+					},
+					{
+						Fields: map[string]*core.MappingNode{
+							"key":   core.MappingNodeFromString("OldTag"),
+							"value": core.MappingNodeFromString("to-remove"),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Updated state with modified tags
+	updatedSpecData := &core.MappingNode{
+		Fields: map[string]*core.MappingNode{
+			"roleName": core.MappingNodeFromString("test-role"),
+			"tags": {
+				Items: []*core.MappingNode{
+					{
+						Fields: map[string]*core.MappingNode{
+							"key":   core.MappingNodeFromString("Environment"),
+							"value": core.MappingNodeFromString("production"),
+						},
+					},
+					{
+						Fields: map[string]*core.MappingNode{
+							"key":   core.MappingNodeFromString("NewTag"),
+							"value": core.MappingNodeFromString("added"),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, iamservice.Service]{
+		Name: "update role tags",
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) iamservice.Service {
+			return service
+		},
+		ServiceMockCalls: &service.MockCalls,
+		ConfigStore: utils.NewAWSConfigStore(
+			[]string{},
+			utils.AWSConfigFromProviderContext,
+			loader,
+			utils.AWSConfigCacheKey,
+		),
+		Input: &provider.ResourceDeployInput{
+			InstanceID: "test-instance-id",
+			ResourceID: "test-role-id",
+			Changes: &provider.Changes{
+				AppliedResourceInfo: provider.ResourceInfo{
+					ResourceID:   "test-role-id",
+					ResourceName: "TestRole",
+					InstanceID:   "test-instance-id",
+					CurrentResourceState: &state.ResourceState{
+						ResourceID: "test-role-id",
+						Name:       "TestRole",
+						InstanceID: "test-instance-id",
+						SpecData:   currentStateSpecData,
+					},
+					ResourceWithResolvedSubs: &provider.ResolvedResource{
+						Type: &schema.ResourceTypeWrapper{
+							Value: "aws/iam/role",
+						},
+						Spec: updatedSpecData,
+					},
+				},
+				ModifiedFields: []provider.FieldChange{
+					{
+						FieldPath: "spec.tags",
+					},
+				},
+			},
+			ProviderContext: providerCtx,
+		},
+		SaveActionsCalled: map[string]any{
+			"UntagRole": &iam.UntagRoleInput{
+				RoleName: aws.String("test-role"),
+				TagKeys:  []string{"OldTag"},
+			},
+			"TagRole": &iam.TagRoleInput{
+				RoleName: aws.String("test-role"),
+				Tags: []types.Tag{
+					{
+						Key:   aws.String("Environment"),
+						Value: aws.String("production"),
+					},
+					{
+						Key:   aws.String("NewTag"),
+						Value: aws.String("added"),
+					},
+				},
+			},
+			"GetRole": &iam.GetRoleInput{
+				RoleName: aws.String("test-role"),
+			},
+		},
+		ExpectedOutput: &provider.ResourceDeployOutput{
+			ComputedFieldValues: map[string]*core.MappingNode{
+				"spec.arn":    core.MappingNodeFromString("arn:aws:iam::123456789012:role/test-role"),
+				"spec.roleId": core.MappingNodeFromString("AROA1234567890123456"),
+			},
+		},
+	}
+}
+
+func updateRoleRemoveInlinePoliciesTestCase(
+	providerCtx provider.Context,
+	loader *testutils.MockAWSConfigLoader,
+) plugintestutils.ResourceDeployTestCase[*aws.Config, iamservice.Service] {
+	service := iammock.CreateIamServiceMock(
+		iammock.WithDeleteRolePolicyOutput(&iam.DeleteRolePolicyOutput{}),
+		iammock.WithPutRolePolicyOutput(&iam.PutRolePolicyOutput{}),
+		iammock.WithGetRoleOutput(&iam.GetRoleOutput{
+			Role: &types.Role{
+				RoleName: aws.String("test-role"),
+				Arn:      aws.String("arn:aws:iam::123456789012:role/test-role"),
+				RoleId:   aws.String("AROA1234567890123456"),
+				AssumeRolePolicyDocument: aws.String(`{
+					"Version": "2012-10-17",
+					"Statement": [{
+						"Effect": "Allow",
+						"Principal": {"Service": "lambda.amazonaws.com"},
+						"Action": "sts:AssumeRole"
+					}]
+				}`),
+			},
+		}),
+	)
+
+	// Current state with multiple policies
+	currentStateSpecData := &core.MappingNode{
+		Fields: map[string]*core.MappingNode{
+			"arn":      core.MappingNodeFromString("arn:aws:iam::123456789012:role/test-role"),
+			"roleName": core.MappingNodeFromString("test-role"),
+			"policies": {
+				Items: []*core.MappingNode{
+					{
+						Fields: map[string]*core.MappingNode{
+							"policyName": core.MappingNodeFromString("KeepPolicy"),
+							"policyDocument": {
+								Fields: map[string]*core.MappingNode{
+									"Version": core.MappingNodeFromString("2012-10-17"),
+									"Statement": {
+										Items: []*core.MappingNode{
+											{
+												Fields: map[string]*core.MappingNode{
+													"Effect": core.MappingNodeFromString("Allow"),
+													"Action": {
+														Items: []*core.MappingNode{
+															core.MappingNodeFromString("s3:GetObject"),
+														},
+													},
+													"Resource": core.MappingNodeFromString("*"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						Fields: map[string]*core.MappingNode{
+							"policyName": core.MappingNodeFromString("RemovePolicy"),
+							"policyDocument": {
+								Fields: map[string]*core.MappingNode{
+									"Version": core.MappingNodeFromString("2012-10-17"),
+									"Statement": {
+										Items: []*core.MappingNode{
+											{
+												Fields: map[string]*core.MappingNode{
+													"Effect": core.MappingNodeFromString("Allow"),
+													"Action": {
+														Items: []*core.MappingNode{
+															core.MappingNodeFromString("ec2:DescribeInstances"),
+														},
+													},
+													"Resource": core.MappingNodeFromString("*"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Updated state with only one policy (removed the other)
+	updatedSpecData := &core.MappingNode{
+		Fields: map[string]*core.MappingNode{
+			"roleName": core.MappingNodeFromString("test-role"),
+			"policies": {
+				Items: []*core.MappingNode{
+					{
+						Fields: map[string]*core.MappingNode{
+							"policyName": core.MappingNodeFromString("KeepPolicy"),
+							"policyDocument": {
+								Fields: map[string]*core.MappingNode{
+									"Version": core.MappingNodeFromString("2012-10-17"),
+									"Statement": {
+										Items: []*core.MappingNode{
+											{
+												Fields: map[string]*core.MappingNode{
+													"Effect": core.MappingNodeFromString("Allow"),
+													"Action": {
+														Items: []*core.MappingNode{
+															core.MappingNodeFromString("s3:GetObject"),
+														},
+													},
+													"Resource": core.MappingNodeFromString("*"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, iamservice.Service]{
+		Name: "update role remove inline policies",
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) iamservice.Service {
+			return service
+		},
+		ServiceMockCalls: &service.MockCalls,
+		ConfigStore: utils.NewAWSConfigStore(
+			[]string{},
+			utils.AWSConfigFromProviderContext,
+			loader,
+			utils.AWSConfigCacheKey,
+		),
+		Input: &provider.ResourceDeployInput{
+			InstanceID: "test-instance-id",
+			ResourceID: "test-role-id",
+			Changes: &provider.Changes{
+				AppliedResourceInfo: provider.ResourceInfo{
+					ResourceID:   "test-role-id",
+					ResourceName: "TestRole",
+					InstanceID:   "test-instance-id",
+					CurrentResourceState: &state.ResourceState{
+						ResourceID: "test-role-id",
+						Name:       "TestRole",
+						InstanceID: "test-instance-id",
+						SpecData:   currentStateSpecData,
+					},
+					ResourceWithResolvedSubs: &provider.ResolvedResource{
+						Type: &schema.ResourceTypeWrapper{
+							Value: "aws/iam/role",
+						},
+						Spec: updatedSpecData,
+					},
+				},
+				ModifiedFields: []provider.FieldChange{
+					{
+						FieldPath: "spec.policies",
+					},
+				},
+			},
+			ProviderContext: providerCtx,
+		},
+		SaveActionsCalled: map[string]any{
+			"DeleteRolePolicy": &iam.DeleteRolePolicyInput{
+				RoleName:   aws.String("test-role"),
+				PolicyName: aws.String("RemovePolicy"),
+			},
+			"GetRole": &iam.GetRoleInput{
+				RoleName: aws.String("test-role"),
+			},
+		},
+		ExpectedOutput: &provider.ResourceDeployOutput{
+			ComputedFieldValues: map[string]*core.MappingNode{
+				"spec.arn":    core.MappingNodeFromString("arn:aws:iam::123456789012:role/test-role"),
+				"spec.roleId": core.MappingNodeFromString("AROA1234567890123456"),
+			},
+		},
+	}
+}
+
+func updateRoleDetachManagedPoliciesTestCase(
+	providerCtx provider.Context,
+	loader *testutils.MockAWSConfigLoader,
+) plugintestutils.ResourceDeployTestCase[*aws.Config, iamservice.Service] {
+	service := iammock.CreateIamServiceMock(
+		iammock.WithDetachRolePolicyOutput(&iam.DetachRolePolicyOutput{}),
+		iammock.WithAttachRolePolicyOutput(&iam.AttachRolePolicyOutput{}),
+		iammock.WithGetRoleOutput(&iam.GetRoleOutput{
+			Role: &types.Role{
+				RoleName: aws.String("test-role"),
+				Arn:      aws.String("arn:aws:iam::123456789012:role/test-role"),
+				RoleId:   aws.String("AROA1234567890123456"),
+				AssumeRolePolicyDocument: aws.String(`{
+					"Version": "2012-10-17",
+					"Statement": [{
+						"Effect": "Allow",
+						"Principal": {"Service": "lambda.amazonaws.com"},
+						"Action": "sts:AssumeRole"
+					}]
+				}`),
+			},
+		}),
+	)
+
+	// Current state with multiple managed policies
+	currentStateSpecData := &core.MappingNode{
+		Fields: map[string]*core.MappingNode{
+			"arn":      core.MappingNodeFromString("arn:aws:iam::123456789012:role/test-role"),
+			"roleName": core.MappingNodeFromString("test-role"),
+			"managedPolicyArns": {
+				Items: []*core.MappingNode{
+					core.MappingNodeFromString("arn:aws:iam::aws:policy/ReadOnlyAccess"),
+					core.MappingNodeFromString("arn:aws:iam::aws:policy/PowerUserAccess"),
+				},
+			},
+		},
+	}
+
+	// Updated state with different managed policies
+	updatedSpecData := &core.MappingNode{
+		Fields: map[string]*core.MappingNode{
+			"roleName": core.MappingNodeFromString("test-role"),
+			"managedPolicyArns": {
+				Items: []*core.MappingNode{
+					core.MappingNodeFromString("arn:aws:iam::aws:policy/ReadOnlyAccess"),
+					core.MappingNodeFromString("arn:aws:iam::aws:policy/AdministratorAccess"),
+				},
+			},
+		},
+	}
+
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, iamservice.Service]{
+		Name: "update role detach managed policies",
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) iamservice.Service {
+			return service
+		},
+		ServiceMockCalls: &service.MockCalls,
+		ConfigStore: utils.NewAWSConfigStore(
+			[]string{},
+			utils.AWSConfigFromProviderContext,
+			loader,
+			utils.AWSConfigCacheKey,
+		),
+		Input: &provider.ResourceDeployInput{
+			InstanceID: "test-instance-id",
+			ResourceID: "test-role-id",
+			Changes: &provider.Changes{
+				AppliedResourceInfo: provider.ResourceInfo{
+					ResourceID:   "test-role-id",
+					ResourceName: "TestRole",
+					InstanceID:   "test-instance-id",
+					CurrentResourceState: &state.ResourceState{
+						ResourceID: "test-role-id",
+						Name:       "TestRole",
+						InstanceID: "test-instance-id",
+						SpecData:   currentStateSpecData,
+					},
+					ResourceWithResolvedSubs: &provider.ResolvedResource{
+						Type: &schema.ResourceTypeWrapper{
+							Value: "aws/iam/role",
+						},
+						Spec: updatedSpecData,
+					},
+				},
+				ModifiedFields: []provider.FieldChange{
+					{
+						FieldPath: "spec.managedPolicyArns",
+					},
+				},
+			},
+			ProviderContext: providerCtx,
+		},
+		SaveActionsCalled: map[string]any{
+			"DetachRolePolicy": &iam.DetachRolePolicyInput{
+				RoleName:  aws.String("test-role"),
+				PolicyArn: aws.String("arn:aws:iam::aws:policy/PowerUserAccess"),
+			},
+			"AttachRolePolicy": &iam.AttachRolePolicyInput{
+				RoleName:  aws.String("test-role"),
+				PolicyArn: aws.String("arn:aws:iam::aws:policy/AdministratorAccess"),
+			},
+			"GetRole": &iam.GetRoleInput{
+				RoleName: aws.String("test-role"),
+			},
+		},
+		ExpectedOutput: &provider.ResourceDeployOutput{
+			ComputedFieldValues: map[string]*core.MappingNode{
+				"spec.arn":    core.MappingNodeFromString("arn:aws:iam::123456789012:role/test-role"),
 				"spec.roleId": core.MappingNodeFromString("AROA1234567890123456"),
 			},
 		},
