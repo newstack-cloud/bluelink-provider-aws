@@ -99,7 +99,7 @@ func extractInstanceProfileNameFromARN(arn string) (string, error) {
 }
 
 // extractRoleNameFromRoleSpec extracts the role name from a role specification
-// which can be either a role name or a role ARN
+// which can be either a role name or a role ARN.
 func extractRoleNameFromRoleSpec(roleSpec string) (string, error) {
 	if roleSpec == "" {
 		return "", fmt.Errorf("role specification cannot be empty")

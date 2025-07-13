@@ -891,7 +891,7 @@ func WithListAccessKeysError(err error) iamServiceMockOption {
 	}
 }
 
-// Instance profile mock configuration options
+// Instance profile mock configuration options.
 func WithCreateInstanceProfileOutput(output *iam.CreateInstanceProfileOutput) iamServiceMockOption {
 	return func(m *iamServiceMock) {
 		m.createInstanceProfileOutput = output
