@@ -381,6 +381,34 @@ type Service interface {
 		params *iam.GetGroupPolicyInput,
 		optFns ...func(*iam.Options),
 	) (*iam.GetGroupPolicyOutput, error)
+
+	// CreateAccessKey creates a new access key for the specified IAM user.
+	CreateAccessKey(
+		ctx context.Context,
+		params *iam.CreateAccessKeyInput,
+		optFns ...func(*iam.Options),
+	) (*iam.CreateAccessKeyOutput, error)
+
+	// UpdateAccessKey changes the status of the specified access key from Active to Inactive, or vice versa.
+	UpdateAccessKey(
+		ctx context.Context,
+		params *iam.UpdateAccessKeyInput,
+		optFns ...func(*iam.Options),
+	) (*iam.UpdateAccessKeyOutput, error)
+
+	// DeleteAccessKey deletes the specified access key.
+	DeleteAccessKey(
+		ctx context.Context,
+		params *iam.DeleteAccessKeyInput,
+		optFns ...func(*iam.Options),
+	) (*iam.DeleteAccessKeyOutput, error)
+
+	// ListAccessKeys lists the access keys associated with the specified IAM user.
+	ListAccessKeys(
+		ctx context.Context,
+		params *iam.ListAccessKeysInput,
+		optFns ...func(*iam.Options),
+	) (*iam.ListAccessKeysOutput, error)
 }
 
 // NewService creates a new instance of the AWS IAM service

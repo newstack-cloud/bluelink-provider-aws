@@ -148,6 +148,16 @@ type iamServiceMock struct {
 	listGroupPoliciesError  error
 	getGroupPolicyOutput    *iam.GetGroupPolicyOutput
 	getGroupPolicyError     error
+
+	// Access key-related mock fields
+	createAccessKeyOutput *iam.CreateAccessKeyOutput
+	createAccessKeyError  error
+	updateAccessKeyOutput *iam.UpdateAccessKeyOutput
+	updateAccessKeyError  error
+	deleteAccessKeyOutput *iam.DeleteAccessKeyOutput
+	deleteAccessKeyError  error
+	listAccessKeysOutput  *iam.ListAccessKeysOutput
+	listAccessKeysError   error
 }
 
 type iamServiceMockOption func(*iamServiceMock)
@@ -820,6 +830,55 @@ func WithGetGroupPolicyError(err error) iamServiceMockOption {
 	}
 }
 
+// Access key mock options
+func WithCreateAccessKeyOutput(output *iam.CreateAccessKeyOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.createAccessKeyOutput = output
+	}
+}
+
+func WithCreateAccessKeyError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.createAccessKeyError = err
+	}
+}
+
+func WithUpdateAccessKeyOutput(output *iam.UpdateAccessKeyOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.updateAccessKeyOutput = output
+	}
+}
+
+func WithUpdateAccessKeyError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.updateAccessKeyError = err
+	}
+}
+
+func WithDeleteAccessKeyOutput(output *iam.DeleteAccessKeyOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.deleteAccessKeyOutput = output
+	}
+}
+
+func WithDeleteAccessKeyError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.deleteAccessKeyError = err
+	}
+}
+
+func WithListAccessKeysOutput(output *iam.ListAccessKeysOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.listAccessKeysOutput = output
+	}
+}
+
+func WithListAccessKeysError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.listAccessKeysError = err
+	}
+}
+
 // Group operation implementations.
 func (m *iamServiceMock) CreateGroup(
 	ctx context.Context,
@@ -1300,4 +1359,41 @@ func (m *iamServiceMock) DeleteLoginProfile(
 ) (*iam.DeleteLoginProfileOutput, error) {
 	m.RegisterCall(ctx, params)
 	return m.deleteLoginProfileOutput, m.deleteLoginProfileError
+}
+
+// Access key methods
+func (m *iamServiceMock) CreateAccessKey(
+	ctx context.Context,
+	params *iam.CreateAccessKeyInput,
+	optFns ...func(*iam.Options),
+) (*iam.CreateAccessKeyOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.createAccessKeyOutput, m.createAccessKeyError
+}
+
+func (m *iamServiceMock) UpdateAccessKey(
+	ctx context.Context,
+	params *iam.UpdateAccessKeyInput,
+	optFns ...func(*iam.Options),
+) (*iam.UpdateAccessKeyOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.updateAccessKeyOutput, m.updateAccessKeyError
+}
+
+func (m *iamServiceMock) DeleteAccessKey(
+	ctx context.Context,
+	params *iam.DeleteAccessKeyInput,
+	optFns ...func(*iam.Options),
+) (*iam.DeleteAccessKeyOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.deleteAccessKeyOutput, m.deleteAccessKeyError
+}
+
+func (m *iamServiceMock) ListAccessKeys(
+	ctx context.Context,
+	params *iam.ListAccessKeysInput,
+	optFns ...func(*iam.Options),
+) (*iam.ListAccessKeysOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.listAccessKeysOutput, m.listAccessKeysError
 }

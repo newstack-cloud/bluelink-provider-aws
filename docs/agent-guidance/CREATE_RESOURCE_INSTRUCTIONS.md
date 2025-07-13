@@ -95,3 +95,4 @@ You should inspect existing examples closely in the `services/${service}/example
 - You should avoid large code blocks with more than half a dozen nil checks for fields, instead, use the `pluginutils` package helpers to break down value extraction, as this will make the code more readable and maintainable.
 - You must run the tests to ensure they are all passing before considering the task as complete.
 - You must run existing tests in this project to ensure that regressions have not been introduced.
+- Opt for using `AllowedValues` in resource schemas instead of `Pattern` for string fields that have a static set of allowed values.

@@ -11,21 +11,4 @@ resources:
     spec:
       groupName: developers
       path: /
-```
-
-```javascript
-{
-  "resources": {
-    "developers": {
-      "type": "aws/iam/group",
-      "metadata": {
-        "displayName": "Developers Group"
-      },
-      "spec": {
-        "groupName": "developers",
-        "path": "/"
-      }
-    }
-  }
-}
 ``` 
