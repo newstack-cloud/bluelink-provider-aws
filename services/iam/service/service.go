@@ -509,6 +509,69 @@ type Service interface {
 		params *iam.ListPolicyTagsInput,
 		optFns ...func(*iam.Options),
 	) (*iam.ListPolicyTagsOutput, error)
+
+	// CreateOpenIDConnectProvider creates an IAM entity to describe an identity provider (IdP) that supports OpenID Connect (OIDC).
+	CreateOpenIDConnectProvider(
+		ctx context.Context,
+		params *iam.CreateOpenIDConnectProviderInput,
+		optFns ...func(*iam.Options),
+	) (*iam.CreateOpenIDConnectProviderOutput, error)
+
+	// GetOpenIDConnectProvider returns information about the specified OpenID Connect (OIDC) provider resource object in IAM.
+	GetOpenIDConnectProvider(
+		ctx context.Context,
+		params *iam.GetOpenIDConnectProviderInput,
+		optFns ...func(*iam.Options),
+	) (*iam.GetOpenIDConnectProviderOutput, error)
+
+	// AddClientIDToOpenIDConnectProvider adds a new client ID (also known as audience) to the list of client IDs already registered for the specified IAM OpenID Connect (OIDC) provider resource.
+	AddClientIDToOpenIDConnectProvider(
+		ctx context.Context,
+		params *iam.AddClientIDToOpenIDConnectProviderInput,
+		optFns ...func(*iam.Options),
+	) (*iam.AddClientIDToOpenIDConnectProviderOutput, error)
+
+	// RemoveClientIDFromOpenIDConnectProvider removes the specified client ID (also known as audience) from the list of client IDs registered for the specified IAM OpenID Connect (OIDC) provider resource object.
+	RemoveClientIDFromOpenIDConnectProvider(
+		ctx context.Context,
+		params *iam.RemoveClientIDFromOpenIDConnectProviderInput,
+		optFns ...func(*iam.Options),
+	) (*iam.RemoveClientIDFromOpenIDConnectProviderOutput, error)
+
+	// UpdateOpenIDConnectProviderThumbprint replaces the existing list of server certificate thumbprints associated with an OpenID Connect (OIDC) provider resource object with a new list of thumbprints.
+	UpdateOpenIDConnectProviderThumbprint(
+		ctx context.Context,
+		params *iam.UpdateOpenIDConnectProviderThumbprintInput,
+		optFns ...func(*iam.Options),
+	) (*iam.UpdateOpenIDConnectProviderThumbprintOutput, error)
+
+	// DeleteOpenIDConnectProvider deletes an OpenID Connect identity provider (IdP) resource object in IAM.
+	DeleteOpenIDConnectProvider(
+		ctx context.Context,
+		params *iam.DeleteOpenIDConnectProviderInput,
+		optFns ...func(*iam.Options),
+	) (*iam.DeleteOpenIDConnectProviderOutput, error)
+
+	// TagOpenIDConnectProvider adds one or more tags to an OpenID Connect (OIDC)-compatible identity provider.
+	TagOpenIDConnectProvider(
+		ctx context.Context,
+		params *iam.TagOpenIDConnectProviderInput,
+		optFns ...func(*iam.Options),
+	) (*iam.TagOpenIDConnectProviderOutput, error)
+
+	// UntagOpenIDConnectProvider removes the specified tags from the specified OpenID Connect (OIDC)-compatible identity provider.
+	UntagOpenIDConnectProvider(
+		ctx context.Context,
+		params *iam.UntagOpenIDConnectProviderInput,
+		optFns ...func(*iam.Options),
+	) (*iam.UntagOpenIDConnectProviderOutput, error)
+
+	// ListOpenIDConnectProviderTags lists the tags that are attached to the specified OpenID Connect (OIDC)-compatible identity provider.
+	ListOpenIDConnectProviderTags(
+		ctx context.Context,
+		params *iam.ListOpenIDConnectProviderTagsInput,
+		optFns ...func(*iam.Options),
+	) (*iam.ListOpenIDConnectProviderTagsOutput, error)
 }
 
 // NewService creates a new instance of the AWS IAM service

@@ -2,7 +2,6 @@ package iam
 
 import (
 	"context"
-	"embed"
 	"fmt"
 	"strings"
 
@@ -14,9 +13,6 @@ import (
 	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/pluginutils"
 	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/providerv1"
 )
-
-//go:embed examples/resources/*.md
-var examples embed.FS
 
 // RoleResource returns a resource implementation for an AWS IAM Role.
 func RoleResource(

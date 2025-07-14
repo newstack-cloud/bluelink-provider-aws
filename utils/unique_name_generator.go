@@ -121,4 +121,7 @@ var (
 
 	// IAMPolicyNameGenerator generates names for IAM policies (128 char limit).
 	IAMPolicyNameGenerator = DefaultUniqueNameGenerator(128)
+
+	// IAMOIDCProviderUrlGenerator generates names for IAM OIDC providers (255 char limit).
+	IAMOIDCProviderUrlGenerator = DefaultUniqueNameGenerator(255)
 )
