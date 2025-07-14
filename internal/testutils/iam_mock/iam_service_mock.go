@@ -194,6 +194,26 @@ type iamServiceMock struct {
 	untagPolicyError     error
 	listPolicyTagsOutput *iam.ListPolicyTagsOutput
 	listPolicyTagsError  error
+
+	// OIDC provider-related mock fields
+	createOpenIDConnectProviderOutput           *iam.CreateOpenIDConnectProviderOutput
+	createOpenIDConnectProviderError            error
+	getOpenIDConnectProviderOutput              *iam.GetOpenIDConnectProviderOutput
+	getOpenIDConnectProviderError               error
+	addClientIDToOpenIDConnectProviderOutput    *iam.AddClientIDToOpenIDConnectProviderOutput
+	addClientIDToOpenIDConnectProviderError     error
+	removeClientIDFromOpenIDConnectProviderOutput *iam.RemoveClientIDFromOpenIDConnectProviderOutput
+	removeClientIDFromOpenIDConnectProviderError  error
+	updateOpenIDConnectProviderThumbprintOutput *iam.UpdateOpenIDConnectProviderThumbprintOutput
+	updateOpenIDConnectProviderThumbprintError  error
+	deleteOpenIDConnectProviderOutput           *iam.DeleteOpenIDConnectProviderOutput
+	deleteOpenIDConnectProviderError            error
+	tagOpenIDConnectProviderOutput              *iam.TagOpenIDConnectProviderOutput
+	tagOpenIDConnectProviderError               error
+	untagOpenIDConnectProviderOutput            *iam.UntagOpenIDConnectProviderOutput
+	untagOpenIDConnectProviderError             error
+	listOpenIDConnectProviderTagsOutput         *iam.ListOpenIDConnectProviderTagsOutput
+	listOpenIDConnectProviderTagsError          error
 }
 
 type iamServiceMockOption func(*iamServiceMock)
@@ -1085,6 +1105,115 @@ func WithListPolicyTagsError(err error) iamServiceMockOption {
 	}
 }
 
+// OIDC provider mock options.
+func WithCreateOpenIDConnectProviderOutput(output *iam.CreateOpenIDConnectProviderOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.createOpenIDConnectProviderOutput = output
+	}
+}
+
+func WithCreateOpenIDConnectProviderError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.createOpenIDConnectProviderError = err
+	}
+}
+
+func WithGetOpenIDConnectProviderOutput(output *iam.GetOpenIDConnectProviderOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.getOpenIDConnectProviderOutput = output
+	}
+}
+
+func WithGetOpenIDConnectProviderError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.getOpenIDConnectProviderError = err
+	}
+}
+
+func WithAddClientIDToOpenIDConnectProviderOutput(output *iam.AddClientIDToOpenIDConnectProviderOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.addClientIDToOpenIDConnectProviderOutput = output
+	}
+}
+
+func WithAddClientIDToOpenIDConnectProviderError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.addClientIDToOpenIDConnectProviderError = err
+	}
+}
+
+func WithRemoveClientIDFromOpenIDConnectProviderOutput(output *iam.RemoveClientIDFromOpenIDConnectProviderOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.removeClientIDFromOpenIDConnectProviderOutput = output
+	}
+}
+
+func WithRemoveClientIDFromOpenIDConnectProviderError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.removeClientIDFromOpenIDConnectProviderError = err
+	}
+}
+
+func WithUpdateOpenIDConnectProviderThumbprintOutput(output *iam.UpdateOpenIDConnectProviderThumbprintOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.updateOpenIDConnectProviderThumbprintOutput = output
+	}
+}
+
+func WithUpdateOpenIDConnectProviderThumbprintError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.updateOpenIDConnectProviderThumbprintError = err
+	}
+}
+
+func WithDeleteOpenIDConnectProviderOutput(output *iam.DeleteOpenIDConnectProviderOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.deleteOpenIDConnectProviderOutput = output
+	}
+}
+
+func WithDeleteOpenIDConnectProviderError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.deleteOpenIDConnectProviderError = err
+	}
+}
+
+func WithTagOpenIDConnectProviderOutput(output *iam.TagOpenIDConnectProviderOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.tagOpenIDConnectProviderOutput = output
+	}
+}
+
+func WithTagOpenIDConnectProviderError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.tagOpenIDConnectProviderError = err
+	}
+}
+
+func WithUntagOpenIDConnectProviderOutput(output *iam.UntagOpenIDConnectProviderOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.untagOpenIDConnectProviderOutput = output
+	}
+}
+
+func WithUntagOpenIDConnectProviderError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.untagOpenIDConnectProviderError = err
+	}
+}
+
+func WithListOpenIDConnectProviderTagsOutput(output *iam.ListOpenIDConnectProviderTagsOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.listOpenIDConnectProviderTagsOutput = output
+	}
+}
+
+func WithListOpenIDConnectProviderTagsError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.listOpenIDConnectProviderTagsError = err
+	}
+}
+
 // Group operation implementations.
 func (m *iamServiceMock) CreateGroup(
 	ctx context.Context,
@@ -1730,4 +1859,86 @@ func (m *iamServiceMock) ListPolicyTags(
 ) (*iam.ListPolicyTagsOutput, error) {
 	m.RegisterCall(ctx, params)
 	return m.listPolicyTagsOutput, m.listPolicyTagsError
+}
+
+// OIDC provider methods.
+func (m *iamServiceMock) CreateOpenIDConnectProvider(
+	ctx context.Context,
+	params *iam.CreateOpenIDConnectProviderInput,
+	optFns ...func(*iam.Options),
+) (*iam.CreateOpenIDConnectProviderOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.createOpenIDConnectProviderOutput, m.createOpenIDConnectProviderError
+}
+
+func (m *iamServiceMock) GetOpenIDConnectProvider(
+	ctx context.Context,
+	params *iam.GetOpenIDConnectProviderInput,
+	optFns ...func(*iam.Options),
+) (*iam.GetOpenIDConnectProviderOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.getOpenIDConnectProviderOutput, m.getOpenIDConnectProviderError
+}
+
+func (m *iamServiceMock) AddClientIDToOpenIDConnectProvider(
+	ctx context.Context,
+	params *iam.AddClientIDToOpenIDConnectProviderInput,
+	optFns ...func(*iam.Options),
+) (*iam.AddClientIDToOpenIDConnectProviderOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.addClientIDToOpenIDConnectProviderOutput, m.addClientIDToOpenIDConnectProviderError
+}
+
+func (m *iamServiceMock) RemoveClientIDFromOpenIDConnectProvider(
+	ctx context.Context,
+	params *iam.RemoveClientIDFromOpenIDConnectProviderInput,
+	optFns ...func(*iam.Options),
+) (*iam.RemoveClientIDFromOpenIDConnectProviderOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.removeClientIDFromOpenIDConnectProviderOutput, m.removeClientIDFromOpenIDConnectProviderError
+}
+
+func (m *iamServiceMock) UpdateOpenIDConnectProviderThumbprint(
+	ctx context.Context,
+	params *iam.UpdateOpenIDConnectProviderThumbprintInput,
+	optFns ...func(*iam.Options),
+) (*iam.UpdateOpenIDConnectProviderThumbprintOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.updateOpenIDConnectProviderThumbprintOutput, m.updateOpenIDConnectProviderThumbprintError
+}
+
+func (m *iamServiceMock) DeleteOpenIDConnectProvider(
+	ctx context.Context,
+	params *iam.DeleteOpenIDConnectProviderInput,
+	optFns ...func(*iam.Options),
+) (*iam.DeleteOpenIDConnectProviderOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.deleteOpenIDConnectProviderOutput, m.deleteOpenIDConnectProviderError
+}
+
+func (m *iamServiceMock) TagOpenIDConnectProvider(
+	ctx context.Context,
+	params *iam.TagOpenIDConnectProviderInput,
+	optFns ...func(*iam.Options),
+) (*iam.TagOpenIDConnectProviderOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.tagOpenIDConnectProviderOutput, m.tagOpenIDConnectProviderError
+}
+
+func (m *iamServiceMock) UntagOpenIDConnectProvider(
+	ctx context.Context,
+	params *iam.UntagOpenIDConnectProviderInput,
+	optFns ...func(*iam.Options),
+) (*iam.UntagOpenIDConnectProviderOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.untagOpenIDConnectProviderOutput, m.untagOpenIDConnectProviderError
+}
+
+func (m *iamServiceMock) ListOpenIDConnectProviderTags(
+	ctx context.Context,
+	params *iam.ListOpenIDConnectProviderTagsInput,
+	optFns ...func(*iam.Options),
+) (*iam.ListOpenIDConnectProviderTagsOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.listOpenIDConnectProviderTagsOutput, m.listOpenIDConnectProviderTagsError
 }

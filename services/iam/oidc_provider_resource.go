@@ -1,0 +1,94 @@
+package iam
+
+import (
+	"context"
+	"fmt"
+	"strings"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	iamservice "github.com/newstack-cloud/bluelink-provider-aws/services/iam/service"
+	"github.com/newstack-cloud/bluelink-provider-aws/utils"
+	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
+	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/pluginutils"
+	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/providerv1"
+)
+
+// OidcProviderResource returns a resource implementation for an AWS IAM OIDC Provider.
+func OidcProviderResource(
+	iamServiceFactory pluginutils.ServiceFactory[*aws.Config, iamservice.Service],
+	awsConfigStore pluginutils.ServiceConfigStore[*aws.Config],
+) provider.Resource {
+	basicExample, _ := examples.ReadFile("examples/resources/iam_oidc_provider_basic.md")
+	completeExample, _ := examples.ReadFile("examples/resources/iam_oidc_provider_complete.md")
+	jsoncExample, _ := examples.ReadFile("examples/resources/iam_oidc_provider_jsonc.md")
+
+	iamOidcProviderActions := &iamOidcProviderResourceActions{
+		iamServiceFactory:   iamServiceFactory,
+		awsConfigStore:      awsConfigStore,
+		uniqueNameGenerator: utils.IAMOidcProviderUrlGenerator,
+	}
+	return &providerv1.ResourceDefinition{
+		Type:             "aws/iam/oidcProvider",
+		Label:            "AWS IAM OIDC Provider",
+		PlainTextSummary: "A resource for managing an AWS IAM OIDC provider.",
+		FormattedDescription: "The resource type used to define an [IAM OIDC provider](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html) " +
+			"that is deployed to AWS. OIDC providers are entities in IAM that describe an external identity provider (IdP) service that supports the " +
+			"OpenID Connect (OIDC) standard.",
+		Schema:  iamOidcProviderResourceSchema(),
+		IDField: "arn",
+		// An IAM OIDC provider is commonly referenced by other resources that need to use it
+		CommonTerminal: false,
+		FormattedExamples: []string{
+			string(basicExample),
+			string(completeExample),
+			string(jsoncExample),
+		},
+		ResourceCanLinkTo:    []string{},
+		GetExternalStateFunc: iamOidcProviderActions.GetExternalState,
+		CreateFunc:           iamOidcProviderActions.Create,
+		UpdateFunc:           iamOidcProviderActions.Update,
+		DestroyFunc:          iamOidcProviderActions.Destroy,
+		StabilisedFunc:       iamOidcProviderActions.Stabilised,
+	}
+}
+
+type iamOidcProviderResourceActions struct {
+	iamServiceFactory   pluginutils.ServiceFactory[*aws.Config, iamservice.Service]
+	awsConfigStore      pluginutils.ServiceConfigStore[*aws.Config]
+	uniqueNameGenerator utils.UniqueNameGenerator
+}
+
+func (i *iamOidcProviderResourceActions) getIamService(
+	ctx context.Context,
+	providerContext provider.Context,
+) (iamservice.Service, error) {
+	awsConfig, err := i.awsConfigStore.FromProviderContext(
+		ctx,
+		providerContext,
+		nil,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return i.iamServiceFactory(awsConfig, providerContext), nil
+}
+
+// extractUrlFromArn extracts the URL from an OIDC provider ARN
+// ARN format: arn:aws:iam::account-id:oidc-provider/oidc.example.com
+func extractUrlFromArn(arn string) (string, error) {
+	parts := strings.Split(arn, "/")
+	if len(parts) != 2 {
+		return "", fmt.Errorf("invalid OIDC provider ARN format: %s", arn)
+	}
+	
+	// The URL is everything after the last slash
+	url := parts[1]
+	
+	// Add https:// prefix if not present (AWS stores it without the protocol)
+	if !strings.HasPrefix(url, "https://") {
+		url = "https://" + url
+	}
+	
+	return url, nil
+}
