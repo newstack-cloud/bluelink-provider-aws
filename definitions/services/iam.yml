@@ -254,3 +254,30 @@ resourceDefinitions:
       - https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-iam-oidcprovider.html
     propertyDocLinks:
       tags: https://docs.aws.amazon.com/IAM/latest/APIReference/API_TagOpenIDConnectProvider.html
+  - type: aws/iam/samlProvider
+    label: AWS IAM SAML Provider
+    requiredFields: []
+    computedFields:
+      - arn
+      - samlProviderUUID
+    operations:
+      create:
+        - CreateSAMLProvider
+      update:
+        - UpdateSAMLProvider
+        - TagSAMLProvider
+        - UntagSAMLProvider
+      destroy:
+        - DeleteSAMLProvider
+      saveTags:
+        saveTags: TagSAMLProvider
+        removeTags: UntagSAMLProvider
+    docLinks:
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_CreateSAMLProvider.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_UpdateSAMLProvider.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_DeleteSAMLProvider.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_TagSAMLProvider.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_UntagSAMLProvider.html
+      - https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-iam-samlprovider.html
+    propertyDocLinks:
+      tags: https://docs.aws.amazon.com/IAM/latest/APIReference/API_TagSAMLProvider.html
