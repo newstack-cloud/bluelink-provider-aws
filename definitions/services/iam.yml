@@ -226,3 +226,31 @@ resourceDefinitions:
       attached via links or via the managed policies lists in the other resources,
       and the other resources will need to remove the policy from their lists
       before the managed policy resource is destroyed.
+  - type: aws/iam/oidcProvider
+    label: AWS IAM OIDC Provider
+    requiredFields: []
+    computedFields:
+      - arn
+    operations:
+      create:
+        - CreateOpenIDConnectProvider
+      update:
+        - RemoveClientIDFromOpenIDConnectProvider
+        - AddClientIDToOpenIDConnectProvider
+        - UpdateOpenIDConnectProviderThumbprint
+      destroy:
+        - DeleteOpenIDConnectProvider
+      tags:
+        saveTags: TagOpenIDConnectProvider
+        removeTags: UntagOpenIDConnectProvider
+    docLinks:
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_CreateOpenIDConnectProvider.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_RemoveClientIDFromOpenIDConnectProvider.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_AddClientIDToOpenIDConnectProvider.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_UpdateOpenIDConnectProviderThumbprint.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_DeleteOpenIDConnectProvider.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_TagOpenIDConnectProvider.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_UntagOpenIDConnectProvider.html
+      - https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-iam-oidcprovider.html
+    propertyDocLinks:
+      tags: https://docs.aws.amazon.com/IAM/latest/APIReference/API_TagOpenIDConnectProvider.html
