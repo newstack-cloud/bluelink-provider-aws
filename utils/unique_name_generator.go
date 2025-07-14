@@ -124,4 +124,7 @@ var (
 
 	// IAMOIDCProviderUrlGenerator generates names for IAM OIDC providers (255 char limit).
 	IAMOIDCProviderUrlGenerator = DefaultUniqueNameGenerator(255)
+
+	// IAMSAMLProviderNameGenerator generates names for IAM SAML providers (128 char limit).
+	IAMSAMLProviderNameGenerator = DefaultUniqueNameGenerator(128)
 )
