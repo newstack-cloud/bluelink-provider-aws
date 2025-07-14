@@ -75,12 +75,12 @@ func destroyOIDCProviderTestCase(
 					Fields: map[string]*core.MappingNode{
 						"arn": core.MappingNodeFromString(oidcProviderArn),
 						"url": core.MappingNodeFromString("https://example.com"),
-						"clientIdList": &core.MappingNode{
+						"clientIdList": {
 							Items: []*core.MappingNode{
 								core.MappingNodeFromString("my-app-id"),
 							},
 						},
-						"thumbprintList": &core.MappingNode{
+						"thumbprintList": {
 							Items: []*core.MappingNode{
 								core.MappingNodeFromString("cf23df2207d99a74fbe169e3eba035e633b65d94"),
 							},

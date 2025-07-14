@@ -282,7 +282,7 @@ func (o *oidcProviderTagsUpdate) Execute(
 	return saveOpCtx, nil
 }
 
-// diffStringSlices returns elements in a that are not in b
+// diffStringSlices returns elements in a that are not in b.
 func diffStringSlices(a, b []string) []string {
 	bMap := make(map[string]bool)
 	for _, v := range b {

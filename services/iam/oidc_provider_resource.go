@@ -75,7 +75,7 @@ func (i *iamOIDCProviderResourceActions) getIamService(
 }
 
 // extractUrlFromArn extracts the URL from an OIDC provider ARN
-// ARN format: arn:aws:iam::account-id:oidc-provider/oidc.example.com
+// ARN format: arn:aws:iam::account-id:oidc-provider/oidc.example.com.
 func extractUrlFromArn(arn string) (string, error) {
 	parts := strings.Split(arn, "/")
 	if len(parts) != 2 {
