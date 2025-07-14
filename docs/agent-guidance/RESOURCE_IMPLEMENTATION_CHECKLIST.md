@@ -1,9 +1,5 @@
 # Resource Implementation Checklist
 
-This checklist is for use by background agents (or human contributors) to track progress and validate the quality of a new resource implementation. Mark each item as complete as you progress.
-
----
-
 ## 1. File and Structure Validation
 - [ ] All required files are present:
   - `*_resource.go`
@@ -16,6 +12,7 @@ This checklist is for use by background agents (or human contributors) to track 
 - [ ] Files are placed in the correct directory (`services/${service}/`)
 - [ ] If this is a new service, a `service.go` file exists in `services/${service}/` and a mock is present in `internal/testutils/${service}_mock/`
 - [ ] A single, shared `examples_embed.go` file is present per service (not per resource)
+- [ ] All resource and test function names use consistent, canonical casing (e.g., `OIDCProvider` not `OidcProvider`)
 
 ## 2. Schema and Method Validation
 - [ ] Resource schema matches the service definition schema (`definitions/services/${service}.yml`) and the structure in `definitions/schema.yml`
@@ -26,6 +23,8 @@ This checklist is for use by background agents (or human contributors) to track 
 - [ ] Uses `pluginutils` helpers for value extraction and nil checks
 - [ ] Uses `AllowedValues` instead of `Pattern` for string fields with static allowed values
 - [ ] Destroy operations do **not** use the SaveOperation pattern (unless justified by complexity)
+- [ ] **Tags are included in the initial create call** (e.g., `Tags` field in `CreateOpenIDConnectProviderInput`), not as a separate operation
+- [ ] Tags are sorted by key before sending to AWS (for deterministic behavior and testability)
 
 ## 3. Test Coverage
 - [ ] Test files exist for each method
@@ -36,6 +35,7 @@ This checklist is for use by background agents (or human contributors) to track 
 - [ ] Tests use mocks and test utils as per existing patterns
 - [ ] All tests pass locally
 - [ ] All tests in the project pass (no regressions introduced)
+- [ ] Tests expect tags in the create call, not as a separate tag operation if the create call supports tags
 
 ## 4. Example and Documentation Validation
 - [ ] At least one example is added to `services/${service}/examples/resources/`
@@ -65,7 +65,7 @@ This checklist is for use by background agents (or human contributors) to track 
 - [ ] Resource is registered with the provider in `provider/provider.go`
 
 ## 8. Linting and Formatting
-- [ ] Code passes linting (e.g., `gofmt`, `golint`, or project-specific linter)
+- [ ] Code passes linting (`gofmt`, `golint`, or project-specific linter)
 - [ ] No TODOs, commented-out code, or debug prints left in output
 
 ## 9. Notes and Special Cases
