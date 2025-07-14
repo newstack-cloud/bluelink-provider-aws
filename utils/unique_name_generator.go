@@ -118,4 +118,7 @@ var (
 
 	// DynamoDBTableNameGenerator generates names for DynamoDB tables (255 char limit).
 	DynamoDBTableNameGenerator = DefaultUniqueNameGenerator(255)
+
+	// IAMPolicyNameGenerator generates names for IAM policies (128 char limit).
+	IAMPolicyNameGenerator = DefaultUniqueNameGenerator(128)
 )

@@ -445,6 +445,70 @@ type Service interface {
 		params *iam.RemoveRoleFromInstanceProfileInput,
 		optFns ...func(*iam.Options),
 	) (*iam.RemoveRoleFromInstanceProfileOutput, error)
+
+	// CreatePolicy creates a new managed policy for your AWS account.
+	CreatePolicy(
+		ctx context.Context,
+		params *iam.CreatePolicyInput,
+		optFns ...func(*iam.Options),
+	) (*iam.CreatePolicyOutput, error)
+
+	// GetPolicy retrieves information about the specified managed policy, including the policy's
+	// default version and the total number of IAM users, groups, and roles that the policy is attached to.
+	GetPolicy(
+		ctx context.Context,
+		params *iam.GetPolicyInput,
+		optFns ...func(*iam.Options),
+	) (*iam.GetPolicyOutput, error)
+
+	// DeletePolicy deletes the specified managed policy.
+	DeletePolicy(
+		ctx context.Context,
+		params *iam.DeletePolicyInput,
+		optFns ...func(*iam.Options),
+	) (*iam.DeletePolicyOutput, error)
+
+	// CreatePolicyVersion creates a new version of the specified managed policy.
+	CreatePolicyVersion(
+		ctx context.Context,
+		params *iam.CreatePolicyVersionInput,
+		optFns ...func(*iam.Options),
+	) (*iam.CreatePolicyVersionOutput, error)
+
+	// DeletePolicyVersion deletes the specified version from the specified managed policy.
+	DeletePolicyVersion(
+		ctx context.Context,
+		params *iam.DeletePolicyVersionInput,
+		optFns ...func(*iam.Options),
+	) (*iam.DeletePolicyVersionOutput, error)
+
+	// ListPolicyVersions lists the versions of the specified managed policy.
+	ListPolicyVersions(
+		ctx context.Context,
+		params *iam.ListPolicyVersionsInput,
+		optFns ...func(*iam.Options),
+	) (*iam.ListPolicyVersionsOutput, error)
+
+	// TagPolicy adds one or more tags to an IAM managed policy.
+	TagPolicy(
+		ctx context.Context,
+		params *iam.TagPolicyInput,
+		optFns ...func(*iam.Options),
+	) (*iam.TagPolicyOutput, error)
+
+	// UntagPolicy removes the specified tags from the managed policy.
+	UntagPolicy(
+		ctx context.Context,
+		params *iam.UntagPolicyInput,
+		optFns ...func(*iam.Options),
+	) (*iam.UntagPolicyOutput, error)
+
+	// ListPolicyTags lists the tags that are attached to the specified managed policy.
+	ListPolicyTags(
+		ctx context.Context,
+		params *iam.ListPolicyTagsInput,
+		optFns ...func(*iam.Options),
+	) (*iam.ListPolicyTagsOutput, error)
 }
 
 // NewService creates a new instance of the AWS IAM service

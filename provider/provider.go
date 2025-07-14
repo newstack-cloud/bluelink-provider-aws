@@ -46,6 +46,10 @@ func NewProvider(
 				iamServiceFactory,
 				awsConfigStore,
 			),
+			"aws/iam/managedPolicy": iam.ManagedPolicyResource(
+				iamServiceFactory,
+				awsConfigStore,
+			),
 			"aws/lambda/function": lambda.FunctionResource(
 				lambdaServiceFactory,
 				awsConfigStore,

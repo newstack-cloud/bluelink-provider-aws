@@ -170,6 +170,30 @@ type iamServiceMock struct {
 	addRoleToInstanceProfileError       error
 	removeRoleFromInstanceProfileOutput *iam.RemoveRoleFromInstanceProfileOutput
 	removeRoleFromInstanceProfileError  error
+
+	// Managed policy-related mock fields
+	createPolicyOutput *iam.CreatePolicyOutput
+	createPolicyError  error
+	getPolicyOutput    *iam.GetPolicyOutput
+	getPolicyError     error
+	deletePolicyOutput *iam.DeletePolicyOutput
+	deletePolicyError  error
+
+	// Policy version-related mock fields
+	createPolicyVersionOutput *iam.CreatePolicyVersionOutput
+	createPolicyVersionError  error
+	deletePolicyVersionOutput *iam.DeletePolicyVersionOutput
+	deletePolicyVersionError  error
+	listPolicyVersionsOutput  *iam.ListPolicyVersionsOutput
+	listPolicyVersionsError   error
+
+	// Policy tag-related mock fields
+	tagPolicyOutput      *iam.TagPolicyOutput
+	tagPolicyError       error
+	untagPolicyOutput    *iam.UntagPolicyOutput
+	untagPolicyError     error
+	listPolicyTagsOutput *iam.ListPolicyTagsOutput
+	listPolicyTagsError  error
 }
 
 type iamServiceMockOption func(*iamServiceMock)
@@ -952,6 +976,115 @@ func WithRemoveRoleFromInstanceProfileError(err error) iamServiceMockOption {
 	}
 }
 
+// Managed policy mock options
+func WithCreatePolicyOutput(output *iam.CreatePolicyOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.createPolicyOutput = output
+	}
+}
+
+func WithCreatePolicyError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.createPolicyError = err
+	}
+}
+
+func WithGetPolicyOutput(output *iam.GetPolicyOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.getPolicyOutput = output
+	}
+}
+
+func WithGetPolicyError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.getPolicyError = err
+	}
+}
+
+func WithDeletePolicyOutput(output *iam.DeletePolicyOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.deletePolicyOutput = output
+	}
+}
+
+func WithDeletePolicyError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.deletePolicyError = err
+	}
+}
+
+func WithCreatePolicyVersionOutput(output *iam.CreatePolicyVersionOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.createPolicyVersionOutput = output
+	}
+}
+
+func WithCreatePolicyVersionError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.createPolicyVersionError = err
+	}
+}
+
+func WithDeletePolicyVersionOutput(output *iam.DeletePolicyVersionOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.deletePolicyVersionOutput = output
+	}
+}
+
+func WithDeletePolicyVersionError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.deletePolicyVersionError = err
+	}
+}
+
+func WithListPolicyVersionsOutput(output *iam.ListPolicyVersionsOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.listPolicyVersionsOutput = output
+	}
+}
+
+func WithListPolicyVersionsError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.listPolicyVersionsError = err
+	}
+}
+
+func WithTagPolicyOutput(output *iam.TagPolicyOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.tagPolicyOutput = output
+	}
+}
+
+func WithTagPolicyError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.tagPolicyError = err
+	}
+}
+
+func WithUntagPolicyOutput(output *iam.UntagPolicyOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.untagPolicyOutput = output
+	}
+}
+
+func WithUntagPolicyError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.untagPolicyError = err
+	}
+}
+
+func WithListPolicyTagsOutput(output *iam.ListPolicyTagsOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.listPolicyTagsOutput = output
+	}
+}
+
+func WithListPolicyTagsError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.listPolicyTagsError = err
+	}
+}
+
 // Group operation implementations.
 func (m *iamServiceMock) CreateGroup(
 	ctx context.Context,
@@ -1515,4 +1648,86 @@ func (m *iamServiceMock) RemoveRoleFromInstanceProfile(
 ) (*iam.RemoveRoleFromInstanceProfileOutput, error) {
 	m.RegisterCall(ctx, params)
 	return m.removeRoleFromInstanceProfileOutput, m.removeRoleFromInstanceProfileError
+}
+
+// Managed policy methods
+func (m *iamServiceMock) CreatePolicy(
+	ctx context.Context,
+	params *iam.CreatePolicyInput,
+	optFns ...func(*iam.Options),
+) (*iam.CreatePolicyOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.createPolicyOutput, m.createPolicyError
+}
+
+func (m *iamServiceMock) GetPolicy(
+	ctx context.Context,
+	params *iam.GetPolicyInput,
+	optFns ...func(*iam.Options),
+) (*iam.GetPolicyOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.getPolicyOutput, m.getPolicyError
+}
+
+func (m *iamServiceMock) DeletePolicy(
+	ctx context.Context,
+	params *iam.DeletePolicyInput,
+	optFns ...func(*iam.Options),
+) (*iam.DeletePolicyOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.deletePolicyOutput, m.deletePolicyError
+}
+
+func (m *iamServiceMock) CreatePolicyVersion(
+	ctx context.Context,
+	params *iam.CreatePolicyVersionInput,
+	optFns ...func(*iam.Options),
+) (*iam.CreatePolicyVersionOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.createPolicyVersionOutput, m.createPolicyVersionError
+}
+
+func (m *iamServiceMock) DeletePolicyVersion(
+	ctx context.Context,
+	params *iam.DeletePolicyVersionInput,
+	optFns ...func(*iam.Options),
+) (*iam.DeletePolicyVersionOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.deletePolicyVersionOutput, m.deletePolicyVersionError
+}
+
+func (m *iamServiceMock) ListPolicyVersions(
+	ctx context.Context,
+	params *iam.ListPolicyVersionsInput,
+	optFns ...func(*iam.Options),
+) (*iam.ListPolicyVersionsOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.listPolicyVersionsOutput, m.listPolicyVersionsError
+}
+
+func (m *iamServiceMock) TagPolicy(
+	ctx context.Context,
+	params *iam.TagPolicyInput,
+	optFns ...func(*iam.Options),
+) (*iam.TagPolicyOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.tagPolicyOutput, m.tagPolicyError
+}
+
+func (m *iamServiceMock) UntagPolicy(
+	ctx context.Context,
+	params *iam.UntagPolicyInput,
+	optFns ...func(*iam.Options),
+) (*iam.UntagPolicyOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.untagPolicyOutput, m.untagPolicyError
+}
+
+func (m *iamServiceMock) ListPolicyTags(
+	ctx context.Context,
+	params *iam.ListPolicyTagsInput,
+	optFns ...func(*iam.Options),
+) (*iam.ListPolicyTagsOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.listPolicyTagsOutput, m.listPolicyTagsError
 }
