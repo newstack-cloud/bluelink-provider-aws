@@ -976,7 +976,7 @@ func WithRemoveRoleFromInstanceProfileError(err error) iamServiceMockOption {
 	}
 }
 
-// Managed policy mock options
+// Managed policy mock options.
 func WithCreatePolicyOutput(output *iam.CreatePolicyOutput) iamServiceMockOption {
 	return func(m *iamServiceMock) {
 		m.createPolicyOutput = output
@@ -1650,7 +1650,7 @@ func (m *iamServiceMock) RemoveRoleFromInstanceProfile(
 	return m.removeRoleFromInstanceProfileOutput, m.removeRoleFromInstanceProfileError
 }
 
-// Managed policy methods
+// Managed policy methods.
 func (m *iamServiceMock) CreatePolicy(
 	ctx context.Context,
 	params *iam.CreatePolicyInput,
