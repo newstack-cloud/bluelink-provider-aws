@@ -4,6 +4,7 @@ import (
 	"context"
 
 	iamservice "github.com/newstack-cloud/bluelink-provider-aws/services/iam/service"
+	"github.com/newstack-cloud/bluelink/libs/blueprint/core"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
 	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/pluginutils"
 )
@@ -40,5 +41,19 @@ func (i *iamOIDCProviderResourceActions) Update(
 		return nil, err
 	}
 
-	return &provider.ResourceDeployOutput{}, nil
+	currentStateSpecData := pluginutils.GetCurrentResourceStateSpecData(input.Changes)
+
+	return &provider.ResourceDeployOutput{
+		ComputedFieldValues: i.extractComputedFieldsFromCurrentState(currentStateSpecData),
+	}, nil
+}
+
+func (i *iamOIDCProviderResourceActions) extractComputedFieldsFromCurrentState(
+	currentStateSpecData *core.MappingNode,
+) map[string]*core.MappingNode {
+	fields := map[string]*core.MappingNode{}
+	if v, ok := pluginutils.GetValueByPath("$.arn", currentStateSpecData); ok {
+		fields["spec.arn"] = v
+	}
+	return fields
 }

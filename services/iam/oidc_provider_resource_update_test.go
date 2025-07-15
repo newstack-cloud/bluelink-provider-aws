@@ -139,7 +139,11 @@ func updateOIDCProviderClientIdsTestCase(
 			},
 			ProviderContext: providerCtx,
 		},
-		ExpectedOutput: &provider.ResourceDeployOutput{},
+		ExpectedOutput: &provider.ResourceDeployOutput{
+			ComputedFieldValues: map[string]*core.MappingNode{
+				"spec.arn": core.MappingNodeFromString(oidcProviderArn),
+			},
+		},
 		SaveActionsCalled: map[string]any{
 			"RemoveClientIDFromOpenIDConnectProvider": &iam.RemoveClientIDFromOpenIDConnectProviderInput{
 				OpenIDConnectProviderArn: aws.String("arn:aws:iam::123456789012:oidc-provider/example.com"),
@@ -230,7 +234,11 @@ func updateOIDCProviderThumbprintsTestCase(
 			},
 			ProviderContext: providerCtx,
 		},
-		ExpectedOutput: &provider.ResourceDeployOutput{},
+		ExpectedOutput: &provider.ResourceDeployOutput{
+			ComputedFieldValues: map[string]*core.MappingNode{
+				"spec.arn": core.MappingNodeFromString(oidcProviderArn),
+			},
+		},
 		SaveActionsCalled: map[string]any{
 			"UpdateOpenIDConnectProviderThumbprint": &iam.UpdateOpenIDConnectProviderThumbprintInput{
 				OpenIDConnectProviderArn: aws.String("arn:aws:iam::123456789012:oidc-provider/example.com"),
@@ -339,7 +347,11 @@ func updateOIDCProviderTagsTestCase(
 			},
 			ProviderContext: providerCtx,
 		},
-		ExpectedOutput: &provider.ResourceDeployOutput{},
+		ExpectedOutput: &provider.ResourceDeployOutput{
+			ComputedFieldValues: map[string]*core.MappingNode{
+				"spec.arn": core.MappingNodeFromString(oidcProviderArn),
+			},
+		},
 		SaveActionsCalled: map[string]any{
 			"TagOpenIDConnectProvider": &iam.TagOpenIDConnectProviderInput{
 				OpenIDConnectProviderArn: aws.String("arn:aws:iam::123456789012:oidc-provider/example.com"),
@@ -416,7 +428,11 @@ func updateOIDCProviderNoChangesTestCase(
 			},
 			ProviderContext: providerCtx,
 		},
-		ExpectedOutput:    &provider.ResourceDeployOutput{},
+		ExpectedOutput: &provider.ResourceDeployOutput{
+			ComputedFieldValues: map[string]*core.MappingNode{
+				"spec.arn": core.MappingNodeFromString(oidcProviderArn),
+			},
+		},
 		SaveActionsCalled: map[string]any{},
 	}
 }
