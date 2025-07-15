@@ -12,6 +12,10 @@ type iamPoliciesDiffResult struct {
 	toRemove []string
 }
 
+// Diff checks are carried out on IAM policies, as policies are in lists,
+// using the position-based information in the change set is not enough to
+// catch policies that have been removed as in the new changes, the policy
+// in the same position might be completely different.
 func diffIAMPolicies(currentPolicies *core.MappingNode, newPolicies *core.MappingNode) *iamPoliciesDiffResult {
 	result := &iamPoliciesDiffResult{}
 
@@ -48,6 +52,8 @@ func diffIAMPolicies(currentPolicies *core.MappingNode, newPolicies *core.Mappin
 }
 
 // Helper function to compare policy documents.
+// A simple serialised JSON comparison is used to compare the policy documents
+// in the current implementation.
 func policiesEqual(policy1, policy2 *core.MappingNode) bool {
 	doc1JSON, err1 := json.Marshal(policy1.Fields["policyDocument"])
 	doc2JSON, err2 := json.Marshal(policy2.Fields["policyDocument"])
