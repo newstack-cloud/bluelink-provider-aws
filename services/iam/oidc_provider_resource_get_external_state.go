@@ -78,21 +78,11 @@ func (i *iamOIDCProviderResourceActions) GetExternalState(
 		OpenIDConnectProviderArn: aws.String(arnStr),
 	})
 	if err != nil {
-		// If we can't get tags, don't fail the entire operation
-		// Just log the error (in a real implementation)
-	} else if len(tagsResult.Tags) > 0 {
-		tagItems := make([]*core.MappingNode, len(tagsResult.Tags))
-		for i, tag := range tagsResult.Tags {
-			tagItems[i] = &core.MappingNode{
-				Fields: map[string]*core.MappingNode{
-					"key":   core.MappingNodeFromString(aws.ToString(tag.Key)),
-					"value": core.MappingNodeFromString(aws.ToString(tag.Value)),
-				},
-			}
-		}
-		externalState["tags"] = &core.MappingNode{
-			Items: tagItems,
-		}
+		return nil, fmt.Errorf("failed to get tags: %w", err)
+	}
+
+	if len(tagsResult.Tags) > 0 {
+		externalState["tags"] = extractIAMTags(tagsResult.Tags)
 	}
 
 	return &provider.ResourceGetExternalStateOutput{

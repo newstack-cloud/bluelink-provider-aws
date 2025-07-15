@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
 	iamservice "github.com/newstack-cloud/bluelink-provider-aws/services/iam/service"
+	"github.com/newstack-cloud/bluelink-provider-aws/utils"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/core"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
 	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/pluginutils"
@@ -180,37 +181,10 @@ func (u *userInlinePoliciesUpdate) Prepare(
 	currentPolicies, _ := pluginutils.GetValueByPath("$.policies", currentStateSpecData)
 	newPolicies := specData.Fields["policies"]
 
-	// Create maps for easier comparison
-	currentMap := make(map[string]*core.MappingNode)
-	if currentPolicies != nil {
-		for _, policy := range currentPolicies.Items {
-			policyName := core.StringValue(policy.Fields["policyName"])
-			currentMap[policyName] = policy
-		}
-	}
-
-	newMap := make(map[string]*core.MappingNode)
-	if newPolicies != nil {
-		for _, policy := range newPolicies.Items {
-			policyName := core.StringValue(policy.Fields["policyName"])
-			newMap[policyName] = policy
-		}
-	}
-
-	// Determine what needs to be added, updated, or removed
-	for name, policy := range newMap {
-		if currentPolicy, exists := currentMap[name]; !exists {
-			u.toAdd = append(u.toAdd, policy)
-		} else if !policiesEqual(currentPolicy, policy) {
-			u.toUpdate = append(u.toUpdate, policy)
-		}
-	}
-
-	for name := range currentMap {
-		if _, exists := newMap[name]; !exists {
-			u.toRemove = append(u.toRemove, name)
-		}
-	}
+	result := diffIAMPolicies(currentPolicies, newPolicies)
+	u.toAdd = result.toAdd
+	u.toUpdate = result.toUpdate
+	u.toRemove = result.toRemove
 
 	return len(u.toAdd) > 0 || len(u.toUpdate) > 0 || len(u.toRemove) > 0, saveOpCtx, nil
 }
@@ -419,44 +393,13 @@ func (u *userTagsUpdate) Prepare(
 	specData *core.MappingNode,
 	changes *provider.Changes,
 ) (bool, pluginutils.SaveOperationContext, error) {
-	// Compare current and desired tags
-	currentStateSpecData := pluginutils.GetCurrentResourceStateSpecData(changes)
-	currentTags, _ := pluginutils.GetValueByPath("$.tags", currentStateSpecData)
-	newTags := specData.Fields["tags"]
-
-	currentMap := make(map[string]string)
-	if currentTags != nil {
-		for _, tag := range currentTags.Items {
-			key := core.StringValue(tag.Fields["key"])
-			value := core.StringValue(tag.Fields["value"])
-			currentMap[key] = value
-		}
-	}
-
-	newMap := make(map[string]string)
-	if newTags != nil {
-		for _, tag := range newTags.Items {
-			key := core.StringValue(tag.Fields["key"])
-			value := core.StringValue(tag.Fields["value"])
-			newMap[key] = value
-		}
-	}
-
-	// Determine tags to add/update and remove
-	for key, value := range newMap {
-		if currentValue, exists := currentMap[key]; !exists || currentValue != value {
-			u.toAdd = append(u.toAdd, types.Tag{
-				Key:   aws.String(key),
-				Value: aws.String(value),
-			})
-		}
-	}
-
-	for key := range currentMap {
-		if _, exists := newMap[key]; !exists {
-			u.toRemove = append(u.toRemove, key)
-		}
-	}
+	diffResult := utils.DiffTags(
+		changes,
+		"$.tags",
+		toIAMTag,
+	)
+	u.toAdd = diffResult.ToSet
+	u.toRemove = diffResult.ToRemove
 
 	return len(u.toAdd) > 0 || len(u.toRemove) > 0, saveOpCtx, nil
 }
@@ -479,10 +422,9 @@ func (u *userTagsUpdate) Execute(
 
 	// Add/update tags
 	if len(u.toAdd) > 0 {
-		sortedTags := sortTagsByKey(u.toAdd)
 		_, err := iamService.TagUser(ctx, &iam.TagUserInput{
 			UserName: aws.String(u.userName),
-			Tags:     sortedTags,
+			Tags:     u.toAdd,
 		})
 		if err != nil {
 			return saveOpCtx, fmt.Errorf("failed to add tags: %w", err)
@@ -570,18 +512,4 @@ func (u *userGroupMembershipUpdate) Execute(
 	}
 
 	return saveOpCtx, nil
-}
-
-// Helper function to compare policy documents.
-func policiesEqual(policy1, policy2 *core.MappingNode) bool {
-	// Simple comparison - in a real implementation, you might want to do a deep comparison
-	// of the policy documents
-	doc1JSON, err1 := json.Marshal(policy1.Fields["policyDocument"])
-	doc2JSON, err2 := json.Marshal(policy2.Fields["policyDocument"])
-
-	if err1 != nil || err2 != nil {
-		return false
-	}
-
-	return string(doc1JSON) == string(doc2JSON)
 }

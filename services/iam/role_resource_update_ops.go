@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
 	iamservice "github.com/newstack-cloud/bluelink-provider-aws/services/iam/service"
+	"github.com/newstack-cloud/bluelink-provider-aws/utils"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/core"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
 	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/pluginutils"
@@ -191,37 +192,10 @@ func (r *roleInlinePoliciesUpdate) Prepare(
 	currentPolicies, _ := pluginutils.GetValueByPath("$.policies", currentStateSpecData)
 	newPolicies := specData.Fields["policies"]
 
-	// Create maps for easier comparison
-	currentMap := make(map[string]*core.MappingNode)
-	if currentPolicies != nil {
-		for _, policy := range currentPolicies.Items {
-			policyName := core.StringValue(policy.Fields["policyName"])
-			currentMap[policyName] = policy
-		}
-	}
-
-	newMap := make(map[string]*core.MappingNode)
-	if newPolicies != nil {
-		for _, policy := range newPolicies.Items {
-			policyName := core.StringValue(policy.Fields["policyName"])
-			newMap[policyName] = policy
-		}
-	}
-
-	// Determine what needs to be added, updated, or removed
-	for name, policy := range newMap {
-		if currentPolicy, exists := currentMap[name]; !exists {
-			r.toAdd = append(r.toAdd, policy)
-		} else if !policiesEqual(currentPolicy, policy) {
-			r.toUpdate = append(r.toUpdate, policy)
-		}
-	}
-
-	for name := range currentMap {
-		if _, exists := newMap[name]; !exists {
-			r.toRemove = append(r.toRemove, name)
-		}
-	}
+	result := diffIAMPolicies(currentPolicies, newPolicies)
+	r.toAdd = result.toAdd
+	r.toUpdate = result.toUpdate
+	r.toRemove = result.toRemove
 
 	return len(r.toAdd) > 0 || len(r.toUpdate) > 0 || len(r.toRemove) > 0, saveOpCtx, nil
 }
@@ -376,58 +350,13 @@ func (r *roleTagsUpdate) Prepare(
 	specData *core.MappingNode,
 	changes *provider.Changes,
 ) (bool, pluginutils.SaveOperationContext, error) {
-
-	// Check if tags were modified
-	tagsModified := false
-	for _, fieldChange := range changes.ModifiedFields {
-		if fieldChange.FieldPath == "spec.tags" {
-			tagsModified = true
-			break
-		}
-	}
-
-	if !tagsModified {
-		return false, saveOpCtx, nil
-	}
-
-	// Compare current and desired tags
-	currentStateSpecData := pluginutils.GetCurrentResourceStateSpecData(changes)
-	currentTags, _ := pluginutils.GetValueByPath("$.tags", currentStateSpecData)
-	newTags := specData.Fields["tags"]
-
-	currentMap := make(map[string]string)
-	if currentTags != nil {
-		for _, tag := range currentTags.Items {
-			key := core.StringValue(tag.Fields["key"])
-			value := core.StringValue(tag.Fields["value"])
-			currentMap[key] = value
-		}
-	}
-
-	newMap := make(map[string]string)
-	if newTags != nil {
-		for _, tag := range newTags.Items {
-			key := core.StringValue(tag.Fields["key"])
-			value := core.StringValue(tag.Fields["value"])
-			newMap[key] = value
-		}
-	}
-
-	// Determine tags to add/update and remove
-	for key, value := range newMap {
-		if currentValue, exists := currentMap[key]; !exists || currentValue != value {
-			r.toAdd = append(r.toAdd, types.Tag{
-				Key:   aws.String(key),
-				Value: aws.String(value),
-			})
-		}
-	}
-
-	for key := range currentMap {
-		if _, exists := newMap[key]; !exists {
-			r.toRemove = append(r.toRemove, key)
-		}
-	}
+	diffResult := utils.DiffTags(
+		changes,
+		"$.tags",
+		toIAMTag,
+	)
+	r.toAdd = diffResult.ToSet
+	r.toRemove = diffResult.ToRemove
 
 	return len(r.toAdd) > 0 || len(r.toRemove) > 0, saveOpCtx, nil
 }
@@ -452,11 +381,9 @@ func (r *roleTagsUpdate) Execute(
 
 	// Add/update tags
 	if len(r.toAdd) > 0 {
-		// Sort tags by key before sending to AWS
-		sortedTags := sortTagsByKey(r.toAdd)
 		_, err := iamService.TagRole(ctx, &iam.TagRoleInput{
 			RoleName: aws.String(roleName),
-			Tags:     sortedTags,
+			Tags:     r.toAdd,
 		})
 		if err != nil {
 			return saveOpCtx, fmt.Errorf("failed to add tags: %w", err)

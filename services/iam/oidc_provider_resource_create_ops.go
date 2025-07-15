@@ -60,24 +60,11 @@ func (o *oidcProviderCreate) Prepare(
 	}
 
 	// Extract tags
-	tags, hasTags := pluginutils.GetValueByPath("$.tags", specData)
-	if hasTags && tags != nil && len(tags.Items) > 0 {
-		tagItems := tags.Items
-		o.tags = make([]types.Tag, len(tagItems))
-		for i, item := range tagItems {
-			keyNode, hasKey := pluginutils.GetValueByPath("$.key", item)
-			valueNode, hasValue := pluginutils.GetValueByPath("$.value", item)
-			if !hasKey || !hasValue {
-				return false, saveOpCtx, fmt.Errorf("invalid tag format at index %d", i)
-			}
-			o.tags[i] = types.Tag{
-				Key:   aws.String(core.StringValue(keyNode)),
-				Value: aws.String(core.StringValue(valueNode)),
-			}
-		}
-	} else {
-		o.tags = nil
+	tags, err := iamTagsFromSpecData(specData)
+	if err != nil {
+		return false, saveOpCtx, err
 	}
+	o.tags = tags
 
 	return true, saveOpCtx, nil
 }

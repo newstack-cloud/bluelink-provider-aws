@@ -180,7 +180,7 @@ func (i *iamUserResourceActions) getInlinePolicies(
 		}
 
 		// Parse the policy document JSON
-		var policyDoc map[string]interface{}
+		var policyDoc map[string]any
 		if err := json.Unmarshal([]byte(aws.ToString(policyResult.PolicyDocument)), &policyDoc); err != nil {
 			return nil, fmt.Errorf("failed to parse policy document for %s: %w", policyName, err)
 		}

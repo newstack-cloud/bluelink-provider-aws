@@ -3,7 +3,6 @@ package iam
 import (
 	"context"
 	"fmt"
-	"sort"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
@@ -54,24 +53,11 @@ func (s *samlProviderCreate) Prepare(
 	s.samlMetadataDocument = core.StringValue(samlMetadataDocument)
 
 	// Extract tags
-	tags, hasTags := pluginutils.GetValueByPath("$.tags", specData)
-	if hasTags && tags != nil && len(tags.Items) > 0 {
-		tagItems := tags.Items
-		s.tags = make([]types.Tag, len(tagItems))
-		for i, item := range tagItems {
-			keyNode, hasKey := pluginutils.GetValueByPath("$.key", item)
-			valueNode, hasValue := pluginutils.GetValueByPath("$.value", item)
-			if !hasKey || !hasValue {
-				return false, saveOpCtx, fmt.Errorf("invalid tag format at index %d", i)
-			}
-			s.tags[i] = types.Tag{
-				Key:   aws.String(core.StringValue(keyNode)),
-				Value: aws.String(core.StringValue(valueNode)),
-			}
-		}
-	} else {
-		s.tags = nil
+	tags, err := iamTagsFromSpecData(specData)
+	if err != nil {
+		return false, saveOpCtx, err
 	}
+	s.tags = tags
 
 	return true, saveOpCtx, nil
 }
@@ -88,7 +74,7 @@ func (s *samlProviderCreate) Execute(
 	input := &iam.CreateSAMLProviderInput{
 		Name:                 aws.String(s.name),
 		SAMLMetadataDocument: aws.String(s.samlMetadataDocument),
-		Tags:                 sortTagsByKeyForSAML(s.tags),
+		Tags:                 sortTagsByKey(s.tags),
 	}
 
 	output, err := iamService.CreateSAMLProvider(ctx, input)
@@ -104,14 +90,4 @@ func newSAMLProviderCreate(generator utils.UniqueNameGenerator) *samlProviderCre
 	return &samlProviderCreate{
 		uniqueSAMLProviderNameGenerator: generator,
 	}
-}
-
-// sortTagsByKeyForSAML sorts a slice of types.Tag by their Key field.
-func sortTagsByKeyForSAML(tags []types.Tag) []types.Tag {
-	sorted := make([]types.Tag, len(tags))
-	copy(sorted, tags)
-	sort.Slice(sorted, func(i, j int) bool {
-		return aws.ToString(sorted[i].Key) < aws.ToString(sorted[j].Key)
-	})
-	return sorted
 }

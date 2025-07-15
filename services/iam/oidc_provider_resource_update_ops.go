@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
 	iamservice "github.com/newstack-cloud/bluelink-provider-aws/services/iam/service"
+	"github.com/newstack-cloud/bluelink-provider-aws/utils"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/core"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
 	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/pluginutils"
@@ -121,14 +122,14 @@ func (o *oidcProviderThumbprintsUpdate) Prepare(
 ) (bool, pluginutils.SaveOperationContext, error) {
 	// Get the OIDC provider ARN from the current state
 	currentStateSpecData := pluginutils.GetCurrentResourceStateSpecData(changes)
-	if currentStateSpecData == nil {
-		return false, saveOpCtx, fmt.Errorf("current state spec data is required for OIDC provider update")
+	arn, err := utils.ExtractARNFromCurrentState(
+		currentStateSpecData,
+		"OIDC provider thumbprint update",
+	)
+	if err != nil {
+		return false, saveOpCtx, err
 	}
-	arn, hasArn := pluginutils.GetValueByPath("$.arn", currentStateSpecData)
-	if !hasArn {
-		return false, saveOpCtx, fmt.Errorf("OIDC provider ARN is required for update")
-	}
-	o.arn = core.StringValue(arn)
+	o.arn = arn
 
 	// Check if thumbprintList was modified
 	thumbprintListModified := false
@@ -188,64 +189,23 @@ func (o *oidcProviderTagsUpdate) Prepare(
 ) (bool, pluginutils.SaveOperationContext, error) {
 	// Get the OIDC provider ARN from the current state
 	currentStateSpecData := pluginutils.GetCurrentResourceStateSpecData(changes)
-	if currentStateSpecData == nil {
-		return false, saveOpCtx, fmt.Errorf("current state spec data is required for OIDC provider update")
+	arn, err := utils.ExtractARNFromCurrentState(
+		currentStateSpecData,
+		"OIDC provider tags update",
+	)
+	if err != nil {
+		return false, saveOpCtx, err
 	}
-	arn, hasArn := pluginutils.GetValueByPath("$.arn", currentStateSpecData)
-	if !hasArn {
-		return false, saveOpCtx, fmt.Errorf("OIDC provider ARN is required for update")
-	}
-	o.arn = core.StringValue(arn)
+	o.arn = arn
 
-	// Check if tags were modified
-	tagsModified := false
-	for _, fieldChange := range changes.ModifiedFields {
-		if fieldChange.FieldPath == "spec.tags" {
-			tagsModified = true
-			break
-		}
-	}
+	diffResult := utils.DiffTags(
+		changes,
+		"$.tags",
+		toIAMTag,
+	)
 
-	if !tagsModified {
-		return false, saveOpCtx, nil
-	}
-
-	// Get current tags
-	currentTags := make(map[string]string)
-	if currentTagsList, exists := pluginutils.GetValueByPath("$.tags", currentStateSpecData); exists && currentTagsList != nil {
-		for _, item := range currentTagsList.Items {
-			key, _ := pluginutils.GetValueByPath("$.key", item)
-			value, _ := pluginutils.GetValueByPath("$.value", item)
-			currentTags[core.StringValue(key)] = core.StringValue(value)
-		}
-	}
-
-	// Get desired tags
-	desiredTags := make(map[string]string)
-	if desiredTagsList, exists := pluginutils.GetValueByPath("$.tags", specData); exists && desiredTagsList != nil {
-		for _, item := range desiredTagsList.Items {
-			key, _ := pluginutils.GetValueByPath("$.key", item)
-			value, _ := pluginutils.GetValueByPath("$.value", item)
-			desiredTags[core.StringValue(key)] = core.StringValue(value)
-		}
-	}
-
-	// Calculate tags to add/update
-	for key, value := range desiredTags {
-		if currentValue, exists := currentTags[key]; !exists || currentValue != value {
-			o.toAdd = append(o.toAdd, types.Tag{
-				Key:   aws.String(key),
-				Value: aws.String(value),
-			})
-		}
-	}
-
-	// Calculate tags to remove
-	for key := range currentTags {
-		if _, exists := desiredTags[key]; !exists {
-			o.toRemove = append(o.toRemove, key)
-		}
-	}
+	o.toAdd = diffResult.ToSet
+	o.toRemove = diffResult.ToRemove
 
 	return len(o.toAdd) > 0 || len(o.toRemove) > 0, saveOpCtx, nil
 }
@@ -268,11 +228,9 @@ func (o *oidcProviderTagsUpdate) Execute(
 
 	// Add/update tags
 	if len(o.toAdd) > 0 {
-		// Sort tags by key before sending to AWS
-		sortedTags := sortTagsByKey(o.toAdd)
 		_, err := iamService.TagOpenIDConnectProvider(ctx, &iam.TagOpenIDConnectProviderInput{
 			OpenIDConnectProviderArn: aws.String(o.arn),
-			Tags:                     sortedTags,
+			Tags:                     o.toAdd,
 		})
 		if err != nil {
 			return saveOpCtx, fmt.Errorf("failed to add tags: %w", err)

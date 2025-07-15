@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
 	iamservice "github.com/newstack-cloud/bluelink-provider-aws/services/iam/service"
+	"github.com/newstack-cloud/bluelink-provider-aws/utils"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/core"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
 	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/pluginutils"
@@ -62,7 +63,8 @@ func (m *managedPolicyVersionUpdate) Execute(
 }
 
 type managedPolicyTagsUpdate struct {
-	tags []*core.MappingNode
+	tagsToAdd    []types.Tag
+	tagsToRemove []string
 }
 
 func (m *managedPolicyTagsUpdate) Name() string {
@@ -74,12 +76,16 @@ func (m *managedPolicyTagsUpdate) Prepare(
 	specData *core.MappingNode,
 	changes *provider.Changes,
 ) (bool, pluginutils.SaveOperationContext, error) {
-	// Check if there are tags to update
-	if tagsNode, ok := specData.Fields["tags"]; ok && tagsNode != nil && len(tagsNode.Items) > 0 {
-		m.tags = tagsNode.Items
-		return true, saveOpCtx, nil
-	}
-	return false, saveOpCtx, nil
+	diffResult := utils.DiffTags(
+		changes,
+		"$.tags",
+		toIAMTag,
+	)
+
+	m.tagsToAdd = diffResult.ToSet
+	m.tagsToRemove = diffResult.ToRemove
+
+	return len(m.tagsToAdd) > 0 || len(m.tagsToRemove) > 0, saveOpCtx, nil
 }
 
 func (m *managedPolicyTagsUpdate) Execute(
@@ -89,39 +95,11 @@ func (m *managedPolicyTagsUpdate) Execute(
 ) (pluginutils.SaveOperationContext, error) {
 	policyArn := saveOpCtx.ProviderUpstreamID
 
-	// Get current tags to determine what needs to be removed
-	currentTagsOutput, err := iamService.ListPolicyTags(ctx, &iam.ListPolicyTagsInput{
-		PolicyArn: aws.String(policyArn),
-	})
-	if err != nil {
-		return saveOpCtx, fmt.Errorf("failed to list current tags for policy %s: %w", policyArn, err)
-	}
-
-	// Build a map of current tag keys
-	currentTagKeys := make(map[string]bool)
-	for _, tag := range currentTagsOutput.Tags {
-		currentTagKeys[aws.ToString(tag.Key)] = true
-	}
-
-	// Build a map of new tag keys
-	newTagKeys := make(map[string]bool)
-	for _, tagNode := range m.tags {
-		key := core.StringValue(tagNode.Fields["key"])
-		newTagKeys[key] = true
-	}
-
 	// Remove tags that are no longer present
-	tagsToRemove := make([]string, 0)
-	for key := range currentTagKeys {
-		if !newTagKeys[key] {
-			tagsToRemove = append(tagsToRemove, key)
-		}
-	}
-
-	if len(tagsToRemove) > 0 {
-		_, err = iamService.UntagPolicy(ctx, &iam.UntagPolicyInput{
+	if len(m.tagsToRemove) > 0 {
+		_, err := iamService.UntagPolicy(ctx, &iam.UntagPolicyInput{
 			PolicyArn: aws.String(policyArn),
-			TagKeys:   tagsToRemove,
+			TagKeys:   m.tagsToRemove,
 		})
 		if err != nil {
 			return saveOpCtx, fmt.Errorf("failed to remove tags from policy %s: %w", policyArn, err)
@@ -129,21 +107,10 @@ func (m *managedPolicyTagsUpdate) Execute(
 	}
 
 	// Add new tags
-	if len(m.tags) > 0 {
-		// Convert tags to the format expected by AWS
-		tags := make([]types.Tag, 0, len(m.tags))
-		for _, tagNode := range m.tags {
-			key := core.StringValue(tagNode.Fields["key"])
-			tagValue := core.StringValue(tagNode.Fields["value"])
-			tags = append(tags, types.Tag{
-				Key:   aws.String(key),
-				Value: aws.String(tagValue),
-			})
-		}
-
-		_, err = iamService.TagPolicy(ctx, &iam.TagPolicyInput{
+	if len(m.tagsToAdd) > 0 {
+		_, err := iamService.TagPolicy(ctx, &iam.TagPolicyInput{
 			PolicyArn: aws.String(policyArn),
-			Tags:      tags,
+			Tags:      m.tagsToAdd,
 		})
 		if err != nil {
 			return saveOpCtx, fmt.Errorf("failed to add tags to policy %s: %w", policyArn, err)
