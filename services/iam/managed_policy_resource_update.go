@@ -114,29 +114,21 @@ func (i *iamManagedPolicyResourceActions) extractComputedFieldsFromCurrentState(
 	currentStateSpecData *core.MappingNode,
 ) map[string]*core.MappingNode {
 	fields := map[string]*core.MappingNode{}
-	if v, ok := pluginutils.GetValueByPath("$.arn", currentStateSpecData); ok {
-		fields["spec.arn"] = v
+	fieldsToExtract := map[string]string{
+		"$.arn":                           "spec.arn",
+		"$.id":                            "spec.id",
+		"$.attachmentCount":               "spec.attachmentCount",
+		"$.createDate":                    "spec.createDate",
+		"$.defaultVersionId":              "spec.defaultVersionId",
+		"$.isAttachable":                  "spec.isAttachable",
+		"$.permissionsBoundaryUsageCount": "spec.permissionsBoundaryUsageCount",
 	}
-	if v, ok := pluginutils.GetValueByPath("$.id", currentStateSpecData); ok {
-		fields["spec.id"] = v
+
+	for path, field := range fieldsToExtract {
+		if v, ok := pluginutils.GetValueByPath(path, currentStateSpecData); ok {
+			fields[field] = v
+		}
 	}
-	if v, ok := pluginutils.GetValueByPath("$.attachmentCount", currentStateSpecData); ok {
-		fields["spec.attachmentCount"] = v
-	}
-	if v, ok := pluginutils.GetValueByPath("$.createDate", currentStateSpecData); ok {
-		fields["spec.createDate"] = v
-	}
-	if v, ok := pluginutils.GetValueByPath("$.defaultVersionId", currentStateSpecData); ok {
-		fields["spec.defaultVersionId"] = v
-	}
-	if v, ok := pluginutils.GetValueByPath("$.isAttachable", currentStateSpecData); ok {
-		fields["spec.isAttachable"] = v
-	}
-	if v, ok := pluginutils.GetValueByPath("$.permissionsBoundaryUsageCount", currentStateSpecData); ok {
-		fields["spec.permissionsBoundaryUsageCount"] = v
-	}
-	if v, ok := pluginutils.GetValueByPath("$.updateDate", currentStateSpecData); ok {
-		fields["spec.updateDate"] = v
-	}
+
 	return fields
 }

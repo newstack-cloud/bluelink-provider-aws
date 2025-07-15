@@ -105,11 +105,16 @@ func (i *iamRoleResourceActions) extractComputedFieldsFromCurrentState(
 	currentStateSpecData *core.MappingNode,
 ) map[string]*core.MappingNode {
 	fields := map[string]*core.MappingNode{}
-	if v, ok := pluginutils.GetValueByPath("$.arn", currentStateSpecData); ok {
-		fields["spec.arn"] = v
+	fieldsToExtract := map[string]string{
+		"$.arn":    "spec.arn",
+		"$.roleId": "spec.roleId",
 	}
-	if v, ok := pluginutils.GetValueByPath("$.roleId", currentStateSpecData); ok {
-		fields["spec.roleId"] = v
+
+	for path, field := range fieldsToExtract {
+		if v, ok := pluginutils.GetValueByPath(path, currentStateSpecData); ok {
+			fields[field] = v
+		}
 	}
+
 	return fields
 }
