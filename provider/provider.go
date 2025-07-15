@@ -54,6 +54,10 @@ func NewProvider(
 				iamServiceFactory,
 				awsConfigStore,
 			),
+			"aws/iam/samlProvider": iam.SAMLProviderResource(
+				iamServiceFactory,
+				awsConfigStore,
+			),
 			"aws/lambda/function": lambda.FunctionResource(
 				lambdaServiceFactory,
 				awsConfigStore,

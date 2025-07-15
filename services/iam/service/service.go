@@ -572,6 +572,55 @@ type Service interface {
 		params *iam.ListOpenIDConnectProviderTagsInput,
 		optFns ...func(*iam.Options),
 	) (*iam.ListOpenIDConnectProviderTagsOutput, error)
+
+	// CreateSAMLProvider creates an IAM resource that describes an identity provider (IdP) that supports SAML 2.0.
+	CreateSAMLProvider(
+		ctx context.Context,
+		params *iam.CreateSAMLProviderInput,
+		optFns ...func(*iam.Options),
+	) (*iam.CreateSAMLProviderOutput, error)
+
+	// GetSAMLProvider returns the SAML provider metadocument that was uploaded when the IAM SAML provider resource object was created or updated.
+	GetSAMLProvider(
+		ctx context.Context,
+		params *iam.GetSAMLProviderInput,
+		optFns ...func(*iam.Options),
+	) (*iam.GetSAMLProviderOutput, error)
+
+	// UpdateSAMLProvider updates the metadata document for an existing SAML provider resource object.
+	UpdateSAMLProvider(
+		ctx context.Context,
+		params *iam.UpdateSAMLProviderInput,
+		optFns ...func(*iam.Options),
+	) (*iam.UpdateSAMLProviderOutput, error)
+
+	// DeleteSAMLProvider deletes a SAML provider resource in IAM.
+	DeleteSAMLProvider(
+		ctx context.Context,
+		params *iam.DeleteSAMLProviderInput,
+		optFns ...func(*iam.Options),
+	) (*iam.DeleteSAMLProviderOutput, error)
+
+	// TagSAMLProvider adds one or more tags to a Security Assertion Markup Language (SAML) identity provider.
+	TagSAMLProvider(
+		ctx context.Context,
+		params *iam.TagSAMLProviderInput,
+		optFns ...func(*iam.Options),
+	) (*iam.TagSAMLProviderOutput, error)
+
+	// UntagSAMLProvider removes the specified tags from the specified Security Assertion Markup Language (SAML) identity provider.
+	UntagSAMLProvider(
+		ctx context.Context,
+		params *iam.UntagSAMLProviderInput,
+		optFns ...func(*iam.Options),
+	) (*iam.UntagSAMLProviderOutput, error)
+
+	// ListSAMLProviderTags lists the tags that are attached to the specified Security Assertion Markup Language (SAML) identity provider.
+	ListSAMLProviderTags(
+		ctx context.Context,
+		params *iam.ListSAMLProviderTagsInput,
+		optFns ...func(*iam.Options),
+	) (*iam.ListSAMLProviderTagsOutput, error)
 }
 
 // NewService creates a new instance of the AWS IAM service

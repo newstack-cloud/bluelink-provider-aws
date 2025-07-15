@@ -214,6 +214,22 @@ type iamServiceMock struct {
 	untagOpenIDConnectProviderError               error
 	listOpenIDConnectProviderTagsOutput           *iam.ListOpenIDConnectProviderTagsOutput
 	listOpenIDConnectProviderTagsError            error
+
+	// SAML Provider fields
+	createSAMLProviderOutput   *iam.CreateSAMLProviderOutput
+	createSAMLProviderError    error
+	getSAMLProviderOutput      *iam.GetSAMLProviderOutput
+	getSAMLProviderError       error
+	updateSAMLProviderOutput   *iam.UpdateSAMLProviderOutput
+	updateSAMLProviderError    error
+	deleteSAMLProviderOutput   *iam.DeleteSAMLProviderOutput
+	deleteSAMLProviderError    error
+	tagSAMLProviderOutput      *iam.TagSAMLProviderOutput
+	tagSAMLProviderError       error
+	untagSAMLProviderOutput    *iam.UntagSAMLProviderOutput
+	untagSAMLProviderError     error
+	listSAMLProviderTagsOutput *iam.ListSAMLProviderTagsOutput
+	listSAMLProviderTagsError  error
 }
 
 type iamServiceMockOption func(*iamServiceMock)
@@ -1214,6 +1230,91 @@ func WithListOpenIDConnectProviderTagsError(err error) iamServiceMockOption {
 	}
 }
 
+// SAML Provider mock options.
+func WithCreateSAMLProviderOutput(output *iam.CreateSAMLProviderOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.createSAMLProviderOutput = output
+	}
+}
+
+func WithCreateSAMLProviderError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.createSAMLProviderError = err
+	}
+}
+
+func WithGetSAMLProviderOutput(output *iam.GetSAMLProviderOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.getSAMLProviderOutput = output
+	}
+}
+
+func WithGetSAMLProviderError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.getSAMLProviderError = err
+	}
+}
+
+func WithUpdateSAMLProviderOutput(output *iam.UpdateSAMLProviderOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.updateSAMLProviderOutput = output
+	}
+}
+
+func WithUpdateSAMLProviderError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.updateSAMLProviderError = err
+	}
+}
+
+func WithDeleteSAMLProviderOutput(output *iam.DeleteSAMLProviderOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.deleteSAMLProviderOutput = output
+	}
+}
+
+func WithDeleteSAMLProviderError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.deleteSAMLProviderError = err
+	}
+}
+
+func WithTagSAMLProviderOutput(output *iam.TagSAMLProviderOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.tagSAMLProviderOutput = output
+	}
+}
+
+func WithTagSAMLProviderError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.tagSAMLProviderError = err
+	}
+}
+
+func WithUntagSAMLProviderOutput(output *iam.UntagSAMLProviderOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.untagSAMLProviderOutput = output
+	}
+}
+
+func WithUntagSAMLProviderError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.untagSAMLProviderError = err
+	}
+}
+
+func WithListSAMLProviderTagsOutput(output *iam.ListSAMLProviderTagsOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.listSAMLProviderTagsOutput = output
+	}
+}
+
+func WithListSAMLProviderTagsError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.listSAMLProviderTagsError = err
+	}
+}
+
 // Group operation implementations.
 func (m *iamServiceMock) CreateGroup(
 	ctx context.Context,
@@ -1841,6 +1942,70 @@ func (m *iamServiceMock) TagPolicy(
 ) (*iam.TagPolicyOutput, error) {
 	m.RegisterCall(ctx, params)
 	return m.tagPolicyOutput, m.tagPolicyError
+}
+
+// SAML Provider operation implementations.
+func (m *iamServiceMock) CreateSAMLProvider(
+	ctx context.Context,
+	params *iam.CreateSAMLProviderInput,
+	optFns ...func(*iam.Options),
+) (*iam.CreateSAMLProviderOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.createSAMLProviderOutput, m.createSAMLProviderError
+}
+
+func (m *iamServiceMock) GetSAMLProvider(
+	ctx context.Context,
+	params *iam.GetSAMLProviderInput,
+	optFns ...func(*iam.Options),
+) (*iam.GetSAMLProviderOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.getSAMLProviderOutput, m.getSAMLProviderError
+}
+
+func (m *iamServiceMock) UpdateSAMLProvider(
+	ctx context.Context,
+	params *iam.UpdateSAMLProviderInput,
+	optFns ...func(*iam.Options),
+) (*iam.UpdateSAMLProviderOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.updateSAMLProviderOutput, m.updateSAMLProviderError
+}
+
+func (m *iamServiceMock) DeleteSAMLProvider(
+	ctx context.Context,
+	params *iam.DeleteSAMLProviderInput,
+	optFns ...func(*iam.Options),
+) (*iam.DeleteSAMLProviderOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.deleteSAMLProviderOutput, m.deleteSAMLProviderError
+}
+
+func (m *iamServiceMock) TagSAMLProvider(
+	ctx context.Context,
+	params *iam.TagSAMLProviderInput,
+	optFns ...func(*iam.Options),
+) (*iam.TagSAMLProviderOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.tagSAMLProviderOutput, m.tagSAMLProviderError
+}
+
+func (m *iamServiceMock) UntagSAMLProvider(
+	ctx context.Context,
+	params *iam.UntagSAMLProviderInput,
+	optFns ...func(*iam.Options),
+) (*iam.UntagSAMLProviderOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.untagSAMLProviderOutput, m.untagSAMLProviderError
+}
+
+func (m *iamServiceMock) ListSAMLProviderTags(
+	ctx context.Context,
+	params *iam.ListSAMLProviderTagsInput,
+	optFns ...func(*iam.Options),
+) (*iam.ListSAMLProviderTagsOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.listSAMLProviderTagsOutput, m.listSAMLProviderTagsError
 }
 
 func (m *iamServiceMock) UntagPolicy(
