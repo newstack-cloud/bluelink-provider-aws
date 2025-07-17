@@ -230,6 +230,22 @@ type iamServiceMock struct {
 	untagSAMLProviderError     error
 	listSAMLProviderTagsOutput *iam.ListSAMLProviderTagsOutput
 	listSAMLProviderTagsError  error
+
+	// Server certificate fields
+	getServerCertificateOutput      *iam.GetServerCertificateOutput
+	getServerCertificateError       error
+	listServerCertificateTagsOutput *iam.ListServerCertificateTagsOutput
+	listServerCertificateTagsError  error
+	deleteServerCertificateOutput   *iam.DeleteServerCertificateOutput
+	deleteServerCertificateError    error
+	updateServerCertificateOutput   *iam.UpdateServerCertificateOutput
+	updateServerCertificateError    error
+	tagServerCertificateOutput      *iam.TagServerCertificateOutput
+	tagServerCertificateError       error
+	untagServerCertificateOutput    *iam.UntagServerCertificateOutput
+	untagServerCertificateError     error
+	uploadServerCertificateOutput   *iam.UploadServerCertificateOutput
+	uploadServerCertificateError    error
 }
 
 type iamServiceMockOption func(*iamServiceMock)
@@ -1315,6 +1331,91 @@ func WithListSAMLProviderTagsError(err error) iamServiceMockOption {
 	}
 }
 
+// Server certificate mock options.
+func WithGetServerCertificateOutput(output *iam.GetServerCertificateOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.getServerCertificateOutput = output
+	}
+}
+
+func WithGetServerCertificateError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.getServerCertificateError = err
+	}
+}
+
+func WithListServerCertificateTagsOutput(output *iam.ListServerCertificateTagsOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.listServerCertificateTagsOutput = output
+	}
+}
+
+func WithListServerCertificateTagsError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.listServerCertificateTagsError = err
+	}
+}
+
+func WithDeleteServerCertificateOutput(output *iam.DeleteServerCertificateOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.deleteServerCertificateOutput = output
+	}
+}
+
+func WithDeleteServerCertificateError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.deleteServerCertificateError = err
+	}
+}
+
+func WithUpdateServerCertificateOutput(output *iam.UpdateServerCertificateOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.updateServerCertificateOutput = output
+	}
+}
+
+func WithUpdateServerCertificateError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.updateServerCertificateError = err
+	}
+}
+
+func WithTagServerCertificateOutput(output *iam.TagServerCertificateOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.tagServerCertificateOutput = output
+	}
+}
+
+func WithTagServerCertificateError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.tagServerCertificateError = err
+	}
+}
+
+func WithUntagServerCertificateOutput(output *iam.UntagServerCertificateOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.untagServerCertificateOutput = output
+	}
+}
+
+func WithUntagServerCertificateError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.untagServerCertificateError = err
+	}
+}
+
+func WithUploadServerCertificateOutput(output *iam.UploadServerCertificateOutput) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.uploadServerCertificateOutput = output
+	}
+}
+
+func WithUploadServerCertificateError(err error) iamServiceMockOption {
+	return func(m *iamServiceMock) {
+		m.uploadServerCertificateError = err
+	}
+}
+
 // Group operation implementations.
 func (m *iamServiceMock) CreateGroup(
 	ctx context.Context,
@@ -2106,4 +2207,68 @@ func (m *iamServiceMock) ListOpenIDConnectProviderTags(
 ) (*iam.ListOpenIDConnectProviderTagsOutput, error) {
 	m.RegisterCall(ctx, params)
 	return m.listOpenIDConnectProviderTagsOutput, m.listOpenIDConnectProviderTagsError
+}
+
+// Server certificate methods.
+func (m *iamServiceMock) GetServerCertificate(
+	ctx context.Context,
+	params *iam.GetServerCertificateInput,
+	optFns ...func(*iam.Options),
+) (*iam.GetServerCertificateOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.getServerCertificateOutput, m.getServerCertificateError
+}
+
+func (m *iamServiceMock) ListServerCertificateTags(
+	ctx context.Context,
+	params *iam.ListServerCertificateTagsInput,
+	optFns ...func(*iam.Options),
+) (*iam.ListServerCertificateTagsOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.listServerCertificateTagsOutput, m.listServerCertificateTagsError
+}
+
+func (m *iamServiceMock) DeleteServerCertificate(
+	ctx context.Context,
+	params *iam.DeleteServerCertificateInput,
+	optFns ...func(*iam.Options),
+) (*iam.DeleteServerCertificateOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.deleteServerCertificateOutput, m.deleteServerCertificateError
+}
+
+func (m *iamServiceMock) UpdateServerCertificate(
+	ctx context.Context,
+	params *iam.UpdateServerCertificateInput,
+	optFns ...func(*iam.Options),
+) (*iam.UpdateServerCertificateOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.updateServerCertificateOutput, m.updateServerCertificateError
+}
+
+func (m *iamServiceMock) TagServerCertificate(
+	ctx context.Context,
+	params *iam.TagServerCertificateInput,
+	optFns ...func(*iam.Options),
+) (*iam.TagServerCertificateOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.tagServerCertificateOutput, m.tagServerCertificateError
+}
+
+func (m *iamServiceMock) UntagServerCertificate(
+	ctx context.Context,
+	params *iam.UntagServerCertificateInput,
+	optFns ...func(*iam.Options),
+) (*iam.UntagServerCertificateOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.untagServerCertificateOutput, m.untagServerCertificateError
+}
+
+func (m *iamServiceMock) UploadServerCertificate(
+	ctx context.Context,
+	params *iam.UploadServerCertificateInput,
+	optFns ...func(*iam.Options),
+) (*iam.UploadServerCertificateOutput, error) {
+	m.RegisterCall(ctx, params)
+	return m.uploadServerCertificateOutput, m.uploadServerCertificateError
 }

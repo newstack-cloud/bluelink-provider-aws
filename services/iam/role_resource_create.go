@@ -162,5 +162,6 @@ func setCreateRoleTags(
 			Value: aws.String(tagValue),
 		})
 	}
-	input.Tags = tags
+	// Sort tags by key before setting them
+	input.Tags = sortTagsByKey(tags)
 }

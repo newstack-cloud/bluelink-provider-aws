@@ -2,7 +2,6 @@ package iam
 
 import (
 	"context"
-	"embed"
 	"fmt"
 	"strings"
 
@@ -15,17 +14,14 @@ import (
 	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/providerv1"
 )
 
-//go:embed examples/resources/*.md
-var userExamples embed.FS
-
 // UserResource returns a resource implementation for an AWS IAM User.
 func UserResource(
 	iamServiceFactory pluginutils.ServiceFactory[*aws.Config, iamservice.Service],
 	awsConfigStore pluginutils.ServiceConfigStore[*aws.Config],
 ) provider.Resource {
-	basicExample, _ := userExamples.ReadFile("examples/resources/iam_user_basic.md")
-	completeExample, _ := userExamples.ReadFile("examples/resources/iam_user_complete.md")
-	jsoncExample, _ := userExamples.ReadFile("examples/resources/iam_user_jsonc.md")
+	basicExample, _ := examples.ReadFile("examples/resources/iam_user_basic.md")
+	completeExample, _ := examples.ReadFile("examples/resources/iam_user_complete.md")
+	jsoncExample, _ := examples.ReadFile("examples/resources/iam_user_jsonc.md")
 
 	iamUserActions := &iamUserResourceActions{
 		iamServiceFactory:   iamServiceFactory,

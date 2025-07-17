@@ -34,10 +34,22 @@ func extractIAMTags(tags []types.Tag) *core.MappingNode {
 }
 
 func iamTagsFromSpecData(specData *core.MappingNode) ([]types.Tag, error) {
-	iamTags := []types.Tag{}
+	var iamTags []types.Tag
 	tags, hasTags := pluginutils.GetValueByPath("$.tags", specData)
-	if hasTags && core.IsArrayMappingNode(tags) {
-		for i, item := range tags.Items {
+	if hasTags {
+		parsedTags, err := iamTagsFromValue(tags)
+		if err != nil {
+			return nil, err
+		}
+		iamTags = parsedTags
+	}
+	return iamTags, nil
+}
+
+func iamTagsFromValue(value *core.MappingNode) ([]types.Tag, error) {
+	iamTags := []types.Tag{}
+	if core.IsArrayMappingNode(value) {
+		for i, item := range value.Items {
 			keyNode, hasKey := pluginutils.GetValueByPath("$.key", item)
 			valueNode, hasValue := pluginutils.GetValueByPath("$.value", item)
 			if !hasKey || !hasValue {
@@ -49,7 +61,6 @@ func iamTagsFromSpecData(specData *core.MappingNode) ([]types.Tag, error) {
 			})
 		}
 	}
-
 	return iamTags, nil
 }
 

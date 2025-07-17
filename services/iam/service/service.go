@@ -621,6 +621,135 @@ type Service interface {
 		params *iam.ListSAMLProviderTagsInput,
 		optFns ...func(*iam.Options),
 	) (*iam.ListSAMLProviderTagsOutput, error)
+
+	// Retrieves information about the specified server certificate stored in IAM.
+	//
+	// For more information about working with server certificates, see [Working with server certificates] in the IAM
+	// User Guide. This topic includes a list of Amazon Web Services services that can
+	// use the server certificates that you manage with IAM.
+	//
+	// [Working with server certificates]: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_server-certs.html
+	GetServerCertificate(
+		ctx context.Context,
+		params *iam.GetServerCertificateInput,
+		optFns ...func(*iam.Options),
+	) (*iam.GetServerCertificateOutput, error)
+
+	// Lists the tags that are attached to the specified IAM server certificate. The
+	// returned list of tags is sorted by tag key. For more information about tagging,
+	// see [Tagging IAM resources]in the IAM User Guide.
+	//
+	// For certificates in a Region supported by Certificate Manager (ACM), we
+	// recommend that you don't use IAM server certificates. Instead, use ACM to
+	// provision, manage, and deploy your server certificates. For more information
+	// about IAM server certificates, [Working with server certificates]in the IAM User Guide.
+	//
+	// [Working with server certificates]: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_server-certs.html
+	// [Tagging IAM resources]: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_tags.html
+	ListServerCertificateTags(
+		ctx context.Context,
+		params *iam.ListServerCertificateTagsInput,
+		optFns ...func(*iam.Options),
+	) (*iam.ListServerCertificateTagsOutput, error)
+
+	// Deletes the specified server certificate.
+	//
+	// For more information about working with server certificates, see [Working with server certificates] in the IAM
+	// User Guide. This topic also includes a list of Amazon Web Services services that
+	// can use the server certificates that you manage with IAM.
+	//
+	// If you are using a server certificate with Elastic Load Balancing, deleting the
+	// certificate could have implications for your application. If Elastic Load
+	// Balancing doesn't detect the deletion of bound certificates, it may continue to
+	// use the certificates. This could cause Elastic Load Balancing to stop accepting
+	// traffic. We recommend that you remove the reference to the certificate from
+	// Elastic Load Balancing before using this command to delete the certificate. For
+	// more information, see [DeleteLoadBalancerListeners]in the Elastic Load Balancing API Reference.
+	//
+	// [Working with server certificates]: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_server-certs.html
+	// [DeleteLoadBalancerListeners]: https://docs.aws.amazon.com/ElasticLoadBalancing/latest/APIReference/API_DeleteLoadBalancerListeners.html
+	DeleteServerCertificate(
+		ctx context.Context,
+		params *iam.DeleteServerCertificateInput,
+		optFns ...func(*iam.Options),
+	) (*iam.DeleteServerCertificateOutput, error)
+
+	// Updates the name and/or the path of the specified server certificate stored in
+	// IAM.
+	//
+	// For more information about working with server certificates, see [Working with server certificates] in the IAM
+	// User Guide. This topic also includes a list of Amazon Web Services services that
+	// can use the server certificates that you manage with IAM.
+	//
+	// You should understand the implications of changing a server certificate's path
+	// or name. For more information, see [Renaming a server certificate]in the IAM User Guide.
+	//
+	// The person making the request (the principal), must have permission to change
+	// the server certificate with the old name and the new name. For example, to
+	// change the certificate named ProductionCert to ProdCert , the principal must
+	// have a policy that allows them to update both certificates. If the principal has
+	// permission to update the ProductionCert group, but not the ProdCert
+	// certificate, then the update fails. For more information about permissions, see [Access management]
+	// in the IAM User Guide.
+	//
+	// [Renaming a server certificate]: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_server-certs_manage.html#RenamingServerCerts
+	// [Access management]: https://docs.aws.amazon.com/IAM/latest/UserGuide/access.html
+	// [Working with server certificates]: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_server-certs.html
+	UpdateServerCertificate(
+		ctx context.Context,
+		params *iam.UpdateServerCertificateInput,
+		optFns ...func(*iam.Options),
+	) (*iam.UpdateServerCertificateOutput, error)
+
+	// TagServerCertificate adds one or more tags to an IAM server certificate.
+	TagServerCertificate(
+		ctx context.Context,
+		params *iam.TagServerCertificateInput,
+		optFns ...func(*iam.Options),
+	) (*iam.TagServerCertificateOutput, error)
+
+	// UntagServerCertificate removes the specified tags from the IAM server certificate.
+	UntagServerCertificate(
+		ctx context.Context,
+		params *iam.UntagServerCertificateInput,
+		optFns ...func(*iam.Options),
+	) (*iam.UntagServerCertificateOutput, error)
+
+	// Uploads a server certificate entity for the Amazon Web Services account. The
+	// server certificate entity includes a public key certificate, a private key, and
+	// an optional certificate chain, which should all be PEM-encoded.
+	//
+	// We recommend that you use [Certificate Manager] to provision, manage, and deploy your server
+	// certificates. With ACM you can request a certificate, deploy it to Amazon Web
+	// Services resources, and let ACM handle certificate renewals for you.
+	// Certificates provided by ACM are free. For more information about using ACM, see
+	// the [Certificate Manager User Guide].
+	//
+	// For more information about working with server certificates, see [Working with server certificates] in the IAM
+	// User Guide. This topic includes a list of Amazon Web Services services that can
+	// use the server certificates that you manage with IAM.
+	//
+	// For information about the number of server certificates you can upload, see [IAM and STS quotas] in
+	// the IAM User Guide.
+	//
+	// Because the body of the public key certificate, private key, and the
+	// certificate chain can be large, you should use POST rather than GET when calling
+	// UploadServerCertificate . For information about setting up signatures and
+	// authorization through the API, see [Signing Amazon Web Services API requests]in the Amazon Web Services General
+	// Reference. For general information about using the Query API with IAM, see [Calling the API by making HTTP query requests]in
+	// the IAM User Guide.
+	//
+	// [Certificate Manager]: https://docs.aws.amazon.com/acm/
+	// [Certificate Manager User Guide]: https://docs.aws.amazon.com/acm/latest/userguide/
+	// [IAM and STS quotas]: https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_iam-quotas.html
+	// [Working with server certificates]: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_server-certs.html
+	// [Signing Amazon Web Services API requests]: https://docs.aws.amazon.com/general/latest/gr/signing_aws_api_requests.html
+	// [Calling the API by making HTTP query requests]: https://docs.aws.amazon.com/IAM/latest/UserGuide/programming.html
+	UploadServerCertificate(
+		ctx context.Context,
+		params *iam.UploadServerCertificateInput,
+		optFns ...func(*iam.Options),
+	) (*iam.UploadServerCertificateOutput, error)
 }
 
 // NewService creates a new instance of the AWS IAM service

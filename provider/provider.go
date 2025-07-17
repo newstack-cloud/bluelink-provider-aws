@@ -58,6 +58,10 @@ func NewProvider(
 				iamServiceFactory,
 				awsConfigStore,
 			),
+			"aws/iam/serverCertificate": iam.ServerCertificateResource(
+				iamServiceFactory,
+				awsConfigStore,
+			),
 			"aws/lambda/function": lambda.FunctionResource(
 				lambdaServiceFactory,
 				awsConfigStore,

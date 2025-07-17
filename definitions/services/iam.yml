@@ -281,3 +281,28 @@ resourceDefinitions:
       - https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-iam-samlprovider.html
     propertyDocLinks:
       tags: https://docs.aws.amazon.com/IAM/latest/APIReference/API_TagSAMLProvider.html
+  - type: aws/iam/serverCertificate
+    label: AWS IAM Server Certificate
+    requiredFields: []
+    computedFields:
+      - arn
+    operations:
+      create:
+        - UploadServerCertificate
+      update:
+        - UpdateServerCertificate
+        - TagServerCertificate
+        - UntagServerCertificate
+      destroy:
+        - DeleteServerCertificate
+    docLinks:
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_UploadServerCertificate.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_UpdateServerCertificate.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_DeleteServerCertificate.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_TagServerCertificate.html
+      - https://docs.aws.amazon.com/IAM/latest/APIReference/API_UntagServerCertificate.html
+      - https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-iam-servercertificate.html
+    notes: |
+      There are implications to changing a server certificate's path or name.
+      For more information, see the AWS documentation:
+      https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_server-certs.html#RenamingServerCerts

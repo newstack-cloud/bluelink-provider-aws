@@ -127,4 +127,7 @@ var (
 
 	// IAMSAMLProviderNameGenerator generates names for IAM SAML providers (128 char limit).
 	IAMSAMLProviderNameGenerator = DefaultUniqueNameGenerator(128)
+
+	// IAMServerCertificateNameGenerator generates names for IAM server certificates (128 char limit).
+	IAMServerCertificateNameGenerator = DefaultUniqueNameGenerator(128)
 )

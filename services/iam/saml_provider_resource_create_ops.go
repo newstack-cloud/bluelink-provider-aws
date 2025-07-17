@@ -76,6 +76,9 @@ func (s *samlProviderCreate) Execute(
 		SAMLMetadataDocument: aws.String(s.samlMetadataDocument),
 		Tags:                 sortTagsByKey(s.tags),
 	}
+	if input.Tags == nil {
+		input.Tags = []types.Tag{}
+	}
 
 	output, err := iamService.CreateSAMLProvider(ctx, input)
 	if err != nil {

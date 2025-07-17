@@ -40,8 +40,8 @@ Use this checklist to track progress when generating scaffolding for any new res
   - [ ] `<resource>_resource_stabilised_test.go`
   - [ ] Each should:
     - [ ] Import `testing` and `testify`.
-    - [ ] Define a test suite struct named `<resource>Resource<Action>Suite`.
-    - [ ] Define a suite registration function named `Test<resource>ResourceActionsSuite`.
+    - [ ] Define a test suite struct named `<Resource>Resource<Action>Suite`.
+    - [ ] Define a suite registration function named `Test<Resource>ResourceActionsSuite`.
     - [ ] Include a TODO comment for future test logic.
 
 ## Examples

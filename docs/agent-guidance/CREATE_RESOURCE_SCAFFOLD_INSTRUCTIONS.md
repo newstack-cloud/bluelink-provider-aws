@@ -19,7 +19,7 @@ This guide describes how to scaffold a new `${resource}` resource for the `${ser
 
 3. **Create test scaffolding for each operation**
    - For each operation, create a corresponding test file (e.g., `${resource}_resource_create_test.go`).
-   - Each test file should include a test suite struct and a suite registration function for the suite of tests for the action. The test suite struct should be named `{resource}Resource{action}Suite` and the suite registration function should be named `Test{resource}ResourceActionsSuite`. Use the existing resource test files for reference.
+   - Each test file should include a test suite struct and a suite registration function for the suite of tests for the action. The test suite struct should be named `{Resource}Resource{Action}Suite` (e.g. `ServerCertificateResourceCreateSuite`) and the suite registration function should be named `Test{Resource}Resource{Action}Suite` (e.g. `TestServerCertificateResourceCreateSuite`). Use the existing resource test files for reference.
    - Import the testing and testify packages and add a TODO comment for future test logic.
 
 4. **Set up examples**
