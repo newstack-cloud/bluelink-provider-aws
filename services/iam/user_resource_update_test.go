@@ -44,6 +44,7 @@ func (s *IAMUserResourceUpdateSuite) Test_update_iam_user() {
 		createUserGroupsUpdateTestCase(providerCtx, loader),
 		createUserPermissionsBoundaryUpdateTestCase(providerCtx, loader),
 		createUserUpdateFailureTestCase(providerCtx, loader),
+		recreateUserOnUserNameChangeTestCase(providerCtx, loader),
 	}
 
 	plugintestutils.RunResourceDeployTestCases(
@@ -991,6 +992,115 @@ func createUserUpdateFailureTestCase(
 			},
 		},
 		ExpectError: true,
+	}
+}
+
+func recreateUserOnUserNameChangeTestCase(
+	providerCtx provider.Context,
+	loader *testutils.MockAWSConfigLoader,
+) plugintestutils.ResourceDeployTestCase[*aws.Config, iamservice.Service] {
+	resourceARN := "arn:aws:iam::123456789012:user/OldUser"
+	userId := "AIDA1234567890123456"
+
+	service := iammock.CreateIamServiceMock(
+		iammock.WithDeleteUserOutput(&iam.DeleteUserOutput{}),
+		iammock.WithCreateUserOutput(&iam.CreateUserOutput{
+			User: &types.User{
+				Arn:      aws.String(resourceARN),
+				UserId:   aws.String(userId),
+				UserName: aws.String("NewUser"),
+				Path:     aws.String("/"),
+			},
+		}),
+		iammock.WithListGroupsForUserOutput(&iam.ListGroupsForUserOutput{
+			Groups: []types.Group{},
+		}),
+		iammock.WithRemoveUserFromGroupOutput(&iam.RemoveUserFromGroupOutput{}),
+		iammock.WithListAttachedUserPoliciesOutput(&iam.ListAttachedUserPoliciesOutput{
+			AttachedPolicies: []types.AttachedPolicy{},
+		}),
+		iammock.WithDetachUserPolicyOutput(&iam.DetachUserPolicyOutput{}),
+		iammock.WithListUserPoliciesOutput(&iam.ListUserPoliciesOutput{
+			PolicyNames: []string{},
+		}),
+		iammock.WithDeleteUserPolicyOutput(&iam.DeleteUserPolicyOutput{}),
+	)
+
+	currentStateSpecData := &core.MappingNode{
+		Fields: map[string]*core.MappingNode{
+			"arn":      core.MappingNodeFromString(resourceARN),
+			"userId":   core.MappingNodeFromString(userId),
+			"userName": core.MappingNodeFromString("OldUser"),
+			"path":     core.MappingNodeFromString("/"),
+		},
+	}
+
+	updatedSpecData := &core.MappingNode{
+		Fields: map[string]*core.MappingNode{
+			"userName": core.MappingNodeFromString("NewUser"),
+			"path":     core.MappingNodeFromString("/"),
+		},
+	}
+
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, iamservice.Service]{
+		Name: "recreate user on userName change",
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) iamservice.Service {
+			return service
+		},
+		ServiceMockCalls: &service.MockCalls,
+		ConfigStore: utils.NewAWSConfigStore(
+			[]string{},
+			utils.AWSConfigFromProviderContext,
+			loader,
+			utils.AWSConfigCacheKey,
+		),
+		Input: &provider.ResourceDeployInput{
+			InstanceID: "test-instance-id",
+			ResourceID: "test-user-id",
+			Changes: &provider.Changes{
+				AppliedResourceInfo: provider.ResourceInfo{
+					ResourceID:   "test-user-id",
+					ResourceName: "TestUser",
+					InstanceID:   "test-instance-id",
+					CurrentResourceState: &state.ResourceState{
+						ResourceID: "test-user-id",
+						Name:       "TestUser",
+						InstanceID: "test-instance-id",
+						SpecData:   currentStateSpecData,
+					},
+					ResourceWithResolvedSubs: &provider.ResolvedResource{
+						Type: &schema.ResourceTypeWrapper{
+							Value: "aws/iam/user",
+						},
+						Spec: updatedSpecData,
+					},
+				},
+				ModifiedFields: []provider.FieldChange{
+					{
+						FieldPath: "spec.userName",
+						PrevValue: core.MappingNodeFromString("OldUser"),
+						NewValue:  core.MappingNodeFromString("NewUser"),
+					},
+				},
+				MustRecreate: true,
+			},
+			ProviderContext: providerCtx,
+		},
+		ExpectedOutput: &provider.ResourceDeployOutput{
+			ComputedFieldValues: map[string]*core.MappingNode{
+				"spec.arn":    core.MappingNodeFromString(resourceARN),
+				"spec.userId": core.MappingNodeFromString(userId),
+			},
+		},
+		SaveActionsCalled: map[string]any{
+			"DeleteUser": &iam.DeleteUserInput{
+				UserName: aws.String("OldUser"),
+			},
+			"CreateUser": &iam.CreateUserInput{
+				UserName: aws.String("NewUser"),
+				Path:     aws.String("/"),
+			},
+		},
 	}
 }
 

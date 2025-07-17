@@ -41,6 +41,7 @@ func (s *IAMOIDCProviderResourceUpdateSuite) Test_update_iam_oidc_provider() {
 		updateOIDCProviderTagsTestCase(providerCtx, loader),
 		updateOIDCProviderNoChangesTestCase(providerCtx, loader),
 		updateOIDCProviderServiceErrorTestCase(providerCtx, loader),
+		recreateOIDCProviderOnUrlChangeTestCase(providerCtx, loader),
 	}
 
 	plugintestutils.RunResourceDeployTestCases(
@@ -514,6 +515,115 @@ func updateOIDCProviderServiceErrorTestCase(
 			ProviderContext: providerCtx,
 		},
 		ExpectError: true,
+	}
+}
+
+func recreateOIDCProviderOnUrlChangeTestCase(
+	providerCtx provider.Context,
+	loader *testutils.MockAWSConfigLoader,
+) plugintestutils.ResourceDeployTestCase[*aws.Config, iamservice.Service] {
+	oldArn := "arn:aws:iam::123456789012:oidc-provider/old.example.com"
+	newArn := "arn:aws:iam::123456789012:oidc-provider/new.example.com"
+
+	service := iammock.CreateIamServiceMock(
+		iammock.WithDeleteOpenIDConnectProviderOutput(&iam.DeleteOpenIDConnectProviderOutput{}),
+		iammock.WithCreateOpenIDConnectProviderOutput(&iam.CreateOpenIDConnectProviderOutput{
+			OpenIDConnectProviderArn: aws.String(newArn),
+		}),
+	)
+
+	currentStateSpecData := &core.MappingNode{
+		Fields: map[string]*core.MappingNode{
+			"arn": core.MappingNodeFromString(oldArn),
+			"url": core.MappingNodeFromString("https://old.example.com"),
+			"clientIdList": {
+				Items: []*core.MappingNode{
+					core.MappingNodeFromString("sts.amazonaws.com"),
+				},
+			},
+			"thumbprintList": {
+				Items: []*core.MappingNode{
+					core.MappingNodeFromString("cf23df2207d99a74fbe169e3eba035e633b65d94"),
+				},
+			},
+		},
+	}
+	updatedSpecData := &core.MappingNode{
+		Fields: map[string]*core.MappingNode{
+			"url": core.MappingNodeFromString("https://new.example.com"),
+			"clientIdList": {
+				Items: []*core.MappingNode{
+					core.MappingNodeFromString("sts.amazonaws.com"),
+				},
+			},
+			"thumbprintList": {
+				Items: []*core.MappingNode{
+					core.MappingNodeFromString("cf23df2207d99a74fbe169e3eba035e633b65d94"),
+				},
+			},
+		},
+	}
+
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, iamservice.Service]{
+		Name: "recreate OIDC provider on url change",
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) iamservice.Service {
+			return service
+		},
+		ServiceMockCalls: &service.MockCalls,
+		ConfigStore: utils.NewAWSConfigStore(
+			[]string{},
+			utils.AWSConfigFromProviderContext,
+			loader,
+			utils.AWSConfigCacheKey,
+		),
+		Input: &provider.ResourceDeployInput{
+			InstanceID: "test-instance-id",
+			ResourceID: "test-oidc-provider-id",
+			Changes: &provider.Changes{
+				AppliedResourceInfo: provider.ResourceInfo{
+					ResourceID:   "test-oidc-provider-id",
+					ResourceName: "TestOIDCProvider",
+					InstanceID:   "test-instance-id",
+					CurrentResourceState: &state.ResourceState{
+						ResourceID: "test-oidc-provider-id",
+						Name:       "TestOIDCProvider",
+						InstanceID: "test-instance-id",
+						SpecData:   currentStateSpecData,
+					},
+					ResourceWithResolvedSubs: &provider.ResolvedResource{
+						Type: &schema.ResourceTypeWrapper{
+							Value: "aws/iam/oidcProvider",
+						},
+						Spec: updatedSpecData,
+					},
+				},
+				ModifiedFields: []provider.FieldChange{
+					{
+						FieldPath: "spec.url",
+						PrevValue: core.MappingNodeFromString("https://old.example.com"),
+						NewValue:  core.MappingNodeFromString("https://new.example.com"),
+					},
+				},
+				MustRecreate: true,
+			},
+			ProviderContext: providerCtx,
+		},
+		ExpectedOutput: &provider.ResourceDeployOutput{
+			ComputedFieldValues: map[string]*core.MappingNode{
+				"spec.arn": core.MappingNodeFromString(newArn),
+			},
+		},
+		SaveActionsCalled: map[string]any{
+			"DeleteOpenIDConnectProvider": &iam.DeleteOpenIDConnectProviderInput{
+				OpenIDConnectProviderArn: aws.String(oldArn),
+			},
+			"CreateOpenIDConnectProvider": &iam.CreateOpenIDConnectProviderInput{
+				Url:            aws.String("https://new.example.com"),
+				ClientIDList:   []string{"sts.amazonaws.com"},
+				ThumbprintList: []string{"cf23df2207d99a74fbe169e3eba035e633b65d94"},
+				Tags:           []types.Tag{},
+			},
+		},
 	}
 }
 

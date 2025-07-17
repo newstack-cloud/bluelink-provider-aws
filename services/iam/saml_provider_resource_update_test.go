@@ -40,6 +40,7 @@ func (s *IAMSAMLProviderResourceUpdateSuite) Test_update_iam_saml_provider() {
 		updateSAMLProviderTagsTestCase(providerCtx, loader),
 		updateSAMLProviderNoChangesTestCase(providerCtx, loader),
 		updateSAMLProviderServiceErrorTestCase(providerCtx, loader),
+		recreateSAMLProviderOnNameChangeTestCase(providerCtx, loader),
 	}
 
 	plugintestutils.RunResourceDeployTestCases(
@@ -449,6 +450,105 @@ func updateSAMLProviderServiceErrorTestCase(
 			"UpdateSAMLProvider": &iam.UpdateSAMLProviderInput{
 				SAMLProviderArn:      aws.String(samlProviderArn),
 				SAMLMetadataDocument: aws.String(newMetadata),
+			},
+		},
+	}
+}
+
+func recreateSAMLProviderOnNameChangeTestCase(
+	providerCtx provider.Context,
+	loader *testutils.MockAWSConfigLoader,
+) plugintestutils.ResourceDeployTestCase[*aws.Config, iamservice.Service] {
+	oldArn := "arn:aws:iam::123456789012:saml-provider/OldSAMLProvider"
+	newArn := "arn:aws:iam::123456789012:saml-provider/NewSAMLProvider"
+	samlProviderUUID := "96dc2683-50a4-4f46-8c0f-4dedf83a8ead"
+	metadata := `<?xml version=\"1.0\"?><EntityDescriptor>...</EntityDescriptor>`
+
+	service := iammock.CreateIamServiceMock(
+		iammock.WithDeleteSAMLProviderOutput(&iam.DeleteSAMLProviderOutput{}),
+		iammock.WithCreateSAMLProviderOutput(&iam.CreateSAMLProviderOutput{
+			SAMLProviderArn: aws.String(newArn),
+		}),
+		iammock.WithGetSAMLProviderOutput(&iam.GetSAMLProviderOutput{
+			SAMLProviderUUID: aws.String(samlProviderUUID),
+		}),
+	)
+
+	currentStateSpecData := &core.MappingNode{
+		Fields: map[string]*core.MappingNode{
+			"arn":                  core.MappingNodeFromString(oldArn),
+			"name":                 core.MappingNodeFromString("OldSAMLProvider"),
+			"samlMetadataDocument": core.MappingNodeFromString(metadata),
+		},
+	}
+	updatedSpecData := &core.MappingNode{
+		Fields: map[string]*core.MappingNode{
+			"name":                 core.MappingNodeFromString("NewSAMLProvider"),
+			"samlMetadataDocument": core.MappingNodeFromString(metadata),
+		},
+	}
+
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, iamservice.Service]{
+		Name: "recreate SAML provider on name change",
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) iamservice.Service {
+			return service
+		},
+		ServiceMockCalls: &service.MockCalls,
+		ConfigStore: utils.NewAWSConfigStore(
+			[]string{},
+			utils.AWSConfigFromProviderContext,
+			loader,
+			utils.AWSConfigCacheKey,
+		),
+		Input: &provider.ResourceDeployInput{
+			InstanceID: "test-instance-id",
+			ResourceID: "test-saml-provider-id",
+			Changes: &provider.Changes{
+				AppliedResourceInfo: provider.ResourceInfo{
+					ResourceID:   "test-saml-provider-id",
+					ResourceName: "TestSAMLProvider",
+					InstanceID:   "test-instance-id",
+					CurrentResourceState: &state.ResourceState{
+						ResourceID: "test-saml-provider-id",
+						Name:       "TestSAMLProvider",
+						InstanceID: "test-instance-id",
+						SpecData:   currentStateSpecData,
+					},
+					ResourceWithResolvedSubs: &provider.ResolvedResource{
+						Type: &schema.ResourceTypeWrapper{
+							Value: "aws/iam/samlProvider",
+						},
+						Spec: updatedSpecData,
+					},
+				},
+				ModifiedFields: []provider.FieldChange{
+					{
+						FieldPath: "spec.name",
+						PrevValue: core.MappingNodeFromString("OldSAMLProvider"),
+						NewValue:  core.MappingNodeFromString("NewSAMLProvider"),
+					},
+				},
+				MustRecreate: true,
+			},
+			ProviderContext: providerCtx,
+		},
+		ExpectedOutput: &provider.ResourceDeployOutput{
+			ComputedFieldValues: map[string]*core.MappingNode{
+				"spec.arn":              core.MappingNodeFromString(newArn),
+				"spec.samlProviderUUID": core.MappingNodeFromString(samlProviderUUID),
+			},
+		},
+		SaveActionsCalled: map[string]any{
+			"DeleteSAMLProvider": &iam.DeleteSAMLProviderInput{
+				SAMLProviderArn: aws.String(oldArn),
+			},
+			"CreateSAMLProvider": &iam.CreateSAMLProviderInput{
+				Name:                 aws.String("NewSAMLProvider"),
+				SAMLMetadataDocument: aws.String(metadata),
+				Tags:                 []types.Tag{},
+			},
+			"GetSAMLProvider": &iam.GetSAMLProviderInput{
+				SAMLProviderArn: aws.String(newArn),
 			},
 		},
 	}

@@ -1,6 +1,8 @@
 package iam
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/url"
 	"testing"
 
@@ -46,6 +48,7 @@ func (s *IamRoleResourceUpdateSuite) Test_update_iam_role() {
 		updateRoleDetachManagedPoliciesTestCase(providerCtx, loader),
 		updateRolePermissionsBoundaryTestCase(providerCtx, loader),
 		updateRoleRemovePermissionsBoundaryTestCase(providerCtx, loader),
+		recreateRoleOnRoleNameChangeTestCase(providerCtx, loader),
 	}
 
 	plugintestutils.RunResourceDeployTestCases(
@@ -1442,8 +1445,180 @@ func updateRoleRemovePermissionsBoundaryTestCase(
 	}
 }
 
-func (s *IamRoleResourceUpdateSuite) AfterTest(suiteName, testName string) {
-	// Remove the problematic AfterTest method that tries to access unexported fields
+func recreateRoleOnRoleNameChangeTestCase(
+	providerCtx provider.Context,
+	loader *testutils.MockAWSConfigLoader,
+) plugintestutils.ResourceDeployTestCase[*aws.Config, iamservice.Service] {
+	oldResourceARN := "arn:aws:iam::123456789012:role/OldRole"
+	newResourceARN := "arn:aws:iam::123456789012:role/NewRole"
+	roleId := "AROA1234567890123456"
+
+	service := iammock.CreateIamServiceMock(
+		iammock.WithDeleteRoleOutput(&iam.DeleteRoleOutput{}),
+		iammock.WithCreateRoleOutput(&iam.CreateRoleOutput{
+			Role: &types.Role{
+				Arn:      aws.String(newResourceARN),
+				RoleId:   aws.String(roleId),
+				RoleName: aws.String("NewRole"),
+			},
+		}),
+	)
+
+	currentStateSpecData := &core.MappingNode{
+		Fields: map[string]*core.MappingNode{
+			"arn":      core.MappingNodeFromString(oldResourceARN),
+			"roleId":   core.MappingNodeFromString(roleId),
+			"roleName": core.MappingNodeFromString("OldRole"),
+			"path":     core.MappingNodeFromString("/"),
+		},
+	}
+
+	updatedSpecData := &core.MappingNode{
+		Fields: map[string]*core.MappingNode{
+			"roleName": core.MappingNodeFromString("NewRole"),
+			"assumeRolePolicyDocument": {
+				Fields: map[string]*core.MappingNode{
+					"Version": core.MappingNodeFromString("2012-10-17"),
+					"Statement": {
+						Items: []*core.MappingNode{
+							{
+								Fields: map[string]*core.MappingNode{
+									"Effect": core.MappingNodeFromString("Allow"),
+									"Principal": {
+										Fields: map[string]*core.MappingNode{
+											"Service": {
+												Items: []*core.MappingNode{
+													core.MappingNodeFromString("lambda.amazonaws.com"),
+												},
+											},
+										},
+									},
+									"Action": {
+										Items: []*core.MappingNode{
+											core.MappingNodeFromString("sts:AssumeRole"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			"description": core.MappingNodeFromString("Test role for Lambda execution"),
+			"path":        core.MappingNodeFromString("/"),
+		},
+	}
+
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, iamservice.Service]{
+		Name: "recreate role on roleName change",
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) iamservice.Service {
+			return service
+		},
+		ServiceMockCalls: &service.MockCalls,
+		ConfigStore: utils.NewAWSConfigStore(
+			[]string{},
+			utils.AWSConfigFromProviderContext,
+			loader,
+			utils.AWSConfigCacheKey,
+		),
+		Input: &provider.ResourceDeployInput{
+			InstanceID: "test-instance-id",
+			ResourceID: "test-role-id",
+			Changes: &provider.Changes{
+				AppliedResourceInfo: provider.ResourceInfo{
+					ResourceID:   "test-role-id",
+					ResourceName: "TestRole",
+					InstanceID:   "test-instance-id",
+					CurrentResourceState: &state.ResourceState{
+						ResourceID: "test-role-id",
+						Name:       "TestRole",
+						InstanceID: "test-instance-id",
+						SpecData:   currentStateSpecData,
+					},
+					ResourceWithResolvedSubs: &provider.ResolvedResource{
+						Type: &schema.ResourceTypeWrapper{
+							Value: "aws/iam/role",
+						},
+						Spec: updatedSpecData,
+					},
+				},
+				ModifiedFields: []provider.FieldChange{
+					{
+						FieldPath: "spec.roleName",
+						PrevValue: core.MappingNodeFromString("OldRole"),
+						NewValue:  core.MappingNodeFromString("NewRole"),
+					},
+				},
+				MustRecreate: true,
+			},
+			ProviderContext: providerCtx,
+		},
+		ExpectedOutput: &provider.ResourceDeployOutput{
+			ComputedFieldValues: map[string]*core.MappingNode{
+				"spec.arn":    core.MappingNodeFromString(newResourceARN),
+				"spec.roleId": core.MappingNodeFromString(roleId),
+			},
+		},
+		SaveActionsCalled: map[string]any{
+			"DeleteRole": &iam.DeleteRoleInput{
+				RoleName: aws.String("OldRole"),
+			},
+			"CreateRole": func(actual any) (plugintestutils.EqualityCheckValues, error) {
+				input, ok := actual.(*iam.CreateRoleInput)
+				if !ok {
+					return plugintestutils.EqualityCheckValues{}, fmt.Errorf("input is not an *iam.CreateRoleInput")
+				}
+				expectedDoc := map[string]any{
+					"Version": "2012-10-17",
+					"Statement": []any{
+						map[string]any{
+							"Effect": "Allow",
+							"Principal": map[string]any{
+								"Service": []any{"lambda.amazonaws.com"},
+							},
+							"Action": []any{"sts:AssumeRole"},
+						},
+					},
+				}
+				var actualDoc map[string]any
+				if err := json.Unmarshal(
+					[]byte(*input.AssumeRolePolicyDocument),
+					&actualDoc,
+				); err != nil {
+					return plugintestutils.EqualityCheckValues{}, err
+				}
+
+				expectedInput := &iam.CreateRoleInput{
+					RoleName:    aws.String("NewRole"),
+					Description: aws.String("Test role for Lambda execution"),
+					Path:        aws.String("/"),
+				}
+				actualInput := &iam.CreateRoleInput{
+					RoleName:    input.RoleName,
+					Description: input.Description,
+					Path:        input.Path,
+				}
+				// Attach expanded policy docs for comparison
+				expectedMap := map[string]any{
+					"RoleName":                 *expectedInput.RoleName,
+					"AssumeRolePolicyDocument": expectedDoc,
+					"Description":              *expectedInput.Description,
+					"Path":                     *expectedInput.Path,
+				}
+				actualMap := map[string]any{
+					"RoleName":                 *actualInput.RoleName,
+					"AssumeRolePolicyDocument": actualDoc,
+					"Description":              *actualInput.Description,
+					"Path":                     *actualInput.Path,
+				}
+
+				return plugintestutils.EqualityCheckValues{
+					Expected: expectedMap,
+					Actual:   actualMap,
+				}, nil
+			},
+		},
+	}
 }
 
 func TestIamRoleResourceUpdate(t *testing.T) {

@@ -41,6 +41,7 @@ func (s *IAMGroupResourceUpdateSuite) Test_update_iam_group() {
 		createGroupPoliciesUpdateTestCase(providerCtx, loader),
 		createGroupManagedPoliciesUpdateTestCase(providerCtx, loader),
 		createGroupUpdateFailureTestCase(providerCtx, loader),
+		recreateGroupOnGroupNameChangeTestCase(providerCtx, loader),
 	}
 
 	plugintestutils.RunResourceDeployTestCases(
@@ -597,6 +598,103 @@ func createGroupUpdateFailureTestCase(
 		SaveActionsCalled: map[string]any{
 			"GetGroup": &iam.GetGroupInput{
 				GroupName: aws.String("test-group"),
+			},
+		},
+	}
+}
+
+func recreateGroupOnGroupNameChangeTestCase(
+	providerCtx provider.Context,
+	loader *testutils.MockAWSConfigLoader,
+) plugintestutils.ResourceDeployTestCase[*aws.Config, iamservice.Service] {
+	resourceARN := "arn:aws:iam::123456789012:group/OldGroup"
+	groupId := "AGPA1234567890123456"
+
+	service := iammock.CreateIamServiceMock(
+		iammock.WithDeleteGroupOutput(&iam.DeleteGroupOutput{}),
+		iammock.WithCreateGroupOutput(&iam.CreateGroupOutput{
+			Group: &types.Group{
+				Arn:       aws.String(resourceARN),
+				GroupId:   aws.String(groupId),
+				GroupName: aws.String("NewGroup"),
+				Path:      aws.String("/"),
+			},
+		}),
+	)
+
+	currentStateSpecData := &core.MappingNode{
+		Fields: map[string]*core.MappingNode{
+			"arn":       core.MappingNodeFromString(resourceARN),
+			"groupId":   core.MappingNodeFromString(groupId),
+			"groupName": core.MappingNodeFromString("OldGroup"),
+			"path":      core.MappingNodeFromString("/"),
+		},
+	}
+
+	updatedSpecData := &core.MappingNode{
+		Fields: map[string]*core.MappingNode{
+			"groupName": core.MappingNodeFromString("NewGroup"),
+			"path":      core.MappingNodeFromString("/"),
+		},
+	}
+
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, iamservice.Service]{
+		Name: "recreate group on groupName change",
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) iamservice.Service {
+			return service
+		},
+		ServiceMockCalls: &service.MockCalls,
+		ConfigStore: utils.NewAWSConfigStore(
+			[]string{},
+			utils.AWSConfigFromProviderContext,
+			loader,
+			utils.AWSConfigCacheKey,
+		),
+		Input: &provider.ResourceDeployInput{
+			InstanceID: "test-instance-id",
+			ResourceID: "test-group-id",
+			Changes: &provider.Changes{
+				AppliedResourceInfo: provider.ResourceInfo{
+					ResourceID:   "test-group-id",
+					ResourceName: "TestGroup",
+					InstanceID:   "test-instance-id",
+					CurrentResourceState: &state.ResourceState{
+						ResourceID: "test-group-id",
+						Name:       "TestGroup",
+						InstanceID: "test-instance-id",
+						SpecData:   currentStateSpecData,
+					},
+					ResourceWithResolvedSubs: &provider.ResolvedResource{
+						Type: &schema.ResourceTypeWrapper{
+							Value: "aws/iam/group",
+						},
+						Spec: updatedSpecData,
+					},
+				},
+				ModifiedFields: []provider.FieldChange{
+					{
+						FieldPath: "spec.groupName",
+						PrevValue: core.MappingNodeFromString("OldGroup"),
+						NewValue:  core.MappingNodeFromString("NewGroup"),
+					},
+				},
+				MustRecreate: true,
+			},
+			ProviderContext: providerCtx,
+		},
+		ExpectedOutput: &provider.ResourceDeployOutput{
+			ComputedFieldValues: map[string]*core.MappingNode{
+				"spec.arn":     core.MappingNodeFromString(resourceARN),
+				"spec.groupId": core.MappingNodeFromString(groupId),
+			},
+		},
+		SaveActionsCalled: map[string]any{
+			"DeleteGroup": &iam.DeleteGroupInput{
+				GroupName: aws.String("OldGroup"),
+			},
+			"CreateGroup": &iam.CreateGroupInput{
+				GroupName: aws.String("NewGroup"),
+				Path:      aws.String("/"),
 			},
 		},
 	}

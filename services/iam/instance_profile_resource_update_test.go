@@ -6,6 +6,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
+	"github.com/aws/aws-sdk-go-v2/service/iam/types"
 	"github.com/newstack-cloud/bluelink-provider-aws/internal/testutils"
 	iammock "github.com/newstack-cloud/bluelink-provider-aws/internal/testutils/iam_mock"
 	iamservice "github.com/newstack-cloud/bluelink-provider-aws/services/iam/service"
@@ -38,6 +39,7 @@ func (s *IAMInstanceProfileResourceUpdateSuite) Test_update_iam_instance_profile
 		updateInstanceProfileRoleTestCase(providerCtx, loader),
 		updateInstanceProfileNoChangesTestCase(providerCtx, loader),
 		updateInstanceProfileServiceErrorTestCase(providerCtx, loader),
+		recreateInstanceProfileOnNameOrPathChangeTestCase(providerCtx, loader),
 	}
 
 	plugintestutils.RunResourceDeployTestCases(
@@ -270,6 +272,107 @@ func updateInstanceProfileServiceErrorTestCase(
 			"RemoveRoleFromInstanceProfile": &iam.RemoveRoleFromInstanceProfileInput{
 				InstanceProfileName: aws.String("MyInstanceProfile"),
 				RoleName:            aws.String("OldRole"),
+			},
+		},
+	}
+}
+
+func recreateInstanceProfileOnNameOrPathChangeTestCase(
+	providerCtx provider.Context,
+	loader *testutils.MockAWSConfigLoader,
+) plugintestutils.ResourceDeployTestCase[*aws.Config, iamservice.Service] {
+	resourceARN := "arn:aws:iam::123456789012:instance-profile/OldProfile"
+	instanceProfileId := "AIPA1234567890123456"
+
+	service := iammock.CreateIamServiceMock(
+		iammock.WithDeleteInstanceProfileOutput(&iam.DeleteInstanceProfileOutput{}),
+		iammock.WithCreateInstanceProfileOutput(&iam.CreateInstanceProfileOutput{
+			InstanceProfile: &types.InstanceProfile{
+				Arn:                 aws.String(resourceARN),
+				InstanceProfileId:   aws.String(instanceProfileId),
+				InstanceProfileName: aws.String("NewProfile"),
+				Path:                aws.String("/newpath/"),
+			},
+		}),
+	)
+
+	currentStateSpecData := &core.MappingNode{
+		Fields: map[string]*core.MappingNode{
+			"instanceProfileName": core.MappingNodeFromString("OldProfile"),
+			"path":                core.MappingNodeFromString("/oldpath/"),
+			"role":                core.MappingNodeFromString("MyRole"),
+			"arn":                 core.MappingNodeFromString(resourceARN),
+		},
+	}
+	updatedSpecData := &core.MappingNode{
+		Fields: map[string]*core.MappingNode{
+			"instanceProfileName": core.MappingNodeFromString("NewProfile"),
+			"path":                core.MappingNodeFromString("/newpath/"),
+			"role":                core.MappingNodeFromString("MyRole"),
+		},
+	}
+
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, iamservice.Service]{
+		Name: "recreate instance profile on instanceProfileName or path change",
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) iamservice.Service {
+			return service
+		},
+		ServiceMockCalls: &service.MockCalls,
+		ConfigStore: utils.NewAWSConfigStore(
+			[]string{},
+			utils.AWSConfigFromProviderContext,
+			loader,
+			utils.AWSConfigCacheKey,
+		),
+		Input: &provider.ResourceDeployInput{
+			InstanceID: "test-instance-id",
+			ResourceID: "test-instance-profile-id",
+			Changes: &provider.Changes{
+				AppliedResourceInfo: provider.ResourceInfo{
+					ResourceID:   "test-instance-profile-id",
+					ResourceName: "TestInstanceProfile",
+					InstanceID:   "test-instance-id",
+					CurrentResourceState: &state.ResourceState{
+						ResourceID: "test-instance-profile-id",
+						Name:       "TestInstanceProfile",
+						InstanceID: "test-instance-id",
+						SpecData:   currentStateSpecData,
+					},
+					ResourceWithResolvedSubs: &provider.ResolvedResource{
+						Type: &schema.ResourceTypeWrapper{
+							Value: "aws/iam/instanceProfile",
+						},
+						Spec: updatedSpecData,
+					},
+				},
+				ModifiedFields: []provider.FieldChange{
+					{
+						FieldPath: "spec.instanceProfileName",
+						PrevValue: core.MappingNodeFromString("OldProfile"),
+						NewValue:  core.MappingNodeFromString("NewProfile"),
+					},
+					{
+						FieldPath: "spec.path",
+						PrevValue: core.MappingNodeFromString("/oldpath/"),
+						NewValue:  core.MappingNodeFromString("/newpath/"),
+					},
+				},
+				MustRecreate: true,
+			},
+			ProviderContext: providerCtx,
+		},
+		ExpectedOutput: &provider.ResourceDeployOutput{
+			ComputedFieldValues: map[string]*core.MappingNode{
+				"spec.arn": core.MappingNodeFromString(resourceARN),
+			},
+		},
+		SaveActionsCalled: map[string]any{
+			"DeleteInstanceProfile": &iam.DeleteInstanceProfileInput{
+				InstanceProfileName: aws.String("OldProfile"),
+			},
+			"CreateInstanceProfile": &iam.CreateInstanceProfileInput{
+				InstanceProfileName: aws.String("NewProfile"),
+				Path:                aws.String("/newpath/"),
 			},
 		},
 	}
