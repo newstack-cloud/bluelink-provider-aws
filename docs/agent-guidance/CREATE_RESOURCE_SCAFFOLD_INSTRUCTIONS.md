@@ -58,6 +58,7 @@ The resource scaffolding should include the following files:
 
 - Each operation in the main resource file resource definition and operation files should have the correct signature and a `TODO` comment.
 - Each test file should import `testing` and `testify` and have a test suite struct along with a test suite registration function.
+- Each test file should be implemented with a skeleton based on the structure used for existing test files for the same resource operation and the high level definition of the service in the `definitions/services/${service}.yml` file. For example, the `services/iam/server_certificate_resource_create_test.go` file is a good reference for the structure of the test file for the `Create` operation.
 
 ### Examples
 
