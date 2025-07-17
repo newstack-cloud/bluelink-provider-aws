@@ -42,6 +42,7 @@ func (s *LambdaEventInvokeConfigResourceUpdateSuite) Test_update_lambda_event_in
 		updateEventInvokeConfigDestinationsTestCase(providerCtx, loader),
 		updateEventInvokeConfigCompleteTestCase(providerCtx, loader),
 		updateEventInvokeConfigFailureTestCase(providerCtx, loader),
+		recreateEventInvokeConfigOnFunctionNameOrQualifierChangeTestCase(providerCtx, loader),
 	}
 
 	plugintestutils.RunResourceDeployTestCases(
@@ -539,6 +540,108 @@ func updateEventInvokeConfigFailureTestCase(
 			"UpdateFunctionEventInvokeConfig": &lambda.UpdateFunctionEventInvokeConfigInput{
 				FunctionName:         aws.String("test-function"),
 				Qualifier:            aws.String("$LATEST"),
+				MaximumRetryAttempts: aws.Int32(2),
+			},
+		},
+	}
+}
+
+func recreateEventInvokeConfigOnFunctionNameOrQualifierChangeTestCase(
+	providerCtx provider.Context,
+	loader *testutils.MockAWSConfigLoader,
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
+	oldFunctionArn := "arn:aws:lambda:us-east-1:123456789012:function:old-function"
+	newFunctionArn := "arn:aws:lambda:us-east-1:123456789012:function:new-function"
+	lastModified := time.Now()
+
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithDeleteFunctionEventInvokeConfigOutput(&lambda.DeleteFunctionEventInvokeConfigOutput{}),
+		lambdamock.WithPutFunctionEventInvokeConfigOutput(&lambda.PutFunctionEventInvokeConfigOutput{
+			FunctionArn:  aws.String(newFunctionArn),
+			LastModified: &lastModified,
+		}),
+	)
+
+	currentStateSpecData := &core.MappingNode{
+		Fields: map[string]*core.MappingNode{
+			"functionArn":          core.MappingNodeFromString(oldFunctionArn),
+			"functionName":         core.MappingNodeFromString("old-function"),
+			"qualifier":            core.MappingNodeFromString("$LATEST"),
+			"maximumRetryAttempts": core.MappingNodeFromInt(1),
+		},
+	}
+
+	updatedSpecData := &core.MappingNode{
+		Fields: map[string]*core.MappingNode{
+			"functionName":         core.MappingNodeFromString("new-function"),
+			"qualifier":            core.MappingNodeFromString("PROD"),
+			"maximumRetryAttempts": core.MappingNodeFromInt(2),
+		},
+	}
+
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
+		Name: "recreate event invoke config on functionName or qualifier change",
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
+			return service
+		},
+		ServiceMockCalls: &service.MockCalls,
+		ConfigStore: utils.NewAWSConfigStore(
+			[]string{},
+			utils.AWSConfigFromProviderContext,
+			loader,
+			utils.AWSConfigCacheKey,
+		),
+		Input: &provider.ResourceDeployInput{
+			InstanceID: "test-instance-id",
+			ResourceID: "test-event-invoke-config-id",
+			Changes: &provider.Changes{
+				AppliedResourceInfo: provider.ResourceInfo{
+					ResourceID:   "test-event-invoke-config-id",
+					ResourceName: "TestEventInvokeConfig",
+					InstanceID:   "test-instance-id",
+					CurrentResourceState: &state.ResourceState{
+						ResourceID: "test-event-invoke-config-id",
+						Name:       "TestEventInvokeConfig",
+						InstanceID: "test-instance-id",
+						SpecData:   currentStateSpecData,
+					},
+					ResourceWithResolvedSubs: &provider.ResolvedResource{
+						Type: &schema.ResourceTypeWrapper{
+							Value: "aws/lambda/eventInvokeConfig",
+						},
+						Spec: updatedSpecData,
+					},
+				},
+				ModifiedFields: []provider.FieldChange{
+					{
+						FieldPath: "spec.functionName",
+						PrevValue: core.MappingNodeFromString("old-function"),
+						NewValue:  core.MappingNodeFromString("new-function"),
+					},
+					{
+						FieldPath: "spec.qualifier",
+						PrevValue: core.MappingNodeFromString("$LATEST"),
+						NewValue:  core.MappingNodeFromString("PROD"),
+					},
+				},
+				MustRecreate: true,
+			},
+			ProviderContext: providerCtx,
+		},
+		ExpectedOutput: &provider.ResourceDeployOutput{
+			ComputedFieldValues: map[string]*core.MappingNode{
+				"spec.functionArn":  core.MappingNodeFromString(newFunctionArn),
+				"spec.lastModified": core.MappingNodeFromString(lastModified.String()),
+			},
+		},
+		SaveActionsCalled: map[string]any{
+			"DeleteFunctionEventInvokeConfig": &lambda.DeleteFunctionEventInvokeConfigInput{
+				FunctionName: aws.String("old-function"),
+				Qualifier:    aws.String("$LATEST"),
+			},
+			"PutFunctionEventInvokeConfig": &lambda.PutFunctionEventInvokeConfigInput{
+				FunctionName:         aws.String("new-function"),
+				Qualifier:            aws.String("PROD"),
 				MaximumRetryAttempts: aws.Int32(2),
 			},
 		},

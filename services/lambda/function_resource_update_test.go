@@ -41,6 +41,7 @@ func (s *LambdaFunctionResourceUpdateSuite) Test_update_lambda_function() {
 		createFunctionConfigAndCodeUpdateTestCase(providerCtx, loader),
 		createFunctionMultipleConfigsUpdateTestCase(providerCtx, loader),
 		createFunctionUpdateFailureTestCase(providerCtx, loader),
+		recreateFunctionOnNameOrPackageTypeChangeTestCase(providerCtx, loader),
 	}
 
 	plugintestutils.RunResourceDeployTestCases(
@@ -757,6 +758,116 @@ func createFunctionUpdateFailureTestCase(
 			"PutRuntimeManagementConfig",
 			"TagResource",
 			"UntagResource",
+		},
+	}
+}
+
+func recreateFunctionOnNameOrPackageTypeChangeTestCase(
+	providerCtx provider.Context,
+	loader *testutils.MockAWSConfigLoader,
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
+	oldResourceARN := "arn:aws:lambda:us-west-2:123456789012:function:old-function"
+	newResourceARN := "arn:aws:lambda:us-west-2:123456789012:function:new-function"
+
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithDeleteFunctionOutput(&lambda.DeleteFunctionOutput{}),
+		lambdamock.WithCreateFunctionOutput(&lambda.CreateFunctionOutput{
+			FunctionArn: aws.String(newResourceARN),
+		}),
+	)
+
+	currentStateSpecData := &core.MappingNode{
+		Fields: map[string]*core.MappingNode{
+			"arn":          core.MappingNodeFromString(oldResourceARN),
+			"functionName": core.MappingNodeFromString("old-function"),
+			"packageType":  core.MappingNodeFromString("Zip"),
+			"runtime":      core.MappingNodeFromString("nodejs18.x"),
+			"handler":      core.MappingNodeFromString("index.handler"),
+			"description":  core.MappingNodeFromString("Original function"),
+			"timeout":      core.MappingNodeFromInt(3),
+			"memorySize":   core.MappingNodeFromInt(128),
+		},
+	}
+
+	updatedSpecData := &core.MappingNode{
+		Fields: map[string]*core.MappingNode{
+			"functionName": core.MappingNodeFromString("new-function"),
+			"packageType":  core.MappingNodeFromString("Image"),
+			"runtime":      core.MappingNodeFromString("nodejs18.x"),
+			"handler":      core.MappingNodeFromString("index.handler"),
+			"description":  core.MappingNodeFromString("Updated function"),
+			"timeout":      core.MappingNodeFromInt(30),
+			"memorySize":   core.MappingNodeFromInt(128),
+		},
+	}
+
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
+		Name: "recreate function on functionName or packageType change",
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
+			return service
+		},
+		ServiceMockCalls: &service.MockCalls,
+		ConfigStore: utils.NewAWSConfigStore(
+			[]string{},
+			utils.AWSConfigFromProviderContext,
+			loader,
+			utils.AWSConfigCacheKey,
+		),
+		Input: &provider.ResourceDeployInput{
+			InstanceID: "test-instance-id",
+			ResourceID: "test-function-id",
+			Changes: &provider.Changes{
+				AppliedResourceInfo: provider.ResourceInfo{
+					ResourceID:   "test-function-id",
+					ResourceName: "TestFunction",
+					InstanceID:   "test-instance-id",
+					CurrentResourceState: &state.ResourceState{
+						ResourceID: "test-function-id",
+						Name:       "TestFunction",
+						InstanceID: "test-instance-id",
+						SpecData:   currentStateSpecData,
+					},
+					ResourceWithResolvedSubs: &provider.ResolvedResource{
+						Type: &schema.ResourceTypeWrapper{
+							Value: "aws/lambda/function",
+						},
+						Spec: updatedSpecData,
+					},
+				},
+				ModifiedFields: []provider.FieldChange{
+					{
+						FieldPath: "spec.functionName",
+						PrevValue: core.MappingNodeFromString("old-function"),
+						NewValue:  core.MappingNodeFromString("new-function"),
+					},
+					{
+						FieldPath: "spec.packageType",
+						PrevValue: core.MappingNodeFromString("Zip"),
+						NewValue:  core.MappingNodeFromString("Image"),
+					},
+				},
+				MustRecreate: true,
+			},
+			ProviderContext: providerCtx,
+		},
+		ExpectedOutput: &provider.ResourceDeployOutput{
+			ComputedFieldValues: map[string]*core.MappingNode{
+				"spec.arn": core.MappingNodeFromString(newResourceARN),
+			},
+		},
+		SaveActionsCalled: map[string]any{
+			"DeleteFunction": &lambda.DeleteFunctionInput{
+				FunctionName: aws.String("arn:aws:lambda:us-west-2:123456789012:function:old-function"),
+			},
+			"CreateFunction": &lambda.CreateFunctionInput{
+				FunctionName: aws.String("new-function"),
+				PackageType:  types.PackageTypeImage,
+				Runtime:      types.RuntimeNodejs18x,
+				Handler:      aws.String("index.handler"),
+				Description:  aws.String("Updated function"),
+				Timeout:      aws.Int32(30),
+				MemorySize:   aws.Int32(128),
+			},
 		},
 	}
 }

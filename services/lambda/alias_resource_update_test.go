@@ -42,6 +42,7 @@ func (s *LambdaAliasResourceUpdateSuite) Test_update_lambda_alias() {
 		updateAliasProvisionedConcurrencyTestCase(providerCtx, loader),
 		updateAliasComplexTestCase(providerCtx, loader),
 		updateAliasFailureTestCase(providerCtx, loader),
+		recreateAliasOnNameOrFunctionNameChangeTestCase(providerCtx, loader),
 	}
 
 	plugintestutils.RunResourceDeployTestCases(
@@ -665,6 +666,111 @@ func updateAliasFailureTestCase(
 				Name:            aws.String("FAIL"),
 				FunctionVersion: aws.String("2"),
 				Description:     aws.String("This should fail"),
+			},
+		},
+	}
+}
+
+func recreateAliasOnNameOrFunctionNameChangeTestCase(
+	providerCtx provider.Context,
+	loader *testutils.MockAWSConfigLoader,
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
+	oldAliasArn := "arn:aws:lambda:us-west-2:123456789012:function:old-function:old-alias"
+	newAliasArn := "arn:aws:lambda:us-west-2:123456789012:function:new-function:new-alias"
+
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithDeleteAliasOutput(&lambda.DeleteAliasOutput{}),
+		lambdamock.WithCreateAliasOutput(&lambda.CreateAliasOutput{
+			AliasArn:        aws.String(newAliasArn),
+			Name:            aws.String("new-alias"),
+			FunctionVersion: aws.String("$LATEST"),
+			Description:     aws.String("Updated alias"),
+		}),
+	)
+
+	currentStateSpecData := &core.MappingNode{
+		Fields: map[string]*core.MappingNode{
+			"aliasArn":        core.MappingNodeFromString(oldAliasArn),
+			"functionName":    core.MappingNodeFromString("old-function"),
+			"name":            core.MappingNodeFromString("old-alias"),
+			"functionVersion": core.MappingNodeFromString("$LATEST"),
+			"description":     core.MappingNodeFromString("Original alias"),
+		},
+	}
+
+	updatedSpecData := &core.MappingNode{
+		Fields: map[string]*core.MappingNode{
+			"functionName":    core.MappingNodeFromString("new-function"),
+			"name":            core.MappingNodeFromString("new-alias"),
+			"functionVersion": core.MappingNodeFromString("$LATEST"),
+			"description":     core.MappingNodeFromString("Updated alias"),
+		},
+	}
+
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
+		Name: "recreate alias on functionName or name change",
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
+			return service
+		},
+		ServiceMockCalls: &service.MockCalls,
+		ConfigStore: utils.NewAWSConfigStore(
+			[]string{},
+			utils.AWSConfigFromProviderContext,
+			loader,
+			utils.AWSConfigCacheKey,
+		),
+		Input: &provider.ResourceDeployInput{
+			InstanceID: "test-instance-id",
+			ResourceID: "test-alias-id",
+			Changes: &provider.Changes{
+				AppliedResourceInfo: provider.ResourceInfo{
+					ResourceID:   "test-alias-id",
+					ResourceName: "TestAlias",
+					InstanceID:   "test-instance-id",
+					CurrentResourceState: &state.ResourceState{
+						ResourceID: "test-alias-id",
+						Name:       "TestAlias",
+						InstanceID: "test-instance-id",
+						SpecData:   currentStateSpecData,
+					},
+					ResourceWithResolvedSubs: &provider.ResolvedResource{
+						Type: &schema.ResourceTypeWrapper{
+							Value: "aws/lambda/alias",
+						},
+						Spec: updatedSpecData,
+					},
+				},
+				ModifiedFields: []provider.FieldChange{
+					{
+						FieldPath: "spec.functionName",
+						PrevValue: core.MappingNodeFromString("old-function"),
+						NewValue:  core.MappingNodeFromString("new-function"),
+					},
+					{
+						FieldPath: "spec.name",
+						PrevValue: core.MappingNodeFromString("old-alias"),
+						NewValue:  core.MappingNodeFromString("new-alias"),
+					},
+				},
+				MustRecreate: true,
+			},
+			ProviderContext: providerCtx,
+		},
+		ExpectedOutput: &provider.ResourceDeployOutput{
+			ComputedFieldValues: map[string]*core.MappingNode{
+				"spec.aliasArn": core.MappingNodeFromString(newAliasArn),
+			},
+		},
+		SaveActionsCalled: map[string]any{
+			"DeleteAlias": &lambda.DeleteAliasInput{
+				FunctionName: aws.String("old-function"),
+				Name:         aws.String("old-alias"),
+			},
+			"CreateAlias": &lambda.CreateAliasInput{
+				FunctionName:    aws.String("new-function"),
+				Name:            aws.String("new-alias"),
+				FunctionVersion: aws.String("$LATEST"),
+				Description:     aws.String("Updated alias"),
 			},
 		},
 	}

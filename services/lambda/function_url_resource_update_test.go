@@ -43,6 +43,7 @@ func (s *LambdaFunctionUrlResourceUpdateSuite) Test_update_lambda_function_url()
 		updateFunctionUrlComplexTestCase(providerCtx, loader),
 		updateFunctionUrlNoChangesTestCase(providerCtx, loader),
 		updateFunctionUrlFailureTestCase(providerCtx, loader),
+		recreateFunctionUrlOnTargetFunctionArnOrAuthTypeOrQualifierChangeTestCase(providerCtx, loader),
 	}
 
 	plugintestutils.RunResourceDeployTestCases(
@@ -665,6 +666,114 @@ func updateFunctionUrlFailureTestCase(
 			ComputedFieldValues: map[string]*core.MappingNode{
 				"spec.functionArn": core.MappingNodeFromString("arn:aws:lambda:us-west-2:123456789012:function:test-function"),
 				"spec.functionUrl": core.MappingNodeFromString("https://test-function-url.lambda-url.us-west-2.on.aws/"),
+			},
+		},
+	}
+}
+
+func recreateFunctionUrlOnTargetFunctionArnOrAuthTypeOrQualifierChangeTestCase(
+	providerCtx provider.Context,
+	loader *testutils.MockAWSConfigLoader,
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
+	oldFunctionUrl := "https://old-function-url.lambda-url.us-west-2.on.aws/"
+	newFunctionUrl := "https://new-function-url.lambda-url.us-west-2.on.aws/"
+
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithDeleteFunctionUrlConfigOutput(&lambda.DeleteFunctionUrlConfigOutput{}),
+		lambdamock.WithCreateFunctionUrlConfigOutput(&lambda.CreateFunctionUrlConfigOutput{
+			FunctionArn: aws.String("arn:aws:lambda:us-west-2:123456789012:function:new-function"),
+			FunctionUrl: aws.String(newFunctionUrl),
+		}),
+	)
+
+	currentStateSpecData := &core.MappingNode{
+		Fields: map[string]*core.MappingNode{
+			"functionArn":       core.MappingNodeFromString("arn:aws:lambda:us-west-2:123456789012:function:old-function"),
+			"functionUrl":       core.MappingNodeFromString(oldFunctionUrl),
+			"targetFunctionArn": core.MappingNodeFromString("arn:aws:lambda:us-west-2:123456789012:function:old-function"),
+			"authType":          core.MappingNodeFromString("NONE"),
+			"qualifier":         core.MappingNodeFromString(""),
+		},
+	}
+
+	updatedSpecData := &core.MappingNode{
+		Fields: map[string]*core.MappingNode{
+			"functionArn":       core.MappingNodeFromString("arn:aws:lambda:us-west-2:123456789012:function:new-function"),
+			"targetFunctionArn": core.MappingNodeFromString("arn:aws:lambda:us-west-2:123456789012:function:new-function"),
+			"authType":          core.MappingNodeFromString("AWS_IAM"),
+			"qualifier":         core.MappingNodeFromString("PROD"),
+		},
+	}
+
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
+		Name: "recreate function URL on targetFunctionArn, authType, or qualifier change",
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
+			return service
+		},
+		ServiceMockCalls: &service.MockCalls,
+		ConfigStore: utils.NewAWSConfigStore(
+			[]string{},
+			utils.AWSConfigFromProviderContext,
+			loader,
+			utils.AWSConfigCacheKey,
+		),
+		Input: &provider.ResourceDeployInput{
+			InstanceID: "test-instance-id",
+			ResourceID: "test-function-url-id",
+			Changes: &provider.Changes{
+				AppliedResourceInfo: provider.ResourceInfo{
+					ResourceID:   "test-function-url-id",
+					ResourceName: "TestFunctionUrl",
+					InstanceID:   "test-instance-id",
+					CurrentResourceState: &state.ResourceState{
+						ResourceID: "test-function-url-id",
+						Name:       "TestFunctionUrl",
+						InstanceID: "test-instance-id",
+						SpecData:   currentStateSpecData,
+					},
+					ResourceWithResolvedSubs: &provider.ResolvedResource{
+						Type: &schema.ResourceTypeWrapper{
+							Value: "aws/lambda/functionUrl",
+						},
+						Spec: updatedSpecData,
+					},
+				},
+				ModifiedFields: []provider.FieldChange{
+					{
+						FieldPath: "spec.targetFunctionArn",
+						PrevValue: core.MappingNodeFromString("arn:aws:lambda:us-west-2:123456789012:function:old-function"),
+						NewValue:  core.MappingNodeFromString("arn:aws:lambda:us-west-2:123456789012:function:new-function"),
+					},
+					{
+						FieldPath: "spec.authType",
+						PrevValue: core.MappingNodeFromString("NONE"),
+						NewValue:  core.MappingNodeFromString("AWS_IAM"),
+					},
+					{
+						FieldPath: "spec.qualifier",
+						PrevValue: core.MappingNodeFromString(""),
+						NewValue:  core.MappingNodeFromString("PROD"),
+					},
+				},
+				MustRecreate: true,
+			},
+			ProviderContext: providerCtx,
+		},
+		ExpectedOutput: &provider.ResourceDeployOutput{
+			ComputedFieldValues: map[string]*core.MappingNode{
+				"spec.functionArn": core.MappingNodeFromString("arn:aws:lambda:us-west-2:123456789012:function:new-function"),
+				"spec.functionUrl": core.MappingNodeFromString(newFunctionUrl),
+			},
+		},
+		SaveActionsCalled: map[string]any{
+			"DeleteFunctionUrlConfig": &lambda.DeleteFunctionUrlConfigInput{
+				FunctionName: aws.String("arn:aws:lambda:us-west-2:123456789012:function:old-function"),
+				Qualifier:    aws.String(""),
+			},
+			"CreateFunctionUrlConfig": &lambda.CreateFunctionUrlConfigInput{
+				FunctionName: aws.String("arn:aws:lambda:us-west-2:123456789012:function:new-function"),
+				AuthType:     types.FunctionUrlAuthTypeAwsIam,
+				Qualifier:    aws.String("PROD"),
 			},
 		},
 	}

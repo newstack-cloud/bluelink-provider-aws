@@ -40,6 +40,7 @@ func (s *LambdaFunctionVersionResourceUpdateSuite) Test_update_lambda_function_v
 		createFunctionVersionWithProvisionedConcurrencyUpdateTestCase(providerCtx, loader),
 		createFunctionVersionWithRuntimePolicyUpdateTestCase(providerCtx, loader),
 		createFunctionVersionUpdateFailureTestCase(providerCtx, loader),
+		recreateFunctionVersionOnFunctionNameOrRuntimeVersionArnChangeTestCase(providerCtx, loader),
 	}
 
 	plugintestutils.RunResourceDeployTestCases(
@@ -431,6 +432,104 @@ func createFunctionVersionUpdateFailureTestCase(
 				FunctionName:                    aws.String(resourceARN),
 				Qualifier:                       aws.String(version),
 				ProvisionedConcurrentExecutions: aws.Int32(200),
+			},
+		},
+	}
+}
+
+func recreateFunctionVersionOnFunctionNameOrRuntimeVersionArnChangeTestCase(
+	providerCtx provider.Context,
+	loader *testutils.MockAWSConfigLoader,
+) plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service] {
+	oldResourceARN := "arn:aws:lambda:us-west-2:123456789012:function:old-function"
+	newResourceARN := "arn:aws:lambda:us-west-2:123456789012:function:new-function"
+	version := "1"
+	oldResourceARNWithVersion := oldResourceARN + ":" + version
+	newResourceARNWithVersion := newResourceARN + ":" + version
+
+	service := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithPublishVersionOutput(&lambda.PublishVersionOutput{
+			FunctionArn: aws.String(newResourceARNWithVersion),
+			Version:     aws.String(version),
+		}),
+	)
+
+	currentStateSpecData := &core.MappingNode{
+		Fields: map[string]*core.MappingNode{
+			"functionArn":            core.MappingNodeFromString(oldResourceARN),
+			"functionArnWithVersion": core.MappingNodeFromString(oldResourceARNWithVersion),
+			"functionName":           core.MappingNodeFromString("old-function"),
+			"version":                core.MappingNodeFromString(version),
+			"runtimeVersionArn":      core.MappingNodeFromString("arn:aws:lambda:us-west-2::runtime:nodejs18.x"),
+		},
+	}
+
+	updatedSpecData := &core.MappingNode{
+		Fields: map[string]*core.MappingNode{
+			"functionName":      core.MappingNodeFromString("new-function"),
+			"runtimeVersionArn": core.MappingNodeFromString("arn:aws:lambda:us-west-2::runtime:nodejs22.x"),
+		},
+	}
+
+	return plugintestutils.ResourceDeployTestCase[*aws.Config, lambdaservice.Service]{
+		Name: "recreate function version on functionName or runtimeVersionArn change",
+		ServiceFactory: func(awsConfig *aws.Config, providerContext provider.Context) lambdaservice.Service {
+			return service
+		},
+		ServiceMockCalls: &service.MockCalls,
+		ConfigStore: utils.NewAWSConfigStore(
+			[]string{},
+			utils.AWSConfigFromProviderContext,
+			loader,
+			utils.AWSConfigCacheKey,
+		),
+		Input: &provider.ResourceDeployInput{
+			InstanceID: "test-instance-id",
+			ResourceID: "test-function-version-id",
+			Changes: &provider.Changes{
+				AppliedResourceInfo: provider.ResourceInfo{
+					ResourceID:   "test-function-version-id",
+					ResourceName: "TestFunctionVersion",
+					InstanceID:   "test-instance-id",
+					CurrentResourceState: &state.ResourceState{
+						ResourceID: "test-function-version-id",
+						Name:       "TestFunctionVersion",
+						InstanceID: "test-instance-id",
+						SpecData:   currentStateSpecData,
+					},
+					ResourceWithResolvedSubs: &provider.ResolvedResource{
+						Type: &schema.ResourceTypeWrapper{
+							Value: "aws/lambda/function_version",
+						},
+						Spec: updatedSpecData,
+					},
+				},
+				ModifiedFields: []provider.FieldChange{
+					{
+						FieldPath: "spec.functionName",
+						PrevValue: core.MappingNodeFromString("old-function"),
+						NewValue:  core.MappingNodeFromString("new-function"),
+					},
+					{
+						FieldPath: "spec.runtimeVersionArn",
+						PrevValue: core.MappingNodeFromString("arn:aws:lambda:us-west-2::runtime:nodejs18.x"),
+						NewValue:  core.MappingNodeFromString("arn:aws:lambda:us-west-2::runtime:nodejs22.x"),
+					},
+				},
+				MustRecreate: true,
+			},
+			ProviderContext: providerCtx,
+		},
+		ExpectedOutput: &provider.ResourceDeployOutput{
+			ComputedFieldValues: map[string]*core.MappingNode{
+				"spec.functionArn":            core.MappingNodeFromString("arn:aws:lambda:us-west-2:123456789012:function:new-function:1"),
+				"spec.functionArnWithVersion": core.MappingNodeFromString("arn:aws:lambda:us-west-2:123456789012:function:new-function:1:1"),
+				"spec.version":                core.MappingNodeFromString(version),
+			},
+		},
+		SaveActionsCalled: map[string]any{
+			"PublishVersion": &lambda.PublishVersionInput{
+				FunctionName: aws.String("new-function"),
 			},
 		},
 	}
