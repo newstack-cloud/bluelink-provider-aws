@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.1] - 2026-10-13
+
+### Bug Fixes
+
+- Narrow link locks and retry conditions that clear on their own([a536c46](https://github.com/newstack-cloud/bluelink-provider-aws/commit/a536c46fea8f3e3f08c33f0f2cfbe40d08aeb554))
+
+### Refactoring
+
+- Update links to work with the new interface that supports link contributions([92dd832](https://github.com/newstack-cloud/bluelink-provider-aws/commit/92dd832dafb13cc96f6b3bf3c6531d885b31ecaa))
 ## [0.5.0] - 2026-08-07
 
 ### Features
