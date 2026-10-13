@@ -4,6 +4,9 @@ package utils
 
 import (
 	"context"
+	"os"
+	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -704,6 +707,183 @@ func (s *AWSConfigTestSuite) TestAWSConfigCacheKey() {
 			s.Equal(tt.expected, actual)
 		})
 	}
+}
+
+// The provider's own defaults for these fields are written with a "~", and the AWS SDK
+// takes the paths literally, so an unexpanded one resolves against the working directory.
+// The file is then missing and the SDK reports the named profile as non-existent, which
+// points at the profile rather than the path.
+func (s *AWSConfigTestSuite) Test_credential_options_resolve_shared_file_paths() {
+	home, err := os.UserHomeDir()
+	s.Require().NoError(err)
+
+	tests := []struct {
+		name                     string
+		sharedCredentialsFiles   string
+		sharedConfigFiles        string
+		expectedCredentialsFiles []string
+		expectedConfigFiles      []string
+	}{
+		{
+			name:                     "a leading home marker is resolved",
+			sharedCredentialsFiles:   "~/.aws/credentials",
+			sharedConfigFiles:        "~",
+			expectedCredentialsFiles: []string{filepath.Join(home, ".aws/credentials")},
+			expectedConfigFiles:      []string{home},
+		},
+		{
+			// Only a leading marker is a home reference.
+			name:                     "other paths are left alone",
+			sharedCredentialsFiles:   "relative/credentials",
+			sharedConfigFiles:        "/etc/~/config",
+			expectedCredentialsFiles: []string{"relative/credentials"},
+			expectedConfigFiles:      []string{"/etc/~/config"},
+		},
+		{
+			name:                     "the separator after the marker follows the platform",
+			sharedCredentialsFiles:   `~\.aws\credentials`,
+			expectedCredentialsFiles: []string{backslashHomePath(home)},
+		},
+		{
+			// The value is a comma-separated list, which authors write with spaces.
+			name:                     "a list is split and trimmed",
+			sharedCredentialsFiles:   "/etc/aws/credentials, ~/.aws/credentials",
+			sharedConfigFiles:        "/etc/aws/config, ~/.aws/config",
+			expectedCredentialsFiles: []string{"/etc/aws/credentials", filepath.Join(home, ".aws/credentials")},
+			expectedConfigFiles:      []string{"/etc/aws/config", filepath.Join(home, ".aws/config")},
+		},
+		{
+			// An empty entry would reach the SDK as a path to a file that cannot exist,
+			// replacing the search list with nothing.
+			name:                     "empty entries are dropped",
+			sharedCredentialsFiles:   "/etc/aws/credentials,",
+			sharedConfigFiles:        "",
+			expectedCredentialsFiles: []string{"/etc/aws/credentials"},
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			opts := CredentialOptions(plugintestutils.NewTestProviderContext(
+				"aws",
+				map[string]*core.ScalarValue{
+					"sharedCredentialsFiles": core.ScalarFromString(tt.sharedCredentialsFiles),
+					"sharedConfigFiles":      core.ScalarFromString(tt.sharedConfigFiles),
+				},
+				nil,
+			))
+
+			loadOpts := &config.LoadOptions{}
+			for _, opt := range opts {
+				s.Require().NoError(opt(loadOpts))
+			}
+
+			s.Equal(tt.expectedCredentialsFiles, nilWhenEmpty(loadOpts.SharedCredentialsFiles))
+			s.Equal(tt.expectedConfigFiles, nilWhenEmpty(loadOpts.SharedConfigFiles))
+		})
+	}
+}
+
+// Nothing else expands these: the value never passes through a shell, and neither the AWS
+// SDK nor any platform's file APIs resolve an environment reference, so an unexpanded
+// "%USERPROFILE%" or "$HOME" reaches the filesystem verbatim and is reported as a missing
+// profile.
+func (s *AWSConfigTestSuite) Test_credential_options_expand_environment_references() {
+	s.T().Setenv("USERPROFILE", `C:\Users\orders`)
+	s.T().Setenv("ProgramFiles(x86)", `C:\Program Files (x86)`)
+	s.T().Setenv("AWS_HOME", "/home/orders")
+
+	tests := []struct {
+		name                     string
+		sharedCredentialsFiles   string
+		expectedCredentialsFiles []string
+	}{
+		{
+			name:                     "a reference is replaced by its value",
+			sharedCredentialsFiles:   `%USERPROFILE%\.aws\credentials`,
+			expectedCredentialsFiles: []string{`C:\Users\orders\.aws\credentials`},
+		},
+		{
+			// %ProgramFiles(x86)% is a real variable, so the name has to allow parentheses.
+			name:                     "a name with parentheses in it",
+			sharedCredentialsFiles:   `%ProgramFiles(x86)%\aws\credentials`,
+			expectedCredentialsFiles: []string{`C:\Program Files (x86)\aws\credentials`},
+		},
+		{
+			// Collapsing it to nothing would turn a typo into a different path that looks
+			// plausible, and the error would name that path rather than the reference.
+			name:                     "a reference to a variable that is not set is left as written",
+			sharedCredentialsFiles:   `%NOT_SET_ANYWHERE%\.aws\credentials`,
+			expectedCredentialsFiles: []string{`%NOT_SET_ANYWHERE%\.aws\credentials`},
+		},
+		{
+			// A path separator cannot appear in a name, so a stray marker stays put.
+			name:                     "a stray percent sign does not start a reference",
+			sharedCredentialsFiles:   "/mnt/50%/aws/credentials",
+			expectedCredentialsFiles: []string{"/mnt/50%/aws/credentials"},
+		},
+		{
+			name:                     "a bare POSIX reference",
+			sharedCredentialsFiles:   "$AWS_HOME/.aws/credentials",
+			expectedCredentialsFiles: []string{"/home/orders/.aws/credentials"},
+		},
+		{
+			// The braced form has to win over the bare one, which would otherwise read the
+			// name as "AWS_HOME" and leave the closing brace behind.
+			name:                     "a braced POSIX reference",
+			sharedCredentialsFiles:   "${AWS_HOME}/.aws/credentials",
+			expectedCredentialsFiles: []string{"/home/orders/.aws/credentials"},
+		},
+		{
+			name:                     "an unset POSIX reference is left as written",
+			sharedCredentialsFiles:   "$NOT_SET_ANYWHERE/.aws/credentials",
+			expectedCredentialsFiles: []string{"$NOT_SET_ANYWHERE/.aws/credentials"},
+		},
+		{
+			// A dollar is an ordinary character in a POSIX file name.
+			name:                     "a stray dollar sign does not start a reference",
+			sharedCredentialsFiles:   "/mnt/cost$/aws/credentials",
+			expectedCredentialsFiles: []string{"/mnt/cost$/aws/credentials"},
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			opts := CredentialOptions(plugintestutils.NewTestProviderContext(
+				"aws",
+				map[string]*core.ScalarValue{
+					"sharedCredentialsFiles": core.ScalarFromString(tt.sharedCredentialsFiles),
+				},
+				nil,
+			))
+
+			loadOpts := &config.LoadOptions{}
+			for _, opt := range opts {
+				s.Require().NoError(opt(loadOpts))
+			}
+
+			s.Equal(tt.expectedCredentialsFiles, nilWhenEmpty(loadOpts.SharedCredentialsFiles))
+		})
+	}
+}
+
+// What the platform makes of a backslash after the marker: a path separator on Windows,
+// where "~\.aws\credentials" is a home reference, and an ordinary character in a file
+// name everywhere else.
+func backslashHomePath(home string) string {
+	if runtime.GOOS == "windows" {
+		return filepath.Join(home, ".aws", "credentials")
+	}
+	return `~\.aws\credentials`
+}
+
+// The SDK's load options hold an empty slice where no path survived, which the test
+// tables express as no expectation at all.
+func nilWhenEmpty(paths []string) []string {
+	if len(paths) == 0 {
+		return nil
+	}
+	return paths
 }
 
 func TestAWSConfigSuite(t *testing.T) {

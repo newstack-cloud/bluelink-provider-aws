@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"os"
 	"strings"
 	"time"
 
@@ -105,7 +106,8 @@ func UpdateLambdaVPCConfig(
 		return err
 	}
 
-	for _, delay := range transientRetryBackoff {
+	for i, delay := range transientRetryBackoff {
+		reportConflictBackoff(functionARN, i+1, delay)
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -293,7 +295,8 @@ func mutateLambdaEnvironmentVariables(
 		return err
 	}
 
-	for _, delay := range transientRetryBackoff {
+	for i, delay := range transientRetryBackoff {
+		reportConflictBackoff(functionARN, i+1, delay)
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -314,4 +317,22 @@ func mutateLambdaEnvironmentVariables(
 	}
 
 	return &provider.RetryableError{ChildError: err}
+}
+
+// Records that the blind conflict ladder was entered.
+//
+// Lambda applies a configuration update asynchronously, rejecting any further
+// configuration update with ResourceConflictException until it settles. The engine holds
+// the function's resource lock across that settle, asking this provider whether the
+// function has settled through the aws/lambda/function predicate in
+// services/cloudcontrol/overlays, so no link should find the function mid-update: this
+// firing means something wrote the function outside that path, or the settle did not
+// happen at all.
+func reportConflictBackoff(functionARN string, attempt int, delay time.Duration) {
+	fmt.Fprintf(
+		os.Stderr,
+		"[linkutils] lambda update conflict backoff fired for %s (attempt %d, waiting %s): "+
+			"a collision the settle wait did not prevent\n",
+		functionARN, attempt, delay,
+	)
 }

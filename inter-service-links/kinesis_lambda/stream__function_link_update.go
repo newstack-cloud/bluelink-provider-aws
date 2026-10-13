@@ -20,28 +20,14 @@ import (
 	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/pluginutils"
 )
 
-func (l *kinesisStreamLambdaFunctionLinkActions) UpdateResourceA(
+func (l *kinesisStreamLambdaFunctionLinkActions) UpdateLinkedResources(
 	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
+	input *provider.LinkUpdateLinkedResourcesInput,
+) (*provider.LinkUpdateLinkedResourcesOutput, error) {
 	// A Kinesis data stream needs no enabling to act as an event source, so there
 	// is nothing to do on the stream itself for this link.
-	return &provider.LinkUpdateResourceOutput{
+	return &provider.LinkUpdateLinkedResourcesOutput{
 		LinkData: core.MappingNodeFields(),
-	}, nil
-}
-
-func (l *kinesisStreamLambdaFunctionLinkActions) UpdateResourceB(
-	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
-	// The Lambda function is not modified as part of this link.
-	// The function's execution role is granted stream read permissions via the
-	// intermediary resource update.
-	return &provider.LinkUpdateResourceOutput{
-		LinkData: &core.MappingNode{
-			Fields: map[string]*core.MappingNode{},
-		},
 	}, nil
 }
 
@@ -91,21 +77,6 @@ func (l *kinesisStreamLambdaFunctionLinkActions) UpdateIntermediaryResources(
 		lambdaService,
 		input.ResourceService,
 		providerCtx,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// The execution role is shared by every link that grants it access, so lock it
-	// for the read-modify-write of its policy set.
-	err = input.ResourceService.AcquireResourceLock(
-		ctx,
-		&provider.AcquireResourceLockInput{
-			InstanceID:      pluginutils.GetInstanceID(input.ResourceBInfo),
-			ResourceName:    setupCtx.RoleResourceName,
-			ProviderContext: providerCtx,
-			AcquiredBy:      input.LinkID,
-		},
 	)
 	if err != nil {
 		return nil, err
@@ -267,10 +238,15 @@ func (l *kinesisStreamLambdaFunctionLinkActions) destroyIntermediaryResources(
 
 	// Remove the stream-read grant from the role's allocator-managed policy set.
 	sid := createKinesisStreamSID(input.ResourceAInfo)
-	_, err := linkutils.ReconcileRoleAccessPolicy(ctx, iamService, linkutils.RoleAccessGrant{
-		RoleName: setupCtx.RoleName,
-		SID:      sid,
-	})
+	_, err := linkutils.GrantRoleAccessUnderLock(
+		ctx,
+		roleAccessLock(input),
+		iamService,
+		linkutils.RoleAccessGrant{
+			RoleName: setupCtx.RoleName,
+			SID:      sid,
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -339,7 +315,17 @@ func (l *kinesisStreamLambdaFunctionLinkActions) createEventSourceMapping(
 	// mirroring CloudFormation), then fall back to the engine's link-update retries.
 	createESM := linkutils.RetryOnIAMPropagation(
 		func(ctx context.Context, in *lambda.CreateEventSourceMappingInput) (*lambda.CreateEventSourceMappingOutput, error) {
-			return lambdaService.CreateEventSourceMapping(ctx, in)
+			// Adopts the mapping when AWS reports one already exists. A retry of
+			// this link is the only thing that could have created it, from the
+			// same input, so what is adopted is what would have been created.
+			ref, createErr := linkutils.CreateOrAdoptEventSourceMapping(ctx, lambdaService, in)
+			if createErr != nil {
+				return nil, createErr
+			}
+			return &lambda.CreateEventSourceMappingOutput{
+				UUID:                  aws.String(ref.UUID),
+				EventSourceMappingArn: aws.String(ref.ARN),
+			}, nil
 		},
 	)
 
@@ -450,11 +436,16 @@ func (l *kinesisStreamLambdaFunctionLinkActions) grantStreamPermissions(
 ) (*permissionLinkData, error) {
 	sid := createKinesisStreamSID(input.ResourceAInfo)
 
-	result, err := linkutils.ReconcileRoleAccessPolicy(ctx, iamService, linkutils.RoleAccessGrant{
-		RoleName:  setupCtx.RoleName,
-		SID:       sid,
-		Statement: kinesisStreamStatement(sid, streamARN),
-	})
+	result, err := linkutils.GrantRoleAccessUnderLock(
+		ctx,
+		roleAccessLock(input),
+		iamService,
+		linkutils.RoleAccessGrant{
+			RoleName:  setupCtx.RoleName,
+			SID:       sid,
+			Statement: kinesisStreamStatement(sid, streamARN),
+		},
+	)
 	if err != nil {
 		if errors.Is(err, linkutils.ErrAccessPolicyBudgetExhausted) {
 			return nil, fmt.Errorf(
@@ -798,5 +789,18 @@ func buildFilterCriteria(patterns []string) *lambdatypes.FilterCriteria {
 
 	return &lambdatypes.FilterCriteria{
 		Filters: filters,
+	}
+}
+
+// The execution role lock for this link, scoped so it can be held around a grant
+// and given up immediately after.
+func roleAccessLock(
+	input *provider.LinkUpdateIntermediaryResourcesInput,
+) linkutils.RoleAccessLock {
+	return linkutils.RoleAccessLock{
+		ResourceService: input.ResourceService,
+		InstanceID:      pluginutils.GetInstanceID(input.ResourceBInfo),
+		LinkID:          input.LinkID,
+		ProviderContext: provider.NewProviderContextFromLinkContext(input.LinkContext, "aws"),
 	}
 }

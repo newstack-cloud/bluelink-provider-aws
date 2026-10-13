@@ -8,7 +8,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	dynamodbtypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/bluelink-provider-aws/linkutils"
@@ -20,73 +19,6 @@ import (
 	"github.com/newstack-cloud/bluelink/libs/blueprint/state"
 	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/pluginutils"
 )
-
-func (l *dynamoDBTableLambdaFunctionLinkActions) UpdateResourceA(
-	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
-	// On destroy, we don't disable streams - that would be destructive
-	// and the user may want streams for other purposes
-	if input.LinkUpdateType == provider.LinkUpdateTypeDestroy {
-		return &provider.LinkUpdateResourceOutput{
-			LinkData: core.MappingNodeFields(),
-		}, nil
-	}
-
-	providerCtx := provider.NewProviderContextFromLinkContext(
-		input.LinkContext,
-		"aws",
-	)
-
-	currentStreamEnabled := isStreamEnabled(input.ResourceInfo)
-	if currentStreamEnabled {
-		return &provider.LinkUpdateResourceOutput{
-			LinkData: core.MappingNodeFields(),
-		}, nil
-	}
-
-	tableName, hasTableName := extractTableNameFromResourceInfo(input.ResourceInfo)
-	if !hasTableName {
-		return nil, fmt.Errorf(
-			"table name could not be retrieved from the DynamoDB table %q",
-			pluginutils.GetResourceName(input.ResourceInfo),
-		)
-	}
-
-	streamViewType := getStreamViewTypeAnnotation(input.ResourceInfo)
-
-	dynamodbService, err := l.getDynamoDBService(ctx, providerCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = dynamodbService.UpdateTable(ctx, &dynamodb.UpdateTableInput{
-		TableName: aws.String(tableName),
-		StreamSpecification: &dynamodbtypes.StreamSpecification{
-			StreamEnabled:  aws.Bool(true),
-			StreamViewType: dynamodbtypes.StreamViewType(streamViewType),
-		},
-	})
-	if err != nil {
-		return nil, fmt.Errorf(
-			"failed to enable DynamoDB Streams on table %q: %w",
-			tableName,
-			err,
-		)
-	}
-
-	return &provider.LinkUpdateResourceOutput{
-		LinkData: core.MappingNodeFields(
-			"streamSpecification",
-			core.MappingNodeFields(
-				"streamEnabled",
-				core.MappingNodeFromBool(true),
-				"streamViewType",
-				core.MappingNodeFromString(streamViewType),
-			),
-		),
-	}, nil
-}
 
 func isStreamEnabled(resourceInfo *provider.ResourceInfo) bool {
 	// The CFN-canonical DynamoDB table has no streamEnabled flag (CFN models
@@ -111,17 +43,14 @@ func getStreamViewTypeAnnotation(resourceInfo *provider.ResourceInfo) string {
 	return viewType
 }
 
-func (l *dynamoDBTableLambdaFunctionLinkActions) UpdateResourceB(
+// The stream's event source mapping is an intermediary resource; neither the table
+// nor the function is written by this link.
+func (l *dynamoDBTableLambdaFunctionLinkActions) UpdateLinkedResources(
 	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
-	// The Lambda function is not modified as part of this link.
-	// The function's execution role should have stream read permissions,
-	// typically configured via the access link (aws/lambda/function::aws/dynamodb/table).
-	return &provider.LinkUpdateResourceOutput{
-		LinkData: &core.MappingNode{
-			Fields: map[string]*core.MappingNode{},
-		},
+	input *provider.LinkUpdateLinkedResourcesInput,
+) (*provider.LinkUpdateLinkedResourcesOutput, error) {
+	return &provider.LinkUpdateLinkedResourcesOutput{
+		LinkData: core.MappingNodeFields(),
 	}, nil
 }
 
@@ -141,8 +70,8 @@ func (l *dynamoDBTableLambdaFunctionLinkActions) UpdateIntermediaryResources(
 	streamARN, hasStreamARN := extractStreamARNFromResourceInfo(input.ResourceAInfo)
 	if !hasStreamARN {
 		// The table's state carries no streamArn when the stream was enabled by
-		// this link's UpdateResourceA (a direct UpdateTable call after the table
-		// deployed without streams). The state snapshot predates the stream, so
+		// this link contributing it to the table (the table is updated with the
+		// stream specification after it first deployed without one). The state snapshot predates the stream, so
 		// the ARN must come from DescribeTable instead. On the deploy path the
 		// stream may still be materialising, so poll for it, and on destroy a single
 		// read is enough (a missing stream there is genuinely an error, and
@@ -180,21 +109,6 @@ func (l *dynamoDBTableLambdaFunctionLinkActions) UpdateIntermediaryResources(
 		lambdaService,
 		input.ResourceService,
 		providerCtx,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// The execution role is shared by every link that grants it access, so lock it
-	// for the read-modify-write of its policy set.
-	err = input.ResourceService.AcquireResourceLock(
-		ctx,
-		&provider.AcquireResourceLockInput{
-			InstanceID:      pluginutils.GetInstanceID(input.ResourceBInfo),
-			ResourceName:    setupCtx.RoleResourceName,
-			ProviderContext: providerCtx,
-			AcquiredBy:      input.LinkID,
-		},
 	)
 	if err != nil {
 		return nil, err
@@ -349,10 +263,15 @@ func (l *dynamoDBTableLambdaFunctionLinkActions) destroyIntermediaryResources(
 
 	// Remove the stream-read grant from the role's allocator-managed policy set.
 	sid := createDynamoDBStreamSID(input.ResourceAInfo)
-	_, err := linkutils.ReconcileRoleAccessPolicy(ctx, iamService, linkutils.RoleAccessGrant{
-		RoleName: setupCtx.RoleName,
-		SID:      sid,
-	})
+	_, err := linkutils.GrantRoleAccessUnderLock(
+		ctx,
+		roleAccessLock(input),
+		iamService,
+		linkutils.RoleAccessGrant{
+			RoleName: setupCtx.RoleName,
+			SID:      sid,
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -410,7 +329,17 @@ func (l *dynamoDBTableLambdaFunctionLinkActions) createEventSourceMapping(
 	// mirroring CloudFormation), then fall back to the engine's link-update retries.
 	createESM := linkutils.RetryOnIAMPropagation(
 		func(ctx context.Context, in *lambda.CreateEventSourceMappingInput) (*lambda.CreateEventSourceMappingOutput, error) {
-			return lambdaService.CreateEventSourceMapping(ctx, in)
+			// Adopts the mapping when AWS reports one already exists. A retry of
+			// this link is the only thing that could have created it, from the
+			// same input, so what is adopted is what would have been created.
+			ref, createErr := linkutils.CreateOrAdoptEventSourceMapping(ctx, lambdaService, in)
+			if createErr != nil {
+				return nil, createErr
+			}
+			return &lambda.CreateEventSourceMappingOutput{
+				UUID:                  aws.String(ref.UUID),
+				EventSourceMappingArn: aws.String(ref.ARN),
+			}, nil
 		},
 	)
 
@@ -507,11 +436,16 @@ func (l *dynamoDBTableLambdaFunctionLinkActions) grantStreamPermissions(
 ) (*permissionLinkData, error) {
 	sid := createDynamoDBStreamSID(input.ResourceAInfo)
 
-	result, err := linkutils.ReconcileRoleAccessPolicy(ctx, iamService, linkutils.RoleAccessGrant{
-		RoleName:  setupCtx.RoleName,
-		SID:       sid,
-		Statement: dynamoDBStreamStatement(sid, streamARN),
-	})
+	result, err := linkutils.GrantRoleAccessUnderLock(
+		ctx,
+		roleAccessLock(input),
+		iamService,
+		linkutils.RoleAccessGrant{
+			RoleName:  setupCtx.RoleName,
+			SID:       sid,
+			Statement: dynamoDBStreamStatement(sid, streamARN),
+		},
+	)
 	if err != nil {
 		if errors.Is(err, linkutils.ErrAccessPolicyBudgetExhausted) {
 			return nil, fmt.Errorf(
@@ -908,5 +842,18 @@ func buildFilterCriteria(patterns []string) *types.FilterCriteria {
 
 	return &types.FilterCriteria{
 		Filters: filters,
+	}
+}
+
+// The execution role lock for this link, scoped so it can be held around a grant
+// and given up immediately after.
+func roleAccessLock(
+	input *provider.LinkUpdateIntermediaryResourcesInput,
+) linkutils.RoleAccessLock {
+	return linkutils.RoleAccessLock{
+		ResourceService: input.ResourceService,
+		InstanceID:      pluginutils.GetInstanceID(input.ResourceBInfo),
+		LinkID:          input.LinkID,
+		ProviderContext: provider.NewProviderContextFromLinkContext(input.LinkContext, "aws"),
 	}
 }

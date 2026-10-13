@@ -47,17 +47,21 @@ func ReplicationGroupSecretLink(
 		return &providerv1.LinkDefinition{
 			ResourceTypeA: "aws/elasticache/replicationGroup",
 			ResourceTypeB: "aws/secretsmanager/secret",
-			// The replication group (A) is configured with the AUTH token once both it and the
-			// secret have been created; ordering the group first avoids an extra modify.
+			// Only one side of the relationship is written, so the deployer takes no
+			// exclusive lock on the other and links that merely read it are not
+			// serialised against one another.
+			Modifies: provider.LinkModifiesResourceA,
+			// The replication group is configured with the AUTH token by this link once
+			// both it and the secret have been created, so neither has to exist before
+			// the other.
 			Kind:                            provider.LinkKindSoft,
-			PriorityResource:                provider.LinkPriorityResourceA,
+			PriorityResource:                provider.LinkPriorityResourceNone,
 			PlainTextSummary:                "A link that applies a Redis AUTH token from a Secrets Manager secret to an ElastiCache replication group.",
 			FormattedDescription:            string(description),
 			AnnotationDefinitions:           replicationGroupSecretLinkAnnotations(),
 			ValidateFunc:                    actions.Validate,
 			StageChangesFunc:                actions.StageChanges,
-			UpdateResourceAFunc:             actions.UpdateResourceA,
-			UpdateResourceBFunc:             actions.UpdateResourceB,
+			UpdateLinkedResourcesFunc:       actions.UpdateLinkedResources,
 			UpdateIntermediaryResourcesFunc: actions.UpdateIntermediaryResources,
 		}
 	}

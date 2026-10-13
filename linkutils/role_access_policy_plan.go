@@ -33,8 +33,14 @@ var ErrAccessPolicyBudgetExhausted = errors.New("execution role permission budge
 const (
 	// inlineAccessPolicyName is the single Bluelink-managed inline policy on a role.
 	inlineAccessPolicyName = "bluelink-link-access"
-	// managedAccessPolicyPrefix prefixes the Bluelink-managed overflow policies,
-	// e.g. "bluelink-link-access-1".
+	// managedAccessPolicyPrefix prefixes the Bluelink-managed overflow policies. The role's
+	// name follows, then the slot index, e.g. "bluelink-link-access-ordersExec-1".
+	//
+	// The role is in the name because a managed policy is account-wide while a slot is
+	// per-role. Without it, links granting access to two different roles both see their own
+	// slot 1 free and both try to create "bluelink-link-access-1", and the second fails with
+	// EntityAlreadyExists. Their locks do not serialise them, correctly, as they are locking
+	// different roles.
 	managedAccessPolicyPrefix = "bluelink-link-access-"
 )
 
@@ -96,6 +102,7 @@ type AccessPolicyPlan struct {
 // planRoleAccess computes the mutation plan for upserting or removing a single
 // statement (by Sid) across the role's current policy slots.
 func planRoleAccess(
+	roleName string,
 	current []AccessPolicySlot,
 	sid string,
 	statement json.RawMessage,
@@ -109,7 +116,7 @@ func planRoleAccess(
 
 	placedSlot := ""
 	if !removeOnly {
-		target, err := selectSlot(working, statement, limits)
+		target, err := selectSlot(roleName, working, statement, limits)
 		if err != nil {
 			return AccessPolicyPlan{}, err
 		}
@@ -151,6 +158,7 @@ func removeStatement(working map[string]*AccessPolicySlot, sid string, changed m
 // slot or a new managed slot as needed. It prefers the inline slot, then existing
 // managed slots in order, then a new managed slot.
 func selectSlot(
+	roleName string,
 	working map[string]*AccessPolicySlot,
 	statement json.RawMessage,
 	limits AccessPolicyLimits,
@@ -178,7 +186,7 @@ func selectSlot(
 	if managedSlotCount(working) < limits.MaxManagedSlots {
 		slot := &AccessPolicySlot{
 			Kind:       AccessPolicyManaged,
-			Name:       nextManagedSlotName(working),
+			Name:       nextManagedSlotName(roleName, working),
 			Statements: map[string]json.RawMessage{},
 		}
 		if fitsWith(slot.Statements, statement, limits.MaxManagedBytes) {
@@ -235,7 +243,7 @@ func policyDocumentSize(statements map[string]json.RawMessage) int {
 func managedSlotCount(working map[string]*AccessPolicySlot) int {
 	count := 0
 	for name := range working {
-		if strings.HasPrefix(name, managedAccessPolicyPrefix) {
+		if isManagedSlotName(name) {
 			count += 1
 		}
 	}
@@ -246,7 +254,7 @@ func managedSlotCount(working map[string]*AccessPolicySlot) int {
 func sortedManagedSlotNames(working map[string]*AccessPolicySlot) []string {
 	var names []string
 	for name := range working {
-		if strings.HasPrefix(name, managedAccessPolicyPrefix) {
+		if isManagedSlotName(name) {
 			names = append(names, name)
 		}
 	}
@@ -267,22 +275,43 @@ func sortedSlotNames(working map[string]*AccessPolicySlot) []string {
 
 // Returns the lowest unused managed slot name so deletes free
 // up indices for reuse.
-func nextManagedSlotName(working map[string]*AccessPolicySlot) string {
+func nextManagedSlotName(roleName string, working map[string]*AccessPolicySlot) string {
 	used := map[int]bool{}
 	for name := range working {
-		if strings.HasPrefix(name, managedAccessPolicyPrefix) {
+		if isManagedSlotName(name) {
 			used[managedSlotIndex(name)] = true
 		}
 	}
 	for index := 1; ; index++ {
 		if !used[index] {
-			return managedAccessPolicyPrefix + strconv.Itoa(index)
+			return managedSlotPrefixForRole(roleName) + strconv.Itoa(index)
 		}
 	}
 }
 
+// The prefix every overflow policy for a role shares.
+func managedSlotPrefixForRole(roleName string) string {
+	return managedAccessPolicyPrefix + roleName + "-"
+}
+
+// Reports whether a slot is one of the Bluelink-managed overflow
+// policies, in either the role-scoped form or the unscoped form earlier versions created.
+//
+// The slots examined here are always those read back from a single role, so a match cannot
+// belong to another role's set, and counting a legacy policy keeps its index reserved and
+// its capacity in the budget rather than orphaning it.
+func isManagedSlotName(name string) bool {
+	return strings.HasPrefix(name, managedAccessPolicyPrefix)
+}
+
+// Reads the trailing index, which is what distinguishes one
+// slot from another in both the role-scoped and the legacy unscoped form.
 func managedSlotIndex(name string) int {
-	index, err := strconv.Atoi(strings.TrimPrefix(name, managedAccessPolicyPrefix))
+	trailing := name
+	if cut := strings.LastIndex(name, "-"); cut >= 0 {
+		trailing = name[cut+1:]
+	}
+	index, err := strconv.Atoi(trailing)
 	if err != nil {
 		return 0
 	}

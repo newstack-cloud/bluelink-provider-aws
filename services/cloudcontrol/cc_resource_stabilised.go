@@ -17,6 +17,10 @@ func (a *ccResourceActions) Stabilised(
 	ctx context.Context,
 	input *provider.ResourceHasStabilisedInput,
 ) (*provider.ResourceHasStabilisedOutput, error) {
+	if input.AfterLinkUpdate {
+		return a.settledAfterLinkUpdate(ctx, input)
+	}
+
 	token := readRequestToken(input.ResourceSpec)
 	if token == "" {
 		// No in-flight operation (e.g. a no-op update) so is already stable.
@@ -104,4 +108,33 @@ func readRequestToken(spec *core.MappingNode) string {
 		return ""
 	}
 	return core.StringValue(value)
+}
+
+// Answers whether the resource has settled after a link wrote it, which the request token
+// path above cannot do. A link writing through a service API does not start a Cloud Control
+// operation, and the token in the spec belongs to the resource's own deployment,
+// so polling it reports settled immediately and lets the next link write while
+// the provider is still applying this one.
+//
+// A type with no registered predicate has nothing to wait for and is reported settled, as
+// every type was before this existed.
+func (a *ccResourceActions) settledAfterLinkUpdate(
+	ctx context.Context,
+	input *provider.ResourceHasStabilisedInput,
+) (*provider.ResourceHasStabilisedOutput, error) {
+	if a.behaviour == nil || a.behaviour.SettledAfterLinkUpdate == nil {
+		return &provider.ResourceHasStabilisedOutput{Stabilised: true}, nil
+	}
+
+	awsConfig, err := a.awsConfigStore.FromProviderContext(ctx, input.ProviderContext, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	settled, err := a.behaviour.SettledAfterLinkUpdate(ctx, input, awsConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return &provider.ResourceHasStabilisedOutput{Stabilised: settled}, nil
 }

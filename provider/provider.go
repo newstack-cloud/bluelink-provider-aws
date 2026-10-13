@@ -20,6 +20,7 @@ import (
 	lambdasns "github.com/newstack-cloud/bluelink-provider-aws/inter-service-links/lambda_sns"
 	lambdasqs "github.com/newstack-cloud/bluelink-provider-aws/inter-service-links/lambda_sqs"
 	lambdassm "github.com/newstack-cloud/bluelink-provider-aws/inter-service-links/lambda_ssm"
+	rdsrds "github.com/newstack-cloud/bluelink-provider-aws/inter-service-links/rds_rds"
 	s3lambda "github.com/newstack-cloud/bluelink-provider-aws/inter-service-links/s3_lambda"
 	s3sns "github.com/newstack-cloud/bluelink-provider-aws/inter-service-links/s3_sns"
 	s3sqs "github.com/newstack-cloud/bluelink-provider-aws/inter-service-links/s3_sqs"
@@ -38,6 +39,7 @@ import (
 	"github.com/newstack-cloud/bluelink-provider-aws/services/lambda"
 	lambdalinks "github.com/newstack-cloud/bluelink-provider-aws/services/lambda/links"
 	lambdaservice "github.com/newstack-cloud/bluelink-provider-aws/services/lambda/service"
+	rdsservice "github.com/newstack-cloud/bluelink-provider-aws/services/rds/service"
 	resgrouptagservice "github.com/newstack-cloud/bluelink-provider-aws/services/resgrouptag/service"
 	s3service "github.com/newstack-cloud/bluelink-provider-aws/services/s3/service"
 	secretsmanagerservice "github.com/newstack-cloud/bluelink-provider-aws/services/secretsmanager/service"
@@ -67,6 +69,7 @@ func NewProvider(
 	kmsServiceFactory pluginutils.ServiceFactory[*aws.Config, kmsservice.Service],
 	elastiCacheServiceFactory pluginutils.ServiceFactory[*aws.Config, elasticacheservice.Service],
 	secretsManagerServiceFactory pluginutils.ServiceFactory[*aws.Config, secretsmanagerservice.Service],
+	rdsServiceFactory pluginutils.ServiceFactory[*aws.Config, rdsservice.Service],
 	awsConfigStore *utils.AWSConfigStore,
 ) provider.Provider {
 	return &providerv1.ProviderPluginDefinition{
@@ -296,6 +299,22 @@ func NewProvider(
 				lambdards.FunctionToProxyLinkDeps{
 					ResourceAService: pluginutils.ServiceWithConfigStore[*aws.Config, lambdaservice.Service]{
 						ServiceFactory: lambdaServiceFactory,
+						ConfigStore:    awsConfigStore,
+					},
+					ResourceBService: pluginutils.ServiceWithConfigStore[*aws.Config, cloudcontrolservice.Service]{
+						ServiceFactory: cloudControlServiceFactory,
+						ConfigStore:    awsConfigStore,
+					},
+				},
+			),
+			// Inter-service link: RDS proxy -> DB instance (network path to its own target)
+			"aws/rds/dbProxy::aws/rds/dbInstance": rdsrds.ProxyInstanceLink(
+				ec2ServiceFactory,
+				rdsServiceFactory,
+			)(
+				rdsrds.ProxyToInstanceLinkDeps{
+					ResourceAService: pluginutils.ServiceWithConfigStore[*aws.Config, cloudcontrolservice.Service]{
+						ServiceFactory: cloudControlServiceFactory,
 						ConfigStore:    awsConfigStore,
 					},
 					ResourceBService: pluginutils.ServiceWithConfigStore[*aws.Config, cloudcontrolservice.Service]{

@@ -49,10 +49,24 @@ func VPCFunctionLink(
 		return &providerv1.LinkDefinition{
 			ResourceTypeA: "aws/flex/vpc",
 			ResourceTypeB: "aws/lambda/function",
-			// The VPC must exist (and have stabilised its subnets and security group)
-			// before the function can be placed into it.
+			// Only one side of the relationship is written, so the deployer takes no
+			// exclusive lock on the other and links that merely read it are not
+			// serialised against one another.
+			//
+			// This link writes the function rather than contributing to it, which is
+			// deliberate. Removal has to detach the function before revoking the
+			// execution role's network interface permissions, for the reason given on
+			// UpdateLinkedResources, and a contribution cannot be ordered that way: a link
+			// being removed is destroyed before any resource is deployed, so its teardown
+			// would revoke the permissions while the function was still attached. Placing
+			// the function through a contribution needs a way to order a link's teardown
+			// after the update that retracts what it contributed.
+			Modifies: provider.LinkModifiesResourceB,
+			// The function is placed into the VPC by this link once both have been
+			// deployed, and detached by it before either is destroyed, so neither has to
+			// exist before the other.
 			Kind:             provider.LinkKindSoft,
-			PriorityResource: provider.LinkPriorityResourceA,
+			PriorityResource: provider.LinkPriorityResourceNone,
 			// Every link that reads the function's live VPC attachment waits for this
 			// one, and is torn down before it.
 			Provides:                        linkutils.NetworkAttachedProvided(provider.LinkPriorityResourceB),
@@ -60,8 +74,7 @@ func VPCFunctionLink(
 			FormattedDescription:            string(description),
 			AnnotationDefinitions:           vpcFunctionLinkAnnotations(),
 			StageChangesFunc:                actions.StageChanges,
-			UpdateResourceAFunc:             actions.UpdateResourceA,
-			UpdateResourceBFunc:             actions.UpdateResourceB,
+			UpdateLinkedResourcesFunc:       actions.UpdateLinkedResources,
 			UpdateIntermediaryResourcesFunc: actions.UpdateIntermediaryResources,
 		}
 	}

@@ -87,7 +87,7 @@ func reconcileParameterTagsForName(
 		ResourceId:   aws.String(name),
 	})
 	if err != nil {
-		return err
+		return retryableSSMError(err)
 	}
 	current := map[string]string{}
 	for _, tag := range listOutput.TagList {
@@ -114,7 +114,7 @@ func reconcileParameterTagsForName(
 			ResourceId:   aws.String(name),
 			Tags:         tags,
 		}); err != nil {
-			return err
+			return retryableSSMError(err)
 		}
 	}
 
@@ -131,7 +131,7 @@ func reconcileParameterTagsForName(
 			ResourceId:   aws.String(name),
 			TagKeys:      removeKeys,
 		}); err != nil {
-			return err
+			return retryableSSMError(err)
 		}
 	}
 

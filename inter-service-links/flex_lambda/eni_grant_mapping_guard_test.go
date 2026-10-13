@@ -3,11 +3,19 @@
 package flexlambda
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
+	ec2mock "github.com/newstack-cloud/bluelink-provider-aws/internal/testutils/ec2_mock"
+	iammock "github.com/newstack-cloud/bluelink-provider-aws/internal/testutils/iam_mock"
+	lambdamock "github.com/newstack-cloud/bluelink-provider-aws/internal/testutils/lambda_mock"
 	"github.com/newstack-cloud/bluelink-provider-aws/linkutils"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/core"
+	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -17,53 +25,72 @@ import (
 //
 // The grant recorded it with IAM's JSON casing, "Sid", which was inert until composition
 // began reading the mappings and then failed staging for every instance that had placed a
-// function in a VPC. The existing test could not catch it: it built its expected value by
-// calling specENIStatementNode, the function under test, so it passed under either casing.
+// function in a VPC.
 type ENIGrantMappingGuardSuite struct {
 	suite.Suite
 }
 
-const (
-	guardRoleResourceName = "ordersExecutionRole"
-	guardFunctionName     = "listOrdersFunction"
-	guardSID              = "VPCNetworkInterfaceslistOrdersFunction"
-)
-
-// The link data and mappings the grant records for an inline placement, built the
-// way the implementation builds them.
-func (s *ENIGrantMappingGuardSuite) grantOutput() (map[string]string, *core.MappingNode) {
-	linkDataKey := fmt.Sprintf("%sExecutionRole", guardFunctionName)
-	roleLinkData := core.MappingNodeFields(
-		linkutils.PermissionFieldName,
-		specENIStatementNode(guardSID),
+// A placement, run for its link data and mappings rather than for the attachment.
+func (s *ENIGrantMappingGuardSuite) placementOutput() *provider.LinkUpdateLinkedResourcesOutput {
+	ec2Svc := ec2mock.CreateEc2ServiceMock(
+		ec2mock.WithDescribeSecurityGroupsOutput(&ec2.DescribeSecurityGroupsOutput{}),
+		ec2mock.WithCreateSecurityGroupOutput(&ec2.CreateSecurityGroupOutput{
+			GroupId: aws.String("sg-workload"),
+		}),
+		ec2mock.WithRevokeSecurityGroupEgressOutput(&ec2.RevokeSecurityGroupEgressOutput{}),
+		ec2mock.WithAuthorizeSecurityGroupEgressOutput(&ec2.AuthorizeSecurityGroupEgressOutput{}),
+	)
+	lambdaSvc := lambdamock.CreateLambdaServiceMock(
+		lambdamock.WithGetFunctionOutput(vfGetFunctionOutput()),
+		lambdamock.WithUpdateFunctionConfigurationOutput(nil),
+	)
+	iamSvc := iammock.CreateIamServiceMock(
+		iammock.WithListRolePoliciesOutput(&iam.ListRolePoliciesOutput{PolicyNames: []string{}}),
+		iammock.WithListAttachedRolePoliciesOutput(&iam.ListAttachedRolePoliciesOutput{}),
+		iammock.WithPutRolePolicyOutput(&iam.PutRolePolicyOutput{}),
 	)
 
-	mappings := map[string]string{}
-	linkutils.AppendRoleAccessMapping(
-		mappings,
-		roleLinkData,
-		guardRoleResourceName,
-		linkDataKey,
-		guardSID,
-		linkutils.RoleAccessResult{PlacedSlotInline: true},
+	output, err := placementLinkWithEC2(iamSvc, lambdaSvc, ec2Svc).UpdateLinkedResources(
+		context.Background(),
+		&provider.LinkUpdateLinkedResourcesInput{
+			LinkUpdateType:  provider.LinkUpdateTypeCreate,
+			ResourceAInfo:   flexVPCResourceInfoAWithGateways("igw-1", "nat-1"),
+			ResourceBInfo:   functionResourceInfoB(),
+			LinkContext:     testLinkContext(),
+			LinkID:          vfLinkID,
+			ResourceService: vfRoleService(),
+		},
 	)
+	s.Require().NoError(err)
+	s.Require().NotNil(output)
 
-	return mappings, core.MappingNodeFields(linkDataKey, roleLinkData)
+	return output
 }
 
 func (s *ENIGrantMappingGuardSuite) Test_every_mapping_selects_the_data_it_points_at() {
-	mappings, linkData := s.grantOutput()
+	output := s.placementOutput()
 
-	s.Require().NotEmpty(mappings, "the inline placement must record a mapping")
-	s.Assert().Empty(linkutils.ValidateResourceDataMappings(mappings, linkData))
+	s.Require().NotEmpty(output.ResourceDataMappings, "the grant must record a mapping")
+	s.Assert().Empty(linkutils.ValidateResourceDataMappings(
+		output.ResourceDataMappings,
+		output.LinkData,
+	))
 }
 
 func (s *ENIGrantMappingGuardSuite) Test_the_statement_uses_the_resource_spec_casing() {
+	output := s.placementOutput()
+
+	roleLinkData := output.LinkData.Fields[fmt.Sprintf(
+		"%sExecutionRole",
+		functionResourceInfoB().ResourceName,
+	)]
+	s.Require().NotNil(roleLinkData, "the grant must record the statement under the role")
+	statement := roleLinkData.Fields[linkutils.PermissionFieldName]
+	s.Require().NotNil(statement)
+
 	// Field names spelled out literally rather than taken from the builder, so putting the
 	// capital back fails here. The IAM role spec schema declares these lowercase; the
 	// capitalised form belongs only in the policy JSON sent to AWS.
-	statement := specENIStatementNode(guardSID)
-
 	s.Require().NotNil(statement.Fields)
 	for _, field := range []string{"sid", "effect", "action", "resource"} {
 		s.Assert().Contains(statement.Fields, field)
@@ -71,7 +98,7 @@ func (s *ENIGrantMappingGuardSuite) Test_the_statement_uses_the_resource_spec_ca
 	for _, field := range []string{"Sid", "Effect", "Action", "Resource"} {
 		s.Assert().NotContains(statement.Fields, field)
 	}
-	s.Assert().Equal(guardSID, core.StringValue(statement.Fields["sid"]))
+	s.Assert().NotEmpty(core.StringValue(statement.Fields["sid"]))
 }
 
 func TestENIGrantMappingGuardSuite(t *testing.T) {

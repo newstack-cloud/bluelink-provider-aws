@@ -89,7 +89,7 @@ func ReconcileRoleAccessPolicy(
 		}
 	}
 
-	plan, err := planRoleAccess(slots, grant.SID, statement, removeOnly, limits)
+	plan, err := planRoleAccess(grant.RoleName, slots, grant.SID, statement, removeOnly, limits)
 	if err != nil {
 		return RoleAccessResult{}, fmt.Errorf("on role %q: %w", grant.RoleName, err)
 	}

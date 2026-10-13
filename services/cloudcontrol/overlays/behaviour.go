@@ -3,6 +3,8 @@ package overlays
 import (
 	"context"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+
 	"github.com/newstack-cloud/bluelink-provider-aws/utils"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/core"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
@@ -40,6 +42,21 @@ type Behaviour struct {
 	// fields). Returning an error aborts the deployment with that message, giving
 	// an actionable diagnostic in place of an opaque downstream AWS error.
 	ValidateResolvedSpec SpecTransform
+	// SettledAfterLinkUpdate answers whether the resource has settled following a write
+	// made by a link rather than by the engine.
+	//
+	// The generic Cloud Control check cannot answer this as it polls the request status of
+	// the operation the engine started, and a link writing through a service API starts no
+	// such operation, so the check reports settled immediately. For a type whose service
+	// API accepts a write and applies it asynchronously, that is the difference between
+	// the next link succeeding and it being rejected.
+	//
+	// Nil means the type has nothing to wait for after a link's write, the common case.
+	SettledAfterLinkUpdate func(
+		ctx context.Context,
+		input *provider.ResourceHasStabilisedInput,
+		awsConfig *aws.Config,
+	) (bool, error)
 }
 
 var behaviours = map[string]*Behaviour{}

@@ -66,7 +66,7 @@ type eniGrantResult struct {
 
 func (l *vpcFunctionLinkActions) grantENIPermissions(
 	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
+	input *provider.LinkUpdateLinkedResourcesInput,
 	providerCtx provider.Context,
 ) (eniGrantResult, error) {
 	return l.reconcileENIGrant(ctx, input, providerCtx, eniManagementStatement)
@@ -74,7 +74,7 @@ func (l *vpcFunctionLinkActions) grantENIPermissions(
 
 func (l *vpcFunctionLinkActions) revokeENIPermissions(
 	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
+	input *provider.LinkUpdateLinkedResourcesInput,
 	providerCtx provider.Context,
 ) (eniGrantResult, error) {
 	// A nil statement removes the grant.
@@ -86,7 +86,7 @@ func (l *vpcFunctionLinkActions) revokeENIPermissions(
 // statements on the same role.
 func (l *vpcFunctionLinkActions) reconcileENIGrant(
 	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
+	input *provider.LinkUpdateLinkedResourcesInput,
 	providerCtx provider.Context,
 	buildStatement func(sid string) map[string]any,
 ) (eniGrantResult, error) {
@@ -98,7 +98,7 @@ func (l *vpcFunctionLinkActions) reconcileENIGrant(
 	setupCtx, err := linkutils.SetupLinkFromLambdaFunction(
 		ctx,
 		&linkutils.LambdaLinkSetupData{
-			LambdaFuncResourceInfo: input.ResourceInfo,
+			LambdaFuncResourceInfo: input.ResourceBInfo,
 			LoadRoleInfo:           true,
 		},
 		lambdaService,
@@ -117,22 +117,16 @@ func (l *vpcFunctionLinkActions) reconcileENIGrant(
 		return eniGrantResult{}, err
 	}
 
-	err = input.ResourceService.AcquireResourceLock(ctx, &provider.AcquireResourceLockInput{
-		InstanceID:      pluginutils.GetInstanceID(input.ResourceInfo),
-		ResourceName:    setupCtx.RoleResourceName,
-		ProviderContext: providerCtx,
-		AcquiredBy:      input.LinkID,
-	})
-	if err != nil {
-		return eniGrantResult{}, err
-	}
-
+	// The role is locked around the grant below rather than here. This phase goes
+	// on to attach the function to the VPC, which is Lambda provisioning network
+	// interfaces and takes minutes; with one execution role shared by dozens of
+	// functions, holding it for that put every link needing the role in one queue.
 	iamService, err := l.getIamService(ctx, providerCtx)
 	if err != nil {
 		return eniGrantResult{}, err
 	}
 
-	sid := createENIManagementSID(input.ResourceInfo)
+	sid := createENIManagementSID(input.ResourceBInfo)
 	grant := linkutils.RoleAccessGrant{
 		RoleName: setupCtx.RoleName,
 		SID:      sid,
@@ -141,12 +135,22 @@ func (l *vpcFunctionLinkActions) reconcileENIGrant(
 		grant.Statement = buildStatement(sid)
 	}
 
-	placement, err := linkutils.ReconcileRoleAccessPolicy(ctx, iamService, grant)
+	placement, err := linkutils.GrantRoleAccessUnderLock(
+		ctx,
+		linkutils.RoleAccessLock{
+			ResourceService: input.ResourceService,
+			InstanceID:      pluginutils.GetInstanceID(input.ResourceBInfo),
+			LinkID:          input.LinkID,
+			ProviderContext: providerCtx,
+		},
+		iamService,
+		grant,
+	)
 	if err != nil {
 		return eniGrantResult{}, fmt.Errorf(
 			"cannot grant function %q the network interface permissions a VPC-attached "+
 				"function requires: %w",
-			pluginutils.GetResourceName(input.ResourceInfo),
+			pluginutils.GetResourceName(input.ResourceBInfo),
 			err,
 		)
 	}
@@ -162,15 +166,15 @@ func (l *vpcFunctionLinkActions) reconcileENIGrant(
 // Attributes the ENI statement to this link in the link's output, so the role does not
 // report drift for a statement the link put there.
 func addENIGrantToOutput(
-	output *provider.LinkUpdateResourceOutput,
-	input *provider.LinkUpdateResourceInput,
+	output *provider.LinkUpdateLinkedResourcesOutput,
+	input *provider.LinkUpdateLinkedResourcesInput,
 	grant eniGrantResult,
-) *provider.LinkUpdateResourceOutput {
+) *provider.LinkUpdateLinkedResourcesOutput {
 	if !grant.granted {
 		return output
 	}
 
-	linkDataKey := fmt.Sprintf("%sExecutionRole", pluginutils.GetResourceName(input.ResourceInfo))
+	linkDataKey := fmt.Sprintf("%sExecutionRole", pluginutils.GetResourceName(input.ResourceBInfo))
 	roleLinkData := core.MappingNodeFields(
 		linkutils.PermissionFieldName,
 		specENIStatementNode(grant.sid),
@@ -200,12 +204,14 @@ func addENIGrantToOutput(
 }
 
 // The same statement as eniManagementStatement, in the mapping node form the link data
-// and drift suppression use.
+// and drift suppression use, and in the resource spec's casing rather than IAM's. The
+// attribution path selects the statement on "@.sid", so a capitalised key here leaves
+// the contribution with nothing to match and the role's spec cannot be composed.
 func specENIStatementNode(sid string) *core.MappingNode {
 	return core.MappingNodeFields(
-		"Sid", core.MappingNodeFromString(sid),
-		"Effect", core.MappingNodeFromString("Allow"),
-		"Action", stringItems(eniManagementActions),
-		"Resource", core.MappingNodeFromString("*"),
+		"sid", core.MappingNodeFromString(sid),
+		"effect", core.MappingNodeFromString("Allow"),
+		"action", stringItems(eniManagementActions),
+		"resource", core.MappingNodeFromString("*"),
 	)
 }

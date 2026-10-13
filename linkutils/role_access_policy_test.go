@@ -96,7 +96,9 @@ func (s *RoleAccessPolicySuite) Test_overflow_places_grant_in_new_managed_policy
 	})
 	s.Require().NoError(err)
 	s.False(result.PlacedSlotInline)
-	s.Equal(managedAccessPolicyPrefix+"1", result.PlacedSlot)
+	// Role-scoped as a managed policy is account-wide, so two roles overflowing at
+	// the same time would otherwise both try to create the same policy name.
+	s.Equal(managedSlotPrefixForRole(testRoleName)+"1", result.PlacedSlot)
 	s.Equal(managedARN, result.PlacedSlotARN)
 	mock.AssertNotCalled(&s.Suite, "PutRolePolicy")
 }

@@ -18,29 +18,15 @@ import (
 	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/pluginutils"
 )
 
-func (l *sqsQueueLambdaFunctionLinkActions) UpdateResourceA(
+func (l *sqsQueueLambdaFunctionLinkActions) UpdateLinkedResources(
 	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
+	input *provider.LinkUpdateLinkedResourcesInput,
+) (*provider.LinkUpdateLinkedResourcesOutput, error) {
 	// SQS has no source-side stream to enable (unlike DynamoDB), so the queue is not
 	// modified by this link. The queue's ARN is read directly from its state when the
 	// event source mapping is created.
-	return &provider.LinkUpdateResourceOutput{
+	return &provider.LinkUpdateLinkedResourcesOutput{
 		LinkData: core.MappingNodeFields(),
-	}, nil
-}
-
-func (l *sqsQueueLambdaFunctionLinkActions) UpdateResourceB(
-	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
-	// The Lambda function is not modified as part of this link.
-	// The function's execution role is granted queue consume permissions as a
-	// link-owned change in UpdateIntermediaryResources.
-	return &provider.LinkUpdateResourceOutput{
-		LinkData: &core.MappingNode{
-			Fields: map[string]*core.MappingNode{},
-		},
 	}, nil
 }
 
@@ -90,21 +76,6 @@ func (l *sqsQueueLambdaFunctionLinkActions) UpdateIntermediaryResources(
 		lambdaService,
 		input.ResourceService,
 		providerCtx,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// The execution role is shared by every link that grants it access, so lock it
-	// for the read-modify-write of its policy set.
-	err = input.ResourceService.AcquireResourceLock(
-		ctx,
-		&provider.AcquireResourceLockInput{
-			InstanceID:      pluginutils.GetInstanceID(input.ResourceBInfo),
-			ResourceName:    setupCtx.RoleResourceName,
-			ProviderContext: providerCtx,
-			AcquiredBy:      input.LinkID,
-		},
 	)
 	if err != nil {
 		return nil, err
@@ -260,10 +231,15 @@ func (l *sqsQueueLambdaFunctionLinkActions) destroyIntermediaryResources(
 
 	// Remove the queue-consume grant from the role's allocator-managed policy set.
 	sid := createSQSQueueSID(input.ResourceAInfo)
-	_, err := linkutils.ReconcileRoleAccessPolicy(ctx, iamService, linkutils.RoleAccessGrant{
-		RoleName: setupCtx.RoleName,
-		SID:      sid,
-	})
+	_, err := linkutils.GrantRoleAccessUnderLock(
+		ctx,
+		roleAccessLock(input),
+		iamService,
+		linkutils.RoleAccessGrant{
+			RoleName: setupCtx.RoleName,
+			SID:      sid,
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -313,7 +289,17 @@ func (l *sqsQueueLambdaFunctionLinkActions) createEventSourceMapping(
 	// mirroring CloudFormation), then fall back to the engine's link-update retries.
 	createESM := linkutils.RetryOnIAMPropagation(
 		func(ctx context.Context, in *lambda.CreateEventSourceMappingInput) (*lambda.CreateEventSourceMappingOutput, error) {
-			return lambdaService.CreateEventSourceMapping(ctx, in)
+			// Adopts the mapping when AWS reports one already exists. A retry of
+			// this link is the only thing that could have created it, from the
+			// same input, so what is adopted is what would have been created.
+			ref, createErr := linkutils.CreateOrAdoptEventSourceMapping(ctx, lambdaService, in)
+			if createErr != nil {
+				return nil, createErr
+			}
+			return &lambda.CreateEventSourceMappingOutput{
+				UUID:                  aws.String(ref.UUID),
+				EventSourceMappingArn: aws.String(ref.ARN),
+			}, nil
 		},
 	)
 
@@ -394,11 +380,16 @@ func (l *sqsQueueLambdaFunctionLinkActions) grantConsumePermissions(
 ) (*permissionLinkData, error) {
 	sid := createSQSQueueSID(input.ResourceAInfo)
 
-	result, err := linkutils.ReconcileRoleAccessPolicy(ctx, iamService, linkutils.RoleAccessGrant{
-		RoleName:  setupCtx.RoleName,
-		SID:       sid,
-		Statement: sqsConsumeStatement(sid, queueARN),
-	})
+	result, err := linkutils.GrantRoleAccessUnderLock(
+		ctx,
+		roleAccessLock(input),
+		iamService,
+		linkutils.RoleAccessGrant{
+			RoleName:  setupCtx.RoleName,
+			SID:       sid,
+			Statement: sqsConsumeStatement(sid, queueARN),
+		},
+	)
 	if err != nil {
 		if errors.Is(err, linkutils.ErrAccessPolicyBudgetExhausted) {
 			return nil, fmt.Errorf(
@@ -676,5 +667,18 @@ func buildFilterCriteria(patterns []string) *types.FilterCriteria {
 
 	return &types.FilterCriteria{
 		Filters: filters,
+	}
+}
+
+// The execution role lock for this link, scoped so it can be held around a grant
+// and given up immediately after.
+func roleAccessLock(
+	input *provider.LinkUpdateIntermediaryResourcesInput,
+) linkutils.RoleAccessLock {
+	return linkutils.RoleAccessLock{
+		ResourceService: input.ResourceService,
+		InstanceID:      pluginutils.GetInstanceID(input.ResourceBInfo),
+		LinkID:          input.LinkID,
+		ProviderContext: provider.NewProviderContextFromLinkContext(input.LinkContext, "aws"),
 	}
 }

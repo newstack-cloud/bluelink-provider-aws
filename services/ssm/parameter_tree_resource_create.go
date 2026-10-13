@@ -36,7 +36,7 @@ func (a *parameterTreeResourceActions) Create(
 
 		if _, err := service.PutParameter(ctx, putInput); err != nil {
 			if _, exists := errors.AsType[*ssmtypes.ParameterAlreadyExists](err); !exists {
-				return nil, err
+				return nil, retryableSSMError(err)
 			}
 			// A parameter already at this name is either left over from a retried partial
 			// create (already holding this value) or was written out-of-band before the

@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -162,9 +164,8 @@ func CredentialOptions(
 	)
 	if hasSharedCredentialsFiles && !core.IsScalarNil(sharedCredentialsFiles) {
 		credentialsFilesStr := core.StringValueFromScalar(sharedCredentialsFiles)
-		credentialsFiles := strings.Split(credentialsFilesStr, ",")
 		opts = append(opts, config.WithSharedCredentialsFiles(
-			credentialsFiles,
+			sharedFilePaths(credentialsFilesStr),
 		))
 	}
 
@@ -173,9 +174,8 @@ func CredentialOptions(
 	)
 	if hasSharedConfigFiles && !core.IsScalarNil(sharedConfigFiles) {
 		configFilesStr := core.StringValueFromScalar(sharedConfigFiles)
-		configFiles := strings.Split(configFilesStr, ",")
 		opts = append(opts, config.WithSharedConfigFiles(
-			configFiles,
+			sharedFilePaths(configFilesStr),
 		))
 	}
 
@@ -189,6 +189,117 @@ func CredentialOptions(
 	}
 
 	return opts
+}
+
+// Splits a comma-separated list of shared config or credentials file paths and
+// resolves each one.
+func sharedFilePaths(value string) []string {
+	parts := strings.Split(value, ",")
+	paths := make([]string, 0, len(parts))
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if trimmed == "" {
+			continue
+		}
+		paths = append(paths, resolveSharedFilePath(trimmed))
+	}
+
+	return paths
+}
+
+// Resolves the references in a shared config or credentials file path.
+func resolveSharedFilePath(path string) string {
+	return expandHomePath(expandEnvRefs(path))
+}
+
+// envRefPattern matches an environment variable reference in any of the forms a path is
+// written with: Windows "%NAME%", and "${NAME}" or "$NAME" elsewhere. The braced form is
+// listed before the bare one so it wins where both could match.
+//
+// A name may not hold a path separator, so a stray "%" or "$" elsewhere in a path cannot
+// start a reference; the Windows form also allows parentheses, for the likes of
+// %ProgramFiles(x86)%.
+var envRefPattern = regexp.MustCompile(
+	`%[A-Za-z_][A-Za-z0-9_()]*%|\$\{[A-Za-z_][A-Za-z0-9_]*\}|\$[A-Za-z_][A-Za-z0-9_]*`,
+)
+
+// Expands environment variable references in a path.
+//
+// A value from provider configuration never passes through a shell, and neither the AWS
+// SDK nor the file APIs of any platform expand environment references themselves, so
+// "%USERPROFILE%\.aws\credentials" or "$HOME/.aws/credentials" would otherwise reach the
+// filesystem as-is and be reported as a missing profile rather than as a path that was
+// never resolved.
+//
+// Every form is expanded on every platform, so one configuration value resolves the same
+// way wherever the plugin runs. A reference to a variable that is not set is left exactly
+// as written, otherwise, collapsing it to nothing would turn a typo into a different path
+// that looks plausible.
+func expandEnvRefs(path string) string {
+	return envRefPattern.ReplaceAllStringFunc(path, func(reference string) string {
+		if value, found := os.LookupEnv(envRefName(reference)); found {
+			return value
+		}
+		return reference
+	})
+}
+
+// The variable name inside a reference, in whichever form it was written.
+func envRefName(reference string) string {
+	switch {
+	case strings.HasPrefix(reference, "%"):
+		return reference[1 : len(reference)-1]
+	case strings.HasPrefix(reference, "${"):
+		return reference[2 : len(reference)-1]
+	default:
+		return reference[1:]
+	}
+}
+
+// Resolves a leading "~" to the current user's home directory.
+//
+// The AWS SDK takes these paths literally, so a "~" reaches the filesystem
+// unexpanded and resolves against the working directory instead of the home
+// directory. The file is then missing and the named profile cannot be found,
+// which surfaces as the profile not existing rather than as a bad path. The
+// provider's own defaults are written with a "~", so this affects every
+// deployment that relies on them.
+func expandHomePath(path string) string {
+	rest, isHomeRelative := homeRelativePath(path)
+	if !isHomeRelative {
+		return path
+	}
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		// Nothing better to fall back on; the SDK will report the missing file.
+		return path
+	}
+
+	if rest == "" {
+		return home
+	}
+
+	return filepath.Join(home, rest)
+}
+
+// Splits a leading "~" off a path, reporting whether there was one.
+//
+// The separator is whatever the platform accepts: os.IsPathSeparator takes a
+// backslash on Windows, so "~\.aws\config" is treated as a home reference there,
+// matching what os.path.expanduser accepts and so what the AWS CLI accepts. On
+// every other platform a backslash is an ordinary character in a file name and is
+// left alone.
+func homeRelativePath(path string) (string, bool) {
+	if path == "~" {
+		return "", true
+	}
+
+	if len(path) > 1 && path[0] == '~' && os.IsPathSeparator(path[1]) {
+		return path[2:], true
+	}
+
+	return "", false
 }
 
 // SharedEndpointOptions returns the shared endpoint options derived from the given provider context.

@@ -11,6 +11,11 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+// planRoleAccess is exercised directly as it is the pure planner ReconcileRoleAccessPolicy
+// delegates placement to, and the cases below are a combinatorial walk over slot budgets
+// that would cost a full IAM round trip each through the public entry point while proving
+// no more. That the plan is applied is covered by role_access_policy_test.go, which drives
+// ReconcileRoleAccessPolicy against the IAM mock.
 type RoleAccessPolicyPlanSuite struct {
 	suite.Suite
 }
@@ -28,7 +33,7 @@ func planSmallLimits() AccessPolicyLimits {
 }
 
 func (s *RoleAccessPolicyPlanSuite) Test_places_first_grant_inline() {
-	plan, err := planRoleAccess(nil, "sid-1", planStmt("sid-1", 0), false, DefaultAccessPolicyLimits())
+	plan, err := planRoleAccess("ordersExec", nil, "sid-1", planStmt("sid-1", 0), false, DefaultAccessPolicyLimits())
 	s.Require().NoError(err)
 
 	s.Equal(inlineAccessPolicyName, plan.PlacedSlot)
@@ -47,7 +52,7 @@ func (s *RoleAccessPolicyPlanSuite) Test_upsert_is_idempotent_on_same_slot() {
 		},
 	}}
 	// Re-applying the same sid replaces in place; still inline, one upsert.
-	plan, err := planRoleAccess(current, "sid-1", planStmt("sid-1", 5), false, DefaultAccessPolicyLimits())
+	plan, err := planRoleAccess("ordersExec", current, "sid-1", planStmt("sid-1", 5), false, DefaultAccessPolicyLimits())
 	s.Require().NoError(err)
 
 	s.Equal(inlineAccessPolicyName, plan.PlacedSlot)
@@ -65,7 +70,7 @@ func (s *RoleAccessPolicyPlanSuite) Test_overflows_to_managed() {
 	placements := map[string]int{}
 	for i := range 3 {
 		sid := fmt.Sprintf("sid-%d", i)
-		plan, err := planRoleAccess(current, sid, planStmt(sid, 60), false, limits)
+		plan, err := planRoleAccess("ordersExec", current, sid, planStmt(sid, 60), false, limits)
 		s.Require().NoErrorf(err, "grant %d", i)
 		current = applyPlanToSlots(current, plan)
 		placements[plan.PlacedSlot]++
@@ -88,7 +93,7 @@ func (s *RoleAccessPolicyPlanSuite) Test_errors_when_budget_exhausted() {
 	var lastErr error
 	for i := range 20 {
 		sid := fmt.Sprintf("sid-%d", i)
-		plan, err := planRoleAccess(current, sid, planStmt(sid, 80), false, limits)
+		plan, err := planRoleAccess("ordersExec", current, sid, planStmt(sid, 80), false, limits)
 		if err != nil {
 			lastErr = err
 			break
@@ -107,7 +112,7 @@ func (s *RoleAccessPolicyPlanSuite) Test_remove_deletes_empty_slot() {
 			"sid-1": planStmt("sid-1", 0),
 		},
 	}}
-	plan, err := planRoleAccess(current, "sid-1", nil, true, DefaultAccessPolicyLimits())
+	plan, err := planRoleAccess("ordersExec", current, "sid-1", nil, true, DefaultAccessPolicyLimits())
 	s.Require().NoError(err)
 
 	s.Empty(plan.PlacedSlot)
@@ -125,7 +130,7 @@ func (s *RoleAccessPolicyPlanSuite) Test_remove_one_of_many_rewrites_slot() {
 			"sid-2": planStmt("sid-2", 0),
 		},
 	}}
-	plan, err := planRoleAccess(current, "sid-1", nil, true, DefaultAccessPolicyLimits())
+	plan, err := planRoleAccess("ordersExec", current, "sid-1", nil, true, DefaultAccessPolicyLimits())
 	s.Require().NoError(err)
 
 	s.Empty(plan.Deletes, "slot still has sid-2, should not be deleted")
@@ -138,7 +143,7 @@ func TestRoleAccessPolicyPlanSuite(t *testing.T) {
 	suite.Run(t, new(RoleAccessPolicyPlanSuite))
 }
 
-// Dolds a plan back into a slot set so a sequence of grants can
+// Folds a plan back into a slot set so a sequence of grants can
 // be simulated in tests.
 func applyPlanToSlots(current []AccessPolicySlot, plan AccessPolicyPlan) []AccessPolicySlot {
 	byName := map[string]AccessPolicySlot{}
@@ -160,4 +165,40 @@ func applyPlanToSlots(current []AccessPolicySlot, plan AccessPolicyPlan) []Acces
 	}
 
 	return out
+}
+
+// A managed policy is account-wide while a slot is per-role, so the role has to be part of
+// the name, see managedAccessPolicyPrefix.
+func (s *RoleAccessPolicyPlanSuite) Test_managed_slot_names_are_scoped_to_their_role() {
+	limits := AccessPolicyLimits{MaxInlineBytes: 10, MaxManagedBytes: 9000, MaxManagedSlots: 5}
+
+	ordersPlan, err := planRoleAccess("ordersExec", nil, "sid-1", planStmt("sid-1", 0), false, limits)
+	s.Require().NoError(err)
+	usersPlan, err := planRoleAccess("usersExec", nil, "sid-1", planStmt("sid-1", 0), false, limits)
+	s.Require().NoError(err)
+
+	s.Equal("bluelink-link-access-ordersExec-1", ordersPlan.PlacedSlot)
+	s.Equal("bluelink-link-access-usersExec-1", usersPlan.PlacedSlot)
+	s.NotEqual(ordersPlan.PlacedSlot, usersPlan.PlacedSlot,
+		"two roles overflowing at once must not collide on a policy name")
+}
+
+// Policies created before the name carried the role are still recognised as
+// managed slots, so their index stays reserved and their capacity stays in the
+// budget rather than being orphaned.
+func (s *RoleAccessPolicyPlanSuite) Test_legacy_unscoped_slots_are_still_counted() {
+	current := []AccessPolicySlot{
+		{
+			Kind:       AccessPolicyManaged,
+			Name:       "bluelink-link-access-1",
+			Statements: map[string]json.RawMessage{"old-sid": planStmt("old-sid", 3000)},
+		},
+	}
+	limits := AccessPolicyLimits{MaxInlineBytes: 10, MaxManagedBytes: 3200, MaxManagedSlots: 5}
+
+	plan, err := planRoleAccess("ordersExec", current, "sid-new", planStmt("sid-new", 3000), false, limits)
+	s.Require().NoError(err)
+
+	s.Equal("bluelink-link-access-ordersExec-2", plan.PlacedSlot,
+		"index 1 is taken by the legacy policy, so the next slot is 2")
 }

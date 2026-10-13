@@ -107,7 +107,7 @@ func putTreeParameter(
 	// separately by the caller where needed.
 	putInput.Overwrite = aws.Bool(true)
 	_, err := service.PutParameter(ctx, putInput)
-	return err
+	return retryableSSMError(err)
 }
 
 // Re-puts an entry whose blueprint value is unchanged
@@ -132,7 +132,7 @@ func reputTreeParameterPreservingValue(
 	})
 	if err != nil {
 		if _, notFound := errors.AsType[*ssmtypes.ParameterNotFound](err); !notFound {
-			return err
+			return retryableSSMError(err)
 		}
 		// The parameter was deleted out-of-band so fall back to (re)applying the
 		// blueprint value with the new settings.
@@ -155,7 +155,7 @@ func deleteTreeParameter(
 		if _, notFound := errors.AsType[*ssmtypes.ParameterNotFound](err); notFound {
 			return nil
 		}
-		return err
+		return retryableSSMError(err)
 	}
 	return nil
 }

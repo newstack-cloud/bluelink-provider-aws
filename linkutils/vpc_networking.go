@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -131,20 +132,67 @@ func ReconcileLinkNetworking(
 		)
 	}
 
-	// Lock the flex VPC to prevent concurrent updates to the same flex VPC from
-	// multiple links in the same blueprint.
+	// Scoped to what the reconciliation below actually shares, rather than to the whole
+	// flex VPC, and given up as soon as that reconciliation is done rather than with the
+	// phase. This prevents significant wait times of having actions queued up when waiting
+	// for other operations that can take multiple minutes when provisioning/updating flex VPCs
+	// powered by multiple underlying network resources.
+	lockName := networkingLockName(flexVPCResourceState.Name, activation)
 	err = input.ResourceService.AcquireResourceLock(
 		ctx,
 		&provider.AcquireResourceLockInput{
 			InstanceID:      instanceID,
-			ResourceName:    flexVPCResourceState.Name,
+			ResourceName:    lockName,
 			ProviderContext: providerCtx,
+			AcquiredBy:      input.LinkID,
 		},
 	)
 	if err != nil {
 		return nil, err
 	}
 
+	reconciled, reconcileErr := reconcileUnderNetworkingLock(
+		ctx,
+		ec2Service,
+		input,
+		activation,
+		flexVPCResourceState,
+		output,
+	)
+
+	releaseErr := input.ResourceService.ReleaseResourceLock(
+		ctx,
+		&provider.ReleaseResourceLockInput{
+			InstanceID:      instanceID,
+			ResourceName:    lockName,
+			ProviderContext: providerCtx,
+			AcquiredBy:      input.LinkID,
+		},
+	)
+
+	// The reconciliation's own error wins, a release that failed leaves the lock to
+	// be cleared with the phase.
+	if reconcileErr != nil {
+		return reconciled, reconcileErr
+	}
+
+	if releaseErr != nil {
+		return nil, releaseErr
+	}
+
+	return reconciled, nil
+}
+
+// The work the networking lock covers, and nothing else, so the caller can give
+// the lock up the moment it returns.
+func reconcileUnderNetworkingLock(
+	ctx context.Context,
+	ec2Service ec2service.Service,
+	input *provider.LinkUpdateIntermediaryResourcesInput,
+	activation NetworkingActivation,
+	flexVPCResourceState *state.ResourceState,
+	output *provider.LinkUpdateIntermediaryResourcesOutput,
+) (*provider.LinkUpdateIntermediaryResourcesOutput, error) {
 	if activation.AWSService != "" {
 		if activation.EndpointType == ec2types.VpcEndpointTypeGateway {
 			return reconcileGatewayEndpoint(
@@ -178,6 +226,33 @@ func ReconcileLinkNetworking(
 	}
 
 	return output, nil
+}
+
+// The lock key for a networking reconciliation, narrow enough that unrelated links do not
+// queue behind each other.
+func networkingLockName(flexVPCResourceName string, activation NetworkingActivation) string {
+	if activation.AWSService != "" {
+		return fmt.Sprintf(
+			"%s::endpoint::%s::%s",
+			flexVPCResourceName,
+			activation.EndpointType,
+			activation.AWSService,
+		)
+	}
+
+	if len(activation.TargetSecurityGroupIDs) > 0 {
+		targets := slices.Clone(activation.TargetSecurityGroupIDs)
+		slices.Sort(targets)
+		return fmt.Sprintf(
+			"%s::sgpair::%s",
+			flexVPCResourceName,
+			strings.Join(targets, ","),
+		)
+	}
+
+	// Nothing identifiable to narrow to, so fall back to the VPC rather than
+	// leaving concurrent callers unsynchronised.
+	return flexVPCResourceName
 }
 
 func reconcileServiceEndpoint(
