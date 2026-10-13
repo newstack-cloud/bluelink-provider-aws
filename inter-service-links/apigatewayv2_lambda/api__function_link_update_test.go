@@ -193,6 +193,9 @@ func (s *APIFunctionLinkUpdateSuite) Test_create_guarded_route_sets_authorizer()
 	s.Equal("auth-xyz", core.StringValue(rSpec.Fields["authorizerId"]))
 }
 
+// A function that names no authorizer is a public route by intent. The annotation reader
+// defaults authorizationType to CUSTOM, so this is the case that must not be mistaken for
+// a guarded route with a missing id.
 func (s *APIFunctionLinkUpdateSuite) Test_create_unguarded_route_omits_authorizer() {
 	loader := &testutils.MockAWSConfigLoader{}
 	rs := resourceservicemock.Create(resourceservicemock.WithDeployOutput(afDeployOutput()))
@@ -208,6 +211,33 @@ func (s *APIFunctionLinkUpdateSuite) Test_create_unguarded_route_omits_authorize
 	_, hasID := rSpec.Fields["authorizerId"]
 	s.False(hasType)
 	s.False(hasID)
+}
+
+// A function that names an authorization type but carries no authorizer id was meant to be
+// guarded, and deploying the route anyway would publish an open route in place of a guarded
+// one. The link fails before the route is created.
+func (s *APIFunctionLinkUpdateSuite) Test_create_refuses_guarded_route_with_missing_authorizer_id() {
+	for _, authorizationType := range []string{"JWT", "CUSTOM"} {
+		loader := &testutils.MockAWSConfigLoader{}
+		rs := resourceservicemock.Create(resourceservicemock.WithDeployOutput(afDeployOutput()))
+
+		fn := afFunctionInfo()
+		fn.ResourceWithResolvedSubs.Metadata.Annotations.Fields["aws.apigatewayv2.lambda.authorizationType"] =
+			core.MappingNodeFromString(authorizationType)
+
+		input := s.updateInput("HTTP")
+		input.ResourceBInfo = fn
+		input.ResourceService = rs
+
+		_, err := testActions(loader).UpdateIntermediaryResources(context.Background(), input)
+		s.Require().Error(err, "authorization type %s", authorizationType)
+		s.Contains(err.Error(), afRouteKey)
+		s.Contains(err.Error(), "publicly accessible")
+
+		// The integration was deployed, the route it targets was not.
+		s.Require().Len(rs.DeployCalls, 1)
+		s.Equal("aws/apigatewayv2/integration", rs.DeployCalls[0].ResourceType)
+	}
 }
 
 func (s *APIFunctionLinkUpdateSuite) Test_create_websocket_two_way_deploys_responses() {

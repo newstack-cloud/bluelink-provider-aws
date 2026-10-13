@@ -3,6 +3,7 @@ package apigatewayv2lambda
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/newstack-cloud/bluelink-provider-aws/linkutils"
 	"github.com/newstack-cloud/bluelink-provider-aws/utils"
@@ -14,24 +15,13 @@ import (
 
 const lambdaAnnotationPrefix = "aws.apigatewayv2.lambda"
 
-func (l *apiFunctionLinkActions) UpdateResourceA(
+func (l *apiFunctionLinkActions) UpdateLinkedResources(
 	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
+	input *provider.LinkUpdateLinkedResourcesInput,
+) (*provider.LinkUpdateLinkedResourcesOutput, error) {
 	// The API is not modified by this link; the integration, route and permission are managed
 	// as intermediaries in UpdateIntermediaryResources.
-	return &provider.LinkUpdateResourceOutput{
-		LinkData: core.MappingNodeFields(),
-	}, nil
-}
-
-func (l *apiFunctionLinkActions) UpdateResourceB(
-	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
-	// The function is not modified by this link; the invoke permission is a separate,
-	// link-owned aws/lambda/permission intermediary handled in UpdateIntermediaryResources.
-	return &provider.LinkUpdateResourceOutput{
+	return &provider.LinkUpdateLinkedResourcesOutput{
 		LinkData: core.MappingNodeFields(),
 	}, nil
 }
@@ -265,10 +255,15 @@ func (d *apiFunctionDeployment) deployRoute(
 	ctx context.Context,
 	integrationID string,
 ) (*state.LinkIntermediaryResourceState, error) {
+	spec, err := routeSpec(d.apiID, integrationID, d.annotations)
+	if err != nil {
+		return nil, err
+	}
+
 	return d.deploy(
 		ctx,
 		d.intermediaries.route,
-		routeSpec(d.apiID, integrationID, d.annotations),
+		spec,
 		map[string]*core.MappingNode{"apiId": core.MappingNodeFromString(d.apiID)},
 	)
 }
@@ -368,19 +363,47 @@ func (d *apiFunctionDeployment) output(
 }
 
 // Builds the route spec, attaching the authorizer (authorizationType + authorizerId)
-// when the route function names one. Without an authorizerId the route is left open
-// (authorizationType NONE, the API Gateway default).
-func routeSpec(apiID, integrationID string, annotations *apiLinkAnnotations) *core.MappingNode {
+// when the route function names one.
+func routeSpec(
+	apiID string,
+	integrationID string,
+	annotations *apiLinkAnnotations,
+) (*core.MappingNode, error) {
 	spec := core.MappingNodeFields(
 		"apiId", core.MappingNodeFromString(apiID),
 		"routeKey", core.MappingNodeFromString(annotations.routeKey),
 		"target", core.MappingNodeFromString("integrations/"+integrationID),
 	)
-	if annotations.authorizerID != "" {
-		spec.Fields["authorizationType"] = core.MappingNodeFromString(annotations.authorizationType)
-		spec.Fields["authorizerId"] = core.MappingNodeFromString(annotations.authorizerID)
+
+	if annotations.authorizerID == "" {
+		if annotations.authorizationTypeSet && requiresAuthorizer(annotations.authorizationType) {
+			return nil, fmt.Errorf(
+				"route %q declares authorization type %q but no authorizer id was provided; "+
+					"refusing to deploy the route without the authorizer it names, which would "+
+					"leave it publicly accessible",
+				annotations.routeKey,
+				annotations.authorizationType,
+			)
+		}
+
+		return spec, nil
 	}
-	return spec
+
+	spec.Fields["authorizationType"] = core.MappingNodeFromString(annotations.authorizationType)
+	spec.Fields["authorizerId"] = core.MappingNodeFromString(annotations.authorizerID)
+	return spec, nil
+}
+
+// Whether an authorization type names an authorizer that has to exist for the route to be
+// guarded. NONE is API Gateway's open default, and IAM and AWS_IAM are enforced by the
+// service without one.
+func requiresAuthorizer(authorizationType string) bool {
+	switch strings.ToUpper(authorizationType) {
+	case "", "NONE", "AWS_IAM", "IAM":
+		return false
+	default:
+		return true
+	}
 }
 
 func integrationSpec(

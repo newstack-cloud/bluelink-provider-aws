@@ -119,6 +119,10 @@ func stageTableFunctionNewResourcesTestCase() plugintestutils.LinkChangeStagingT
 					esmLeaf("functionArn"),
 					"processStreamFunctionExecutionRole",
 				},
+
+				// The stream this link needs the table to have, declared before the
+				// link runs so the framework knows the table is waiting on it.
+				ResourceDataMappings: tfDeclaredStreamContributions(),
 			},
 		},
 	}
@@ -170,6 +174,10 @@ func stageTableFunctionArnChangesTestCase() plugintestutils.LinkChangeStagingTes
 					{FieldPath: esmLeaf("eventSourceArn"), NewValue: core.MappingNodeFromString(esmStreamARN)},
 					{FieldPath: esmLeaf("functionArn"), NewValue: core.MappingNodeFromString(esmFunctionARN)},
 				},
+
+				// The stream this link needs the table to have, declared before the
+				// link runs so the framework knows the table is waiting on it.
+				ResourceDataMappings: tfDeclaredStreamContributions(),
 			},
 		},
 	}
@@ -229,6 +237,10 @@ func stageTableFunctionNoChangesTestCase() plugintestutils.LinkChangeStagingTest
 					esmLeaf("eventSourceArn"),
 					esmLeaf("functionArn"),
 				},
+
+				// The stream this link needs the table to have, declared before the
+				// link runs so the framework knows the table is waiting on it.
+				ResourceDataMappings: tfDeclaredStreamContributions(),
 			},
 		},
 	}
@@ -236,4 +248,11 @@ func stageTableFunctionNoChangesTestCase() plugintestutils.LinkChangeStagingTest
 
 func TestTableFunctionLinkStageChangesSuite(t *testing.T) {
 	suite.Run(t, new(TableFunctionLinkStageChangesSuite))
+}
+
+// The stream specification this link declares it will contribute to the table.
+func tfDeclaredStreamContributions() map[string]string {
+	return map[string]string{
+		"ordersTable::spec.streamSpecification.streamViewType": "contributions[0]",
+	}
 }

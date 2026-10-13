@@ -12,40 +12,29 @@ import (
 	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/pluginutils"
 )
 
-// UpdateResourceA is a no-op: placing a function does not modify the VPC. The
-// security-group rules a placed function needs to reach its targets are opened by the
-// access links between the function and those targets.
-func (l *vpcFunctionLinkActions) UpdateResourceA(
-	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
-	return &provider.LinkUpdateResourceOutput{
-		LinkData: core.MappingNodeFields(),
-	}, nil
-}
-
-// UpdateResourceB sets (or, on destroy, clears) the Lambda function's VpcConfig so it
+// UpdateLinkedResources sets (or, on destroy, clears) the Lambda function's VpcConfig so it
 // runs attached to the flex VPC. Subnets are selected from the VPC's computed outputs by
 // the aws.flexvpc.lambda.subnetType tier, and the VPC's Bluelink-managed security group is
-// attached.
-func (l *vpcFunctionLinkActions) UpdateResourceB(
+// attached. The VPC itself is not written: the security-group rules a placed function needs
+// to reach its targets are opened by the access links between the function and those targets.
+func (l *vpcFunctionLinkActions) UpdateLinkedResources(
 	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
+	input *provider.LinkUpdateLinkedResourcesInput,
+) (*provider.LinkUpdateLinkedResourcesOutput, error) {
 	providerCtx := provider.NewProviderContextFromLinkContext(input.LinkContext, "aws")
 	lambdaService, err := l.getLambdaService(ctx, providerCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	functionARN, hasFunctionARN := utils.ExtractARNFromResourceInfo(input.ResourceInfo)
+	functionARN, hasFunctionARN := utils.ExtractARNFromResourceInfo(input.ResourceBInfo)
 	if !hasFunctionARN {
 		return nil, fmt.Errorf(
 			"function ARN could not be retrieved from the %q function resource",
-			pluginutils.GetResourceName(input.ResourceInfo),
+			pluginutils.GetResourceName(input.ResourceBInfo),
 		)
 	}
-	functionName := pluginutils.GetResourceName(input.ResourceInfo)
+	functionName := pluginutils.GetResourceName(input.ResourceBInfo)
 
 	ec2Service, err := l.getEC2Service(ctx, providerCtx)
 	if err != nil {
@@ -54,13 +43,13 @@ func (l *vpcFunctionLinkActions) UpdateResourceB(
 
 	// The flex VPC is the link's other resource; its computed subnets and topology
 	// are read from its resource state (populated for create and reference-mode).
-	flexVPCState := input.OtherResourceInfo.CurrentResourceState.SpecData
-	identity, err := workloadIdentity(flexVPCState, functionName, input.ResourceInfo.InstanceID)
+	flexVPCState := input.ResourceAInfo.CurrentResourceState.SpecData
+	identity, err := workloadIdentity(flexVPCState, functionName, input.ResourceBInfo.InstanceID)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"cannot place function %q in flex VPC %q: %w",
 			functionName,
-			pluginutils.GetResourceName(input.OtherResourceInfo),
+			pluginutils.GetResourceName(input.ResourceAInfo),
 			err,
 		)
 	}
@@ -88,20 +77,20 @@ func (l *vpcFunctionLinkActions) UpdateResourceB(
 			return nil, err
 		}
 
-		return &provider.LinkUpdateResourceOutput{
+		return &provider.LinkUpdateLinkedResourcesOutput{
 			LinkData:             core.MappingNodeFields(functionName, core.MappingNodeFields()),
 			ResourceDataMappings: map[string]string{},
 		}, nil
 	}
 
-	subnetType := subnetTypeAnnotation(input.ResourceInfo)
+	subnetType := subnetTypeAnnotation(input.ResourceBInfo)
 
 	subnetIDs, err := subnetIDsByTier(flexVPCState, subnetType)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"cannot place function %q in flex VPC %q: %w",
 			functionName,
-			pluginutils.GetResourceName(input.OtherResourceInfo),
+			pluginutils.GetResourceName(input.ResourceAInfo),
 			err,
 		)
 	}
@@ -113,14 +102,14 @@ func (l *vpcFunctionLinkActions) UpdateResourceB(
 		return nil, fmt.Errorf(
 			"cannot create a security group for function %q in flex VPC %q: %w",
 			functionName,
-			pluginutils.GetResourceName(input.OtherResourceInfo),
+			pluginutils.GetResourceName(input.ResourceAInfo),
 			err,
 		)
 	}
 
 	// Reach outside the VPC is declared, not derived from links, since the public
 	// internet is not a resource the link graph can name.
-	egress, err := resolveEgressPlan(input.ResourceInfo, flexVPCState, subnetType)
+	egress, err := resolveEgressPlan(input.ResourceBInfo, flexVPCState, subnetType)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"cannot resolve outbound access for function %q: %w",
@@ -243,8 +232,8 @@ func vpcConfigLinkOutput(
 	functionName string,
 	subnetIDs, securityGroupIDs []string,
 	ipv6AllowedForDualStack bool,
-) *provider.LinkUpdateResourceOutput {
-	return &provider.LinkUpdateResourceOutput{
+) *provider.LinkUpdateLinkedResourcesOutput {
+	return &provider.LinkUpdateLinkedResourcesOutput{
 		LinkData: core.MappingNodeFields(
 			functionName,
 			core.MappingNodeFields(

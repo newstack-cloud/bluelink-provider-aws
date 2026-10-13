@@ -107,6 +107,12 @@ func stageParameterTreeDefaultEnvVarNameTestCase() plugintestutils.LinkChangeSta
 					},
 				},
 				FieldChangesKnownOnDeploy: []string{"apiFunctionExecutionRole"},
+
+				// What the link will contribute to the function, declared before it
+				// runs so the framework knows the function is waiting on it.
+				ResourceDataMappings: map[string]string{
+					"apiFunction::spec.environment.variables[\"" + fptDefaultEnvVarName + "\"]": "apiFunction.environmentVariables[\"" + fptDefaultEnvVarName + "\"]",
+				},
 			},
 		},
 	}

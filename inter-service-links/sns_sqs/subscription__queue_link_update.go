@@ -12,27 +12,13 @@ import (
 	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/pluginutils"
 )
 
-func (l *subscriptionQueueLinkActions) UpdateResourceA(
+func (l *subscriptionQueueLinkActions) UpdateLinkedResources(
 	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
+	input *provider.LinkUpdateLinkedResourcesInput,
+) (*provider.LinkUpdateLinkedResourcesOutput, error) {
 	// The subscription is not modified by this link; it owns the topic -> queue wiring
 	// and all of its configuration.
-	return &provider.LinkUpdateResourceOutput{
-		LinkData: &core.MappingNode{
-			Fields: map[string]*core.MappingNode{},
-		},
-	}, nil
-}
-
-func (l *subscriptionQueueLinkActions) UpdateResourceB(
-	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
-	// The queue is not modified by this link; the send-message permission is a separate,
-	// link-owned aws/sqs/queueInlinePolicy intermediary handled in
-	// UpdateIntermediaryResources.
-	return &provider.LinkUpdateResourceOutput{
+	return &provider.LinkUpdateLinkedResourcesOutput{
 		LinkData: &core.MappingNode{
 			Fields: map[string]*core.MappingNode{},
 		},

@@ -3,6 +3,7 @@
 package lambdards
 
 import (
+	"fmt"
 	"maps"
 	"testing"
 
@@ -100,6 +101,9 @@ func (s *FunctionClusterLinkStageChangesSuite) Test_stage_changes() {
 					NewFields: []*provider.FieldChange{
 						{FieldPath: fcStageHostPath, NewValue: core.MappingNodeFromString(testClusterEndpoint)},
 					},
+
+					// The variables this link declares it will contribute.
+					ResourceDataMappings: fcDeclaredContributions(),
 				},
 			},
 		},
@@ -118,6 +122,9 @@ func (s *FunctionClusterLinkStageChangesSuite) Test_stage_changes() {
 						{FieldPath: fcStageHostPath, NewValue: core.MappingNodeFromString(testClusterEndpoint)},
 						{FieldPath: fcStageReaderPath, NewValue: core.MappingNodeFromString(testClusterReaderEndpoint)},
 					},
+
+					// The variables this link declares it will contribute.
+					ResourceDataMappings: fcDeclaredContributions(),
 				},
 			},
 		},
@@ -134,6 +141,9 @@ func (s *FunctionClusterLinkStageChangesSuite) Test_stage_changes() {
 						{FieldPath: fcStageHostPath, NewValue: core.MappingNodeFromString(testClusterEndpoint)},
 					},
 					FieldChangesKnownOnDeploy: []string{"apiFunctionExecutionRole"},
+
+					// The variables this link declares it will contribute.
+					ResourceDataMappings: fcDeclaredContributions(),
 				},
 			},
 		},
@@ -150,6 +160,9 @@ func (s *FunctionClusterLinkStageChangesSuite) Test_stage_changes() {
 						{FieldPath: fcStageHostPath, NewValue: core.MappingNodeFromString(testClusterEndpoint)},
 					},
 					FieldChangesKnownOnDeploy: []string{"apiFunctionNetworkAccess"},
+
+					// The variables this link declares it will contribute.
+					ResourceDataMappings: fcDeclaredContributions(),
 				},
 			},
 		},
@@ -176,6 +189,9 @@ func (s *FunctionClusterLinkStageChangesSuite) Test_stage_changes() {
 			ExpectedOutput: &provider.LinkStageChangesOutput{
 				Changes: &provider.LinkChanges{
 					UnchangedFields: []string{fcStageHostPath},
+
+					// The variables this link declares it will contribute.
+					ResourceDataMappings: fcDeclaredContributions(),
 				},
 			},
 		},
@@ -190,4 +206,16 @@ func (s *FunctionClusterLinkStageChangesSuite) Test_stage_changes() {
 
 func TestFunctionClusterLinkStageChangesSuite(t *testing.T) {
 	suite.Run(t, new(FunctionClusterLinkStageChangesSuite))
+}
+
+// The variables the cluster link declares it will contribute to the function, which staging
+// records so the framework knows the function is waiting on this link.
+func fcDeclaredContributions() map[string]string {
+	declared := map[string]string{}
+	for _, name := range clusterEnvVarNames(fcPrefix).all() {
+		declared[fmt.Sprintf("apiFunction::spec.environment.variables[%q]", name)] =
+			fmt.Sprintf("apiFunction.environmentVariables[%q]", name)
+	}
+
+	return declared
 }

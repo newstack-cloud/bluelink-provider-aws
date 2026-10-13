@@ -20,6 +20,10 @@ type lambdaServiceMock struct {
 
 	getFunctionOutput *lambda.GetFunctionOutput
 	getFunctionError  error
+	// Consumed one per call, so a test can express a function that is still updating
+	// on the first look and settled on a later one. The final entry is reused once the
+	// sequence runs out.
+	getFunctionOutputs []*lambda.GetFunctionOutput
 
 	getFunctionCodeSigningOutput *lambda.GetFunctionCodeSigningConfigOutput
 	getFunctionCodeSigningError  error
@@ -103,6 +107,8 @@ type lambdaServiceMock struct {
 	createEventSourceMappingError  error
 	getEventSourceMappingOutput    *lambda.GetEventSourceMappingOutput
 	getEventSourceMappingError     error
+	listEventSourceMappingsOutput  *lambda.ListEventSourceMappingsOutput
+	listEventSourceMappingsError   error
 	updateEventSourceMappingOutput *lambda.UpdateEventSourceMappingOutput
 	updateEventSourceMappingError  error
 	deleteEventSourceMappingOutput *lambda.DeleteEventSourceMappingOutput
@@ -147,6 +153,7 @@ type lambdaServiceMock struct {
 	// Event Source Mapping mock methods
 	MockCreateEventSourceMapping func(ctx context.Context, input *lambda.CreateEventSourceMappingInput) (*lambda.CreateEventSourceMappingOutput, error)
 	MockGetEventSourceMapping    func(ctx context.Context, input *lambda.GetEventSourceMappingInput) (*lambda.GetEventSourceMappingOutput, error)
+	MockListEventSourceMappings  func(ctx context.Context, input *lambda.ListEventSourceMappingsInput) (*lambda.ListEventSourceMappingsOutput, error)
 	MockUpdateEventSourceMapping func(ctx context.Context, input *lambda.UpdateEventSourceMappingInput) (*lambda.UpdateEventSourceMappingOutput, error)
 	MockDeleteEventSourceMapping func(ctx context.Context, input *lambda.DeleteEventSourceMappingInput) (*lambda.DeleteEventSourceMappingOutput, error)
 }
@@ -184,6 +191,15 @@ func NewMockService(t any) *lambdaServiceMock {
 func WithGetFunctionOutput(output *lambda.GetFunctionOutput) lambdaServiceMockOption {
 	return func(m *lambdaServiceMock) {
 		m.getFunctionOutput = output
+	}
+}
+
+// WithGetFunctionOutputSequence returns each output in turn on successive GetFunction
+// calls, so a test can drive a function through changing states rather than a single
+// fixed one. The last entry is returned for every call beyond the sequence.
+func WithGetFunctionOutputSequence(outputs ...*lambda.GetFunctionOutput) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.getFunctionOutputs = outputs
 	}
 }
 
@@ -528,9 +544,27 @@ func WithDeleteCodeSigningConfigError(err error) lambdaServiceMockOption {
 }
 
 // Event Source Mapping mock helpers.
+func WithCreateEventSourceMappingError(err error) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.createEventSourceMappingError = err
+	}
+}
+
 func WithCreateEventSourceMappingOutput(output *lambda.CreateEventSourceMappingOutput) lambdaServiceMockOption {
 	return func(m *lambdaServiceMock) {
 		m.createEventSourceMappingOutput = output
+	}
+}
+
+func WithListEventSourceMappingsOutput(output *lambda.ListEventSourceMappingsOutput) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.listEventSourceMappingsOutput = output
+	}
+}
+
+func WithListEventSourceMappingsError(err error) lambdaServiceMockOption {
+	return func(m *lambdaServiceMock) {
+		m.listEventSourceMappingsError = err
 	}
 }
 
@@ -616,6 +650,13 @@ func (m *lambdaServiceMock) GetFunction(
 	optFns ...func(*lambda.Options),
 ) (*lambda.GetFunctionOutput, error) {
 	m.RegisterCall(ctx, params)
+	if len(m.getFunctionOutputs) > 0 {
+		output := m.getFunctionOutputs[0]
+		if len(m.getFunctionOutputs) > 1 {
+			m.getFunctionOutputs = m.getFunctionOutputs[1:]
+		}
+		return output, m.getFunctionError
+	}
 	return m.getFunctionOutput, m.getFunctionError
 }
 
@@ -877,6 +918,17 @@ func (m *lambdaServiceMock) GetEventSourceMapping(ctx context.Context, input *la
 		return m.MockGetEventSourceMapping(ctx, input)
 	}
 	return m.getEventSourceMappingOutput, m.getEventSourceMappingError
+}
+
+func (m *lambdaServiceMock) ListEventSourceMappings(ctx context.Context, input *lambda.ListEventSourceMappingsInput, optFns ...func(*lambda.Options)) (*lambda.ListEventSourceMappingsOutput, error) {
+	m.RegisterCall(ctx, input)
+	if m.MockListEventSourceMappings != nil {
+		return m.MockListEventSourceMappings(ctx, input)
+	}
+	if m.listEventSourceMappingsOutput == nil && m.listEventSourceMappingsError == nil {
+		return &lambda.ListEventSourceMappingsOutput{}, nil
+	}
+	return m.listEventSourceMappingsOutput, m.listEventSourceMappingsError
 }
 
 func (m *lambdaServiceMock) UpdateEventSourceMapping(ctx context.Context, input *lambda.UpdateEventSourceMappingInput, optFns ...func(*lambda.Options)) (*lambda.UpdateEventSourceMappingOutput, error) {

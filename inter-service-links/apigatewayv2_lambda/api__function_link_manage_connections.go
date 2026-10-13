@@ -48,15 +48,6 @@ func (l *apiFunctionLinkActions) reconcileManageConnectionsGrant(
 		return nil, nil, err
 	}
 
-	if err := input.ResourceService.AcquireResourceLock(ctx, &provider.AcquireResourceLockInput{
-		InstanceID:      pluginutils.GetInstanceID(input.ResourceBInfo),
-		ResourceName:    setupCtx.RoleResourceName,
-		ProviderContext: providerCtx,
-		AcquiredBy:      input.LinkID,
-	}); err != nil {
-		return nil, nil, err
-	}
-
 	iamService, err := l.getIamService(ctx, providerCtx)
 	if err != nil {
 		return nil, nil, err
@@ -65,21 +56,41 @@ func (l *apiFunctionLinkActions) reconcileManageConnectionsGrant(
 	sid := manageConnectionsSID(input.ResourceBInfo)
 
 	if isDestroy || !applicable {
-		if _, err := linkutils.ReconcileRoleAccessPolicy(ctx, iamService, linkutils.RoleAccessGrant{
-			RoleName: setupCtx.RoleName,
-			SID:      sid,
-		}); err != nil {
+		if _, err := linkutils.GrantRoleAccessUnderLock(
+			ctx,
+			linkutils.RoleAccessLockFor(
+				input.ResourceService,
+				input.LinkID,
+				input.ResourceBInfo,
+				setupCtx,
+				providerCtx,
+			),
+			iamService,
+			linkutils.RoleAccessGrant{
+				RoleName: setupCtx.RoleName,
+				SID:      sid,
+			}); err != nil {
 			return nil, nil, err
 		}
 		return core.MappingNodeFields(), map[string]string{}, nil
 	}
 
 	sourceARN := manageConnectionsSourceARN(region, account, apiID, annotations.manageConnectionsStage)
-	result, err := linkutils.ReconcileRoleAccessPolicy(ctx, iamService, linkutils.RoleAccessGrant{
-		RoleName:  setupCtx.RoleName,
-		SID:       sid,
-		Statement: manageConnectionsStatement(sid, sourceARN),
-	})
+	result, err := linkutils.GrantRoleAccessUnderLock(
+		ctx,
+		linkutils.RoleAccessLockFor(
+			input.ResourceService,
+			input.LinkID,
+			input.ResourceBInfo,
+			setupCtx,
+			providerCtx,
+		),
+		iamService,
+		linkutils.RoleAccessGrant{
+			RoleName:  setupCtx.RoleName,
+			SID:       sid,
+			Statement: manageConnectionsStatement(sid, sourceARN),
+		})
 	if err != nil {
 		if errors.Is(err, linkutils.ErrAccessPolicyBudgetExhausted) {
 			return nil, nil, fmt.Errorf(

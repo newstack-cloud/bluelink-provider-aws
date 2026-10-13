@@ -69,23 +69,6 @@ func fsGetFunctionOutput(vars map[string]string) *lambda.GetFunctionOutput {
 	}
 }
 
-func (s *FunctionSecretLinkUpdateSuite) Test_update_resource_a_env_vars() {
-	loader := &testutils.MockAWSConfigLoader{}
-
-	testCases := []plugintestutils.LinkUpdateResourceTestCase[
-		*aws.Config, lambdaservice.Service, *aws.Config, cloudcontrolservice.Service,
-	]{
-		functionSecretAddEnvVarTestCase(loader),
-		functionSecretRemoveEnvVarTestCase(loader),
-	}
-
-	plugintestutils.RunLinkUpdateResourceTestCases(
-		testCases,
-		functionSecretLinkFactory(iammock.CreateIamServiceMock()),
-		&s.Suite,
-	)
-}
-
 func functionSecretAddEnvVarTestCase(
 	loader *testutils.MockAWSConfigLoader,
 ) plugintestutils.LinkUpdateResourceTestCase[
@@ -100,19 +83,18 @@ func functionSecretAddEnvVarTestCase(
 		*aws.Config, lambdaservice.Service, *aws.Config, cloudcontrolservice.Service,
 	]{
 		Name:                    "populates the secret ARN env var on the function",
-		Resource:                plugintestutils.LinkUpdateResourceA,
 		ServiceFactoryA:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
 		ConfigStoreA:            testConfigStore(loader),
 		ServiceFactoryB:         noopCloudControlServiceFactory,
 		ConfigStoreB:            testConfigStore(loader),
 		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeCreate,
-			ResourceInfo:      fsFunctionInfo(),
-			OtherResourceInfo: fsSecretInfo(),
-			LinkContext:       testLinkContext(),
+		Input: &provider.LinkUpdateLinkedResourcesInput{
+			LinkUpdateType: provider.LinkUpdateTypeCreate,
+			ResourceAInfo:  fsFunctionInfo(),
+			ResourceBInfo:  fsSecretInfo(),
+			LinkContext:    testLinkContext(),
 		},
-		ExpectedOutput: &provider.LinkUpdateResourceOutput{
+		ExpectedOutput: &provider.LinkUpdateLinkedResourcesOutput{
 			LinkData: core.MappingNodeFields(
 				"apiFunction",
 				core.MappingNodeFields(
@@ -161,19 +143,18 @@ func functionSecretRemoveEnvVarTestCase(
 		*aws.Config, lambdaservice.Service, *aws.Config, cloudcontrolservice.Service,
 	]{
 		Name:                    "removes the secret ARN env var on destroy",
-		Resource:                plugintestutils.LinkUpdateResourceA,
 		ServiceFactoryA:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
 		ConfigStoreA:            testConfigStore(loader),
 		ServiceFactoryB:         noopCloudControlServiceFactory,
 		ConfigStoreB:            testConfigStore(loader),
 		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeDestroy,
-			ResourceInfo:      fsFunctionInfo(),
-			OtherResourceInfo: fsSecretInfo(),
-			LinkContext:       testLinkContext(),
+		Input: &provider.LinkUpdateLinkedResourcesInput{
+			LinkUpdateType: provider.LinkUpdateTypeDestroy,
+			ResourceAInfo:  fsFunctionInfo(),
+			ResourceBInfo:  fsSecretInfo(),
+			LinkContext:    testLinkContext(),
 		},
-		ExpectedOutput: &provider.LinkUpdateResourceOutput{
+		ExpectedOutput: &provider.LinkUpdateLinkedResourcesOutput{
 			LinkData:             core.MappingNodeFields("apiFunction", core.MappingNodeFields()),
 			ResourceDataMappings: map[string]string{},
 		},

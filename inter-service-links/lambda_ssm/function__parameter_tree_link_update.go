@@ -12,79 +12,17 @@ import (
 	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/pluginutils"
 )
 
-func (l *functionParameterTreeLinkActions) UpdateResourceA(
+// The tree's path is read from state when the function's access is granted, so
+// neither resource is written by this link.
+func (l *functionParameterTreeLinkActions) UpdateLinkedResources(
 	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
-	providerCtx := provider.NewProviderContextFromLinkContext(input.LinkContext, "aws")
-	lambdaService, _, err := l.getLambdaServiceWithRegion(ctx, providerCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	annotations := getParameterLinkAnnotations(input.ResourceInfo, input.OtherResourceInfo)
-	if !annotations.populateEnvVars {
-		return &provider.LinkUpdateResourceOutput{
-			LinkData:             core.MappingNodeFields(),
-			ResourceDataMappings: map[string]string{},
-		}, nil
-	}
-
-	setupCtx, err := linkutils.SetupLinkFromLambdaFunction(
-		ctx,
-		&linkutils.LambdaLinkSetupData{
-			LambdaFuncResourceInfo: input.ResourceInfo,
-			LoadRoleInfo:           false,
-		},
-		lambdaService,
-		nil,
-		providerCtx,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	finalEnvVarName := parameterPathEnvVarName(annotations.envVarName, input.OtherResourceInfo)
-
-	if input.LinkUpdateType == provider.LinkUpdateTypeDestroy {
-		return l.removeParameterEnvVars(
-			ctx, input, setupCtx.FunctionARN, finalEnvVarName,
-			setupCtx.LambdaOutput, lambdaService,
-		)
-	}
-
-	// The environment variable holds the path prefix, since the runtime enumerates the
-	// tree via ssm:GetParametersByPath(path).
-	path, hasPath := extractParameterPath(input.OtherResourceInfo)
-	if !hasPath {
-		return nil, fmt.Errorf(
-			"parameter path could not be retrieved from the linked to %q SSM parameter tree resource",
-			pluginutils.GetResourceName(input.OtherResourceInfo),
-		)
-	}
-
-	return l.addParameterEnvVars(
-		ctx, input, setupCtx.FunctionARN, path, finalEnvVarName,
-		setupCtx.LambdaOutput, lambdaService,
-	)
-}
-
-func (l *functionParameterTreeLinkActions) UpdateResourceB(
-	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
-	// The parameter tree is not modified by this link; only the Lambda function and its
-	// execution role are updated to allow it to access the tree.
-	return &provider.LinkUpdateResourceOutput{
-		LinkData: &core.MappingNode{
-			Fields: map[string]*core.MappingNode{},
-		},
+	input *provider.LinkUpdateLinkedResourcesInput,
+) (*provider.LinkUpdateLinkedResourcesOutput, error) {
+	return &provider.LinkUpdateLinkedResourcesOutput{
+		LinkData: core.MappingNodeFields(),
 	}, nil
 }
 
-// UpdateIntermediaryResources grants (or revokes) the Lambda execution role access to every
-// SSM parameter beneath the tree's path prefix, then activates the SSM interface VPC
-// endpoint when the function is VPC-isolated.
 func (l *functionParameterTreeLinkActions) UpdateIntermediaryResources(
 	ctx context.Context,
 	input *provider.LinkUpdateIntermediaryResourcesInput,
@@ -109,18 +47,8 @@ func (l *functionParameterTreeLinkActions) UpdateIntermediaryResources(
 		return nil, err
 	}
 
-	// The execution role is shared by every link that grants it access, so lock it for the
-	// read-modify-write of its policy set.
-	err = input.ResourceService.AcquireResourceLock(ctx, &provider.AcquireResourceLockInput{
-		InstanceID:      pluginutils.GetInstanceID(input.ResourceAInfo),
-		ResourceName:    setupCtx.RoleResourceName,
-		ProviderContext: providerCtx,
-		AcquiredBy:      input.LinkID,
-	})
-	if err != nil {
-		return nil, err
-	}
-
+	// The role is locked around each grant below rather than for this whole
+	// phase, which goes on to do slow work the role has no part in.
 	iamService, err := l.getIamService(ctx, providerCtx)
 	if err != nil {
 		return nil, err
@@ -129,10 +57,20 @@ func (l *functionParameterTreeLinkActions) UpdateIntermediaryResources(
 	sid := createParameterTreeAccessSID(input.ResourceBInfo)
 
 	if input.LinkUpdateType == provider.LinkUpdateTypeDestroy {
-		if _, err := linkutils.ReconcileRoleAccessPolicy(ctx, iamService, linkutils.RoleAccessGrant{
-			RoleName: setupCtx.RoleName,
-			SID:      sid,
-		}); err != nil {
+		if _, err := linkutils.GrantRoleAccessUnderLock(
+			ctx,
+			linkutils.RoleAccessLockFor(
+				input.ResourceService,
+				input.LinkID,
+				input.ResourceAInfo,
+				setupCtx,
+				providerCtx,
+			),
+			iamService,
+			linkutils.RoleAccessGrant{
+				RoleName: setupCtx.RoleName,
+				SID:      sid,
+			}); err != nil {
 			return nil, err
 		}
 		// The endpoint this link provisioned is removed here; returning early would
@@ -165,11 +103,21 @@ func (l *functionParameterTreeLinkActions) UpdateIntermediaryResources(
 
 	annotations := getParameterLinkAnnotations(input.ResourceAInfo, input.ResourceBInfo)
 	statementResources := parameterPathStatementResources(pathARN)
-	result, err := linkutils.ReconcileRoleAccessPolicy(ctx, iamService, linkutils.RoleAccessGrant{
-		RoleName:  setupCtx.RoleName,
-		SID:       sid,
-		Statement: parameterPathAccessStatement(sid, statementResources, annotations.accessLevel),
-	})
+	result, err := linkutils.GrantRoleAccessUnderLock(
+		ctx,
+		linkutils.RoleAccessLockFor(
+			input.ResourceService,
+			input.LinkID,
+			input.ResourceAInfo,
+			setupCtx,
+			providerCtx,
+		),
+		iamService,
+		linkutils.RoleAccessGrant{
+			RoleName:  setupCtx.RoleName,
+			SID:       sid,
+			Statement: parameterPathAccessStatement(sid, statementResources, annotations.accessLevel),
+		})
 	if err != nil {
 		if errors.Is(err, linkutils.ErrAccessPolicyBudgetExhausted) {
 			return nil, fmt.Errorf(

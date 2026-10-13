@@ -4,139 +4,25 @@ import (
 	"context"
 	"fmt"
 	"sort"
-	"strconv"
 	"strings"
 
-	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/bluelink-provider-aws/linkutils"
-	lambdaservice "github.com/newstack-cloud/bluelink-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/core"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
 	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/pluginutils"
 )
 
-func (l *functionCacheLinkActions) UpdateResourceA(
+// The cache endpoint is read from state when the function's environment is built,
+// so neither resource is written by this link.
+func (l *functionCacheLinkActions) UpdateLinkedResources(
 	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
-	providerCtx := provider.NewProviderContextFromLinkContext(input.LinkContext, "aws")
-	lambdaService, _, err := l.getLambdaServiceWithRegion(ctx, providerCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	annotations := getCacheLinkAnnotations(input.ResourceInfo, input.OtherResourceInfo)
-	if !annotations.populateEnvVars {
-		return &provider.LinkUpdateResourceOutput{
-			LinkData:             core.MappingNodeFields(),
-			ResourceDataMappings: map[string]string{},
-		}, nil
-	}
-
-	setupCtx, err := linkutils.SetupLinkFromLambdaFunction(
-		ctx,
-		&linkutils.LambdaLinkSetupData{
-			LambdaFuncResourceInfo: input.ResourceInfo,
-			LoadRoleInfo:           false,
-		},
-		lambdaService,
-		nil,
-		providerCtx,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	prefix := cacheEnvVarPrefix(annotations.envVarPrefix, input.OtherResourceInfo)
-	envVarNames := cacheEnvVarNames(prefix)
-
-	if input.LinkUpdateType == provider.LinkUpdateTypeDestroy {
-		return l.removeCacheEnvVars(ctx, input, setupCtx.FunctionARN, envVarNames, setupCtx.LambdaOutput, lambdaService)
-	}
-
-	endpoint, hasEndpoint := extractCacheEndpoint(input.OtherResourceInfo)
-	if !hasEndpoint {
-		return nil, fmt.Errorf(
-			"endpoint could not be retrieved from the linked to %q ElastiCache replication group resource",
-			pluginutils.GetResourceName(input.OtherResourceInfo),
-		)
-	}
-
-	envVars := map[string]string{
-		envVarNames.host: endpoint,
-		envVarNames.port: strconv.Itoa(int(annotations.port)),
-	}
-
-	return l.addCacheEnvVars(ctx, input, setupCtx.FunctionARN, envVars, setupCtx.LambdaOutput, lambdaService)
-}
-
-func (l *functionCacheLinkActions) addCacheEnvVars(
-	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-	functionARN string,
-	envVars map[string]string,
-	currentFunctionConfig *types.FunctionConfiguration,
-	lambdaService lambdaservice.Service,
-) (*provider.LinkUpdateResourceOutput, error) {
-	if err := linkutils.UpdateLambdaEnvironmentVariables(
-		ctx, lambdaService, functionARN, currentFunctionConfig, envVars,
-	); err != nil {
-		return nil, err
-	}
-
-	functionName := pluginutils.GetResourceName(input.ResourceInfo)
-	envVarNodes := core.MappingNodeFields()
-	mappings := map[string]string{}
-	for _, name := range sortedKeys(envVars) {
-		envVarNodes.Fields[name] = core.MappingNodeFromString(envVars[name])
-		mappings[fmt.Sprintf("%s::spec.environment.variables[%q]", functionName, name)] =
-			fmt.Sprintf("%s.environmentVariables[%q]", functionName, name)
-	}
-
-	return &provider.LinkUpdateResourceOutput{
-		LinkData: core.MappingNodeFields(
-			functionName,
-			core.MappingNodeFields("environmentVariables", envVarNodes),
-		),
-		ResourceDataMappings: mappings,
+	input *provider.LinkUpdateLinkedResourcesInput,
+) (*provider.LinkUpdateLinkedResourcesOutput, error) {
+	return &provider.LinkUpdateLinkedResourcesOutput{
+		LinkData: core.MappingNodeFields(),
 	}, nil
 }
 
-func (l *functionCacheLinkActions) removeCacheEnvVars(
-	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-	functionARN string,
-	envVarNames cacheEnvVarNameSet,
-	currentFunctionConfig *types.FunctionConfiguration,
-	lambdaService lambdaservice.Service,
-) (*provider.LinkUpdateResourceOutput, error) {
-	if err := linkutils.RemoveLambdaEnvironmentVariables(
-		ctx, lambdaService, functionARN, currentFunctionConfig, envVarNames.all(),
-	); err != nil {
-		return nil, err
-	}
-	return &provider.LinkUpdateResourceOutput{
-		LinkData:             core.MappingNodeFields(pluginutils.GetResourceName(input.ResourceInfo), core.MappingNodeFields()),
-		ResourceDataMappings: map[string]string{},
-	}, nil
-}
-
-func (l *functionCacheLinkActions) UpdateResourceB(
-	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
-	// The ElastiCache replication group is not modified by this link; only the Lambda function and
-	// the security-group rules are updated so it can reach the cache.
-	return &provider.LinkUpdateResourceOutput{
-		LinkData: &core.MappingNode{
-			Fields: map[string]*core.MappingNode{},
-		},
-	}, nil
-}
-
-// UpdateIntermediaryResources opens the security-group rule so the function can reach the cache on
-// the cache port. (for IAM authentication, the elasticache:Connect grant is added in a follow-up
-// slice; on the password path there is no execution-role change.)
 func (l *functionCacheLinkActions) UpdateIntermediaryResources(
 	ctx context.Context,
 	input *provider.LinkUpdateIntermediaryResourcesInput,

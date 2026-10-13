@@ -40,6 +40,11 @@ func FunctionParameterPathLink(
 		return &providerv1.LinkDefinition{
 			ResourceTypeA: "aws/lambda/function",
 			ResourceTypeB: "aws/ssm/parameterPath",
+			// Neither resource is written by this link. The function's environment
+			// variable is contributed rather than written, and the framework applies
+			// what every link contributing to the function needs it to say as one
+			// update, so no exclusive lock on the function is taken here.
+			Modifies: provider.LinkModifiesNeither,
 			// ReconcileLinkNetworking reads the function's live VPC attachment, so the
 			// placement link that establishes it has to run first.
 			Requires: linkutils.NetworkAttachedRequired(provider.LinkPriorityResourceA),
@@ -49,12 +54,12 @@ func FunctionParameterPathLink(
 			PriorityResource: provider.LinkPriorityResourceNone,
 			PlainTextSummary: "A link that grants a Lambda function access to all SSM parameters " +
 				"beneath a path prefix.",
-			FormattedDescription:            string(description),
-			AnnotationDefinitions:           functionParameterPathLinkAnnotations(),
-			StageChangesFunc:                actions.StageChanges,
-			UpdateResourceAFunc:             actions.UpdateResourceA,
-			UpdateResourceBFunc:             actions.UpdateResourceB,
-			UpdateIntermediaryResourcesFunc: actions.UpdateIntermediaryResources,
+			FormattedDescription:             string(description),
+			AnnotationDefinitions:            functionParameterPathLinkAnnotations(),
+			StageChangesFunc:                 actions.StageChanges,
+			ProduceResourceContributionsFunc: actions.ProduceResourceContributions,
+			UpdateLinkedResourcesFunc:        actions.UpdateLinkedResources,
+			UpdateIntermediaryResourcesFunc:  actions.UpdateIntermediaryResources,
 		}
 	}
 }

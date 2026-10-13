@@ -20,15 +20,8 @@ func (l *functionCacheLinkActions) reconcileConnectGrant(
 	annotations *cacheLinkAnnotations,
 	region string,
 ) (*provider.LinkUpdateIntermediaryResourcesOutput, error) {
-	if err := input.ResourceService.AcquireResourceLock(ctx, &provider.AcquireResourceLockInput{
-		InstanceID:      pluginutils.GetInstanceID(input.ResourceAInfo),
-		ResourceName:    setupCtx.RoleResourceName,
-		ProviderContext: providerCtx,
-		AcquiredBy:      input.LinkID,
-	}); err != nil {
-		return nil, err
-	}
-
+	// The role is locked around each grant below rather than for this whole
+	// phase, which goes on to do slow work the role has no part in.
 	iamService, err := l.getIamService(ctx, providerCtx)
 	if err != nil {
 		return nil, err
@@ -37,10 +30,20 @@ func (l *functionCacheLinkActions) reconcileConnectGrant(
 	sid := createConnectSID(input.ResourceBInfo)
 
 	if input.LinkUpdateType == provider.LinkUpdateTypeDestroy {
-		if _, err := linkutils.ReconcileRoleAccessPolicy(ctx, iamService, linkutils.RoleAccessGrant{
-			RoleName: setupCtx.RoleName,
-			SID:      sid,
-		}); err != nil {
+		if _, err := linkutils.GrantRoleAccessUnderLock(
+			ctx,
+			linkutils.RoleAccessLockFor(
+				input.ResourceService,
+				input.LinkID,
+				input.ResourceAInfo,
+				setupCtx,
+				providerCtx,
+			),
+			iamService,
+			linkutils.RoleAccessGrant{
+				RoleName: setupCtx.RoleName,
+				SID:      sid,
+			}); err != nil {
 			return nil, err
 		}
 		return &provider.LinkUpdateIntermediaryResourcesOutput{LinkData: core.MappingNodeFields()}, nil
@@ -51,11 +54,21 @@ func (l *functionCacheLinkActions) reconcileConnectGrant(
 		return nil, err
 	}
 
-	result, err := linkutils.ReconcileRoleAccessPolicy(ctx, iamService, linkutils.RoleAccessGrant{
-		RoleName:  setupCtx.RoleName,
-		SID:       sid,
-		Statement: connectStatement(sid, connectResources),
-	})
+	result, err := linkutils.GrantRoleAccessUnderLock(
+		ctx,
+		linkutils.RoleAccessLockFor(
+			input.ResourceService,
+			input.LinkID,
+			input.ResourceAInfo,
+			setupCtx,
+			providerCtx,
+		),
+		iamService,
+		linkutils.RoleAccessGrant{
+			RoleName:  setupCtx.RoleName,
+			SID:       sid,
+			Statement: connectStatement(sid, connectResources),
+		})
 	if err != nil {
 		if errors.Is(err, linkutils.ErrAccessPolicyBudgetExhausted) {
 			return nil, fmt.Errorf(

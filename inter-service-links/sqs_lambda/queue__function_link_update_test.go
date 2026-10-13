@@ -165,9 +165,8 @@ func (s *QueueFunctionLinkUpdateSuite) Test_link_update_resources() {
 		*aws.Config,
 		lambdaservice.Service,
 	]{
-		queueFunctionUpdateResourceANoOpTestCase(loader),
-		queueFunctionUpdateResourceADestroyNoOpTestCase(loader),
-		queueFunctionUpdateResourceBNoOpTestCase(loader),
+		queueFunctionUpdateLinkedResourcesNoOpTestCase(loader),
+		queueFunctionUpdateLinkedResourcesDestroyNoOpTestCase(loader),
 	}
 
 	plugintestutils.RunLinkUpdateResourceTestCases(
@@ -177,7 +176,7 @@ func (s *QueueFunctionLinkUpdateSuite) Test_link_update_resources() {
 	)
 }
 
-func queueFunctionUpdateResourceANoOpTestCase(
+func queueFunctionUpdateLinkedResourcesNoOpTestCase(
 	loader *testutils.MockAWSConfigLoader,
 ) plugintestutils.LinkUpdateResourceTestCase[
 	*aws.Config,
@@ -192,24 +191,23 @@ func queueFunctionUpdateResourceANoOpTestCase(
 		lambdaservice.Service,
 	]{
 		Name:            "does not modify the queue (resourceA is a no-op)",
-		Resource:        plugintestutils.LinkUpdateResourceA,
 		ServiceFactoryA: noopCloudControlServiceFactory,
 		ConfigStoreA:    testConfigStore(loader),
 		ServiceFactoryB: lambdamock.CreateLambdaServiceMockFactory(),
 		ConfigStoreB:    testConfigStore(loader),
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeCreate,
-			ResourceInfo:      queueResourceInfo(),
-			OtherResourceInfo: queueFunctionResourceInfo(),
-			LinkContext:       testLinkContext(),
+		Input: &provider.LinkUpdateLinkedResourcesInput{
+			LinkUpdateType: provider.LinkUpdateTypeCreate,
+			ResourceAInfo:  queueResourceInfo(),
+			ResourceBInfo:  queueFunctionResourceInfo(),
+			LinkContext:    testLinkContext(),
 		},
-		ExpectedOutput: &provider.LinkUpdateResourceOutput{
+		ExpectedOutput: &provider.LinkUpdateLinkedResourcesOutput{
 			LinkData: core.MappingNodeFields(),
 		},
 	}
 }
 
-func queueFunctionUpdateResourceADestroyNoOpTestCase(
+func queueFunctionUpdateLinkedResourcesDestroyNoOpTestCase(
 	loader *testutils.MockAWSConfigLoader,
 ) plugintestutils.LinkUpdateResourceTestCase[
 	*aws.Config,
@@ -224,56 +222,18 @@ func queueFunctionUpdateResourceADestroyNoOpTestCase(
 		lambdaservice.Service,
 	]{
 		Name:            "does not modify the queue on destroy (resourceA is a no-op)",
-		Resource:        plugintestutils.LinkUpdateResourceA,
 		ServiceFactoryA: noopCloudControlServiceFactory,
 		ConfigStoreA:    testConfigStore(loader),
 		ServiceFactoryB: lambdamock.CreateLambdaServiceMockFactory(),
 		ConfigStoreB:    testConfigStore(loader),
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeDestroy,
-			ResourceInfo:      queueResourceInfo(),
-			OtherResourceInfo: queueFunctionResourceInfo(),
-			LinkContext:       testLinkContext(),
+		Input: &provider.LinkUpdateLinkedResourcesInput{
+			LinkUpdateType: provider.LinkUpdateTypeDestroy,
+			ResourceAInfo:  queueResourceInfo(),
+			ResourceBInfo:  queueFunctionResourceInfo(),
+			LinkContext:    testLinkContext(),
 		},
-		ExpectedOutput: &provider.LinkUpdateResourceOutput{
+		ExpectedOutput: &provider.LinkUpdateLinkedResourcesOutput{
 			LinkData: core.MappingNodeFields(),
-		},
-	}
-}
-
-func queueFunctionUpdateResourceBNoOpTestCase(
-	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.LinkUpdateResourceTestCase[
-	*aws.Config,
-	cloudcontrolservice.Service,
-	*aws.Config,
-	lambdaservice.Service,
-] {
-	lambdaSvc := lambdamock.CreateLambdaServiceMock()
-
-	return plugintestutils.LinkUpdateResourceTestCase[
-		*aws.Config,
-		cloudcontrolservice.Service,
-		*aws.Config,
-		lambdaservice.Service,
-	]{
-		Name:                    "does not modify the lambda function (resourceB is a no-op)",
-		Resource:                plugintestutils.LinkUpdateResourceB,
-		ServiceFactoryA:         noopCloudControlServiceFactory,
-		ConfigStoreA:            testConfigStore(loader),
-		ServiceFactoryB:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
-		ConfigStoreB:            testConfigStore(loader),
-		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeCreate,
-			ResourceInfo:      queueFunctionResourceInfo(),
-			OtherResourceInfo: queueResourceInfo(),
-			LinkContext:       testLinkContext(),
-		},
-		ExpectedOutput: &provider.LinkUpdateResourceOutput{
-			LinkData: &core.MappingNode{
-				Fields: map[string]*core.MappingNode{},
-			},
 		},
 	}
 }

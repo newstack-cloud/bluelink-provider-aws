@@ -14,24 +14,14 @@ import (
 
 const sqsAnnotationPrefix = "aws.s3.sqs"
 
-func (l *bucketQueueLinkActions) UpdateResourceA(
+func (l *bucketQueueLinkActions) UpdateLinkedResources(
 	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
+	input *provider.LinkUpdateLinkedResourcesInput,
+) (*provider.LinkUpdateLinkedResourcesOutput, error) {
 	// The bucket's notification configuration is written in the intermediary phase, the
 	// only phase with access to the resource service (for the bucket lock and the managed
 	// queue policy), and after the queue policy is set.
-	return &provider.LinkUpdateResourceOutput{LinkData: core.MappingNodeFields()}, nil
-}
-
-func (l *bucketQueueLinkActions) UpdateResourceB(
-	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
-	// The queue is not modified by this link; the send-message permission is a separate,
-	// link-owned aws/sqs/queueInlinePolicy intermediary handled in
-	// UpdateIntermediaryResources.
-	return &provider.LinkUpdateResourceOutput{LinkData: core.MappingNodeFields()}, nil
+	return &provider.LinkUpdateLinkedResourcesOutput{LinkData: core.MappingNodeFields()}, nil
 }
 
 // UpdateIntermediaryResources grants S3 permission to send messages to the queue and

@@ -11,16 +11,19 @@ import (
 // in link intermediary-resource tests. LookupResourceInState returns the configured
 // resource state; Deploy/Destroy record their calls and return configured results.
 type mockResourceService struct {
-	lookupResult *state.ResourceState
-	lookupError  error
-	deployOutput *provider.ResourceDeployOutput
-	deployError  error
-	destroyError error
+	lookupResult     *state.ResourceState
+	lookupError      error
+	deployOutput     *provider.ResourceDeployOutput
+	deployError      error
+	destroyError     error
+	releaseLockError error
 
 	// DeployCalls records every Deploy invocation, in order.
 	DeployCalls []DeployCall
 	// DestroyCalls records every Destroy invocation, in order.
 	DestroyCalls []DestroyCall
+	// ReleasedLocks records the resources ReleaseResourceLock was called for, in order.
+	ReleasedLocks []string
 
 	// lastLookupExternalID is the external ID of the most recent lookup, so a test can
 	// assert what a caller identified a resource by.
@@ -131,4 +134,22 @@ func (m *mockResourceService) AcquireResourceLock(
 	input *provider.AcquireResourceLockInput,
 ) error {
 	return nil
+}
+
+// Recorded rather than ignored: a link releasing its execution role before slow
+// networking work is behaviour worth being able to assert on, and a release sent
+// for the wrong resource would otherwise pass unnoticed.
+func (m *mockResourceService) ReleaseResourceLock(
+	ctx context.Context,
+	input *provider.ReleaseResourceLockInput,
+) error {
+	m.ReleasedLocks = append(m.ReleasedLocks, input.ResourceName)
+	return m.releaseLockError
+}
+
+// WithReleaseResourceLockError sets the error returned by ReleaseResourceLock, so a
+// test can assert which error a caller surfaces when both the work and the release
+// fail.
+func WithReleaseResourceLockError(err error) Option {
+	return func(m *mockResourceService) { m.releaseLockError = err }
 }

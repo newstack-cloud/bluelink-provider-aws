@@ -42,17 +42,22 @@ func FunctionEventBusLink(
 		return &providerv1.LinkDefinition{
 			ResourceTypeA: "aws/lambda/function",
 			ResourceTypeB: "aws/events/eventBus",
+			// Neither resource is written by this link. The function's environment
+			// variable is contributed rather than written, and the framework applies
+			// what every link contributing to the function needs it to say as one
+			// update, so no exclusive lock on the function is taken here.
+			Modifies: provider.LinkModifiesNeither,
 			// It doesn't matter which resource is created first; the Lambda function
 			// is configured to publish to the event bus once both exist.
-			Kind:                            provider.LinkKindSoft,
-			PriorityResource:                provider.LinkPriorityResourceNone,
-			PlainTextSummary:                "A link that grants a Lambda function permission to publish events to an EventBridge event bus.",
-			FormattedDescription:            string(description),
-			AnnotationDefinitions:           functionEventBusLinkAnnotations(),
-			StageChangesFunc:                actions.StageChanges,
-			UpdateResourceAFunc:             actions.UpdateResourceA,
-			UpdateResourceBFunc:             actions.UpdateResourceB,
-			UpdateIntermediaryResourcesFunc: actions.UpdateIntermediaryResources,
+			Kind:                             provider.LinkKindSoft,
+			PriorityResource:                 provider.LinkPriorityResourceNone,
+			PlainTextSummary:                 "A link that grants a Lambda function permission to publish events to an EventBridge event bus.",
+			FormattedDescription:             string(description),
+			AnnotationDefinitions:            functionEventBusLinkAnnotations(),
+			StageChangesFunc:                 actions.StageChanges,
+			ProduceResourceContributionsFunc: actions.ProduceResourceContributions,
+			UpdateLinkedResourcesFunc:        actions.UpdateLinkedResources,
+			UpdateIntermediaryResourcesFunc:  actions.UpdateIntermediaryResources,
 		}
 	}
 }

@@ -5,161 +5,25 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/bluelink-provider-aws/linkutils"
-	lambdaservice "github.com/newstack-cloud/bluelink-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/bluelink-provider-aws/utils"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/core"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
 	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/pluginutils"
 )
 
-func (l *functionEventBusLinkActions) UpdateResourceA(
+// The PutEvents grant on the function's execution role is applied in
+// UpdateIntermediaryResources; neither the function nor the event bus is written by
+// this link.
+func (l *functionEventBusLinkActions) UpdateLinkedResources(
 	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
-	lambdaService, err := l.getLambdaService(
-		ctx,
-		provider.NewProviderContextFromLinkContext(input.LinkContext, "aws"),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	annotations := getEventBusLinkAnnotations(input.ResourceInfo, input.OtherResourceInfo)
-	if !annotations.populateEnvVars {
-		return &provider.LinkUpdateResourceOutput{
-			LinkData:             core.MappingNodeFields(),
-			ResourceDataMappings: map[string]string{},
-		}, nil
-	}
-
-	setupCtx, err := linkutils.SetupLinkFromLambdaFunction(
-		ctx,
-		&linkutils.LambdaLinkSetupData{
-			LambdaFuncResourceInfo: input.ResourceInfo,
-			LoadRoleInfo:           false,
-		},
-		lambdaService,
-		nil,
-		provider.NewProviderContextFromLinkContext(input.LinkContext, "aws"),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	eventBusName, hasEventBusName := extractEventBusNameFromResourceInfo(input.OtherResourceInfo)
-	if !hasEventBusName {
-		return nil, fmt.Errorf(
-			"event bus name could not be retrieved from the linked to %q event bus resource",
-			pluginutils.GetResourceName(input.OtherResourceInfo),
-		)
-	}
-
-	if input.LinkUpdateType == provider.LinkUpdateTypeDestroy {
-		return l.removeFunctionEnvVars(
-			ctx, input, setupCtx.FunctionARN, annotations.envVarName, setupCtx.LambdaOutput, lambdaService,
-		)
-	}
-
-	return l.addFunctionEnvVars(
-		ctx, input, setupCtx.FunctionARN, eventBusName, annotations.envVarName, setupCtx.LambdaOutput, lambdaService,
-	)
-}
-
-func (l *functionEventBusLinkActions) addFunctionEnvVars(
-	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-	functionARN string,
-	eventBusName string,
-	envVarName string,
-	currentFunctionConfig *types.FunctionConfiguration,
-	lambdaService lambdaservice.Service,
-) (*provider.LinkUpdateResourceOutput, error) {
-	finalEnvVarName := eventBusEnvVarName(envVarName, input.OtherResourceInfo)
-	dataMappingKey := fmt.Sprintf(
-		"%s::spec.environment.variables[\"%s\"]",
-		input.ResourceInfo.ResourceName,
-		finalEnvVarName,
-	)
-	linkDataFieldPath := fmt.Sprintf(
-		"%s.environmentVariables[\"%s\"]",
-		input.ResourceInfo.ResourceName,
-		finalEnvVarName,
-	)
-
-	err := linkutils.UpdateLambdaEnvironmentVariables(
-		ctx,
-		lambdaService,
-		functionARN,
-		currentFunctionConfig,
-		map[string]string{finalEnvVarName: eventBusName},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return &provider.LinkUpdateResourceOutput{
-		LinkData: core.MappingNodeFields(
-			pluginutils.GetResourceName(input.ResourceInfo),
-			core.MappingNodeFields(
-				"environmentVariables",
-				core.MappingNodeFields(
-					finalEnvVarName,
-					core.MappingNodeFromString(eventBusName),
-				),
-			),
-		),
-		ResourceDataMappings: map[string]string{
-			dataMappingKey: linkDataFieldPath,
-		},
+	input *provider.LinkUpdateLinkedResourcesInput,
+) (*provider.LinkUpdateLinkedResourcesOutput, error) {
+	return &provider.LinkUpdateLinkedResourcesOutput{
+		LinkData: core.MappingNodeFields(),
 	}, nil
 }
 
-func (l *functionEventBusLinkActions) removeFunctionEnvVars(
-	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-	functionARN string,
-	envVarName string,
-	currentFunctionConfig *types.FunctionConfiguration,
-	lambdaService lambdaservice.Service,
-) (*provider.LinkUpdateResourceOutput, error) {
-	finalEnvVarName := eventBusEnvVarName(envVarName, input.OtherResourceInfo)
-
-	err := linkutils.RemoveLambdaEnvironmentVariables(
-		ctx, lambdaService, functionARN, currentFunctionConfig, []string{finalEnvVarName},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return &provider.LinkUpdateResourceOutput{
-		LinkData: core.MappingNodeFields(
-			pluginutils.GetResourceName(input.ResourceInfo),
-			core.MappingNodeFields(),
-		),
-		ResourceDataMappings: map[string]string{},
-	}, nil
-}
-
-func (l *functionEventBusLinkActions) UpdateResourceB(
-	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
-	// The event bus is not modified by the link; only the Lambda function and its
-	// execution role are updated to allow publishing events to the bus.
-	return &provider.LinkUpdateResourceOutput{
-		LinkData: &core.MappingNode{
-			Fields: map[string]*core.MappingNode{},
-		},
-	}, nil
-}
-
-// UpdateIntermediaryResources grants (or revokes) the Lambda execution role
-// permission to publish events to the event bus by packing a single IAM statement
-// into the role's allocator-managed policies. The role is an existing intermediary
-// in the blueprint, so the role lock is held while its shared policy set is
-// read-modified.
 func (l *functionEventBusLinkActions) UpdateIntermediaryResources(
 	ctx context.Context,
 	input *provider.LinkUpdateIntermediaryResourcesInput,
@@ -184,21 +48,8 @@ func (l *functionEventBusLinkActions) UpdateIntermediaryResources(
 		return nil, err
 	}
 
-	// The execution role is shared by every link that grants it access, so lock it
-	// for the read-modify-write of its policy set.
-	err = input.ResourceService.AcquireResourceLock(
-		ctx,
-		&provider.AcquireResourceLockInput{
-			InstanceID:      pluginutils.GetInstanceID(input.ResourceAInfo),
-			ResourceName:    setupCtx.RoleResourceName,
-			ProviderContext: providerCtx,
-			AcquiredBy:      input.LinkID,
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-
+	// The role is locked around each grant below rather than for this whole
+	// phase, which goes on to do slow work the role has no part in.
 	iamService, err := l.getIamService(ctx, providerCtx)
 	if err != nil {
 		return nil, err
@@ -207,10 +58,20 @@ func (l *functionEventBusLinkActions) UpdateIntermediaryResources(
 	sid := createPutEventsSID(input.ResourceBInfo)
 
 	if input.LinkUpdateType == provider.LinkUpdateTypeDestroy {
-		_, err := linkutils.ReconcileRoleAccessPolicy(ctx, iamService, linkutils.RoleAccessGrant{
-			RoleName: setupCtx.RoleName,
-			SID:      sid,
-		})
+		_, err := linkutils.GrantRoleAccessUnderLock(
+			ctx,
+			linkutils.RoleAccessLockFor(
+				input.ResourceService,
+				input.LinkID,
+				input.ResourceAInfo,
+				setupCtx,
+				providerCtx,
+			),
+			iamService,
+			linkutils.RoleAccessGrant{
+				RoleName: setupCtx.RoleName,
+				SID:      sid,
+			})
 		if err != nil {
 			return nil, err
 		}
@@ -227,11 +88,21 @@ func (l *functionEventBusLinkActions) UpdateIntermediaryResources(
 		)
 	}
 
-	result, err := linkutils.ReconcileRoleAccessPolicy(ctx, iamService, linkutils.RoleAccessGrant{
-		RoleName:  setupCtx.RoleName,
-		SID:       sid,
-		Statement: putEventsStatement(sid, eventBusARN),
-	})
+	result, err := linkutils.GrantRoleAccessUnderLock(
+		ctx,
+		linkutils.RoleAccessLockFor(
+			input.ResourceService,
+			input.LinkID,
+			input.ResourceAInfo,
+			setupCtx,
+			providerCtx,
+		),
+		iamService,
+		linkutils.RoleAccessGrant{
+			RoleName:  setupCtx.RoleName,
+			SID:       sid,
+			Statement: putEventsStatement(sid, eventBusARN),
+		})
 	if err != nil {
 		if errors.Is(err, linkutils.ErrAccessPolicyBudgetExhausted) {
 			return nil, fmt.Errorf(

@@ -17,7 +17,6 @@ import (
 	"github.com/newstack-cloud/bluelink-provider-aws/linkutils"
 	cloudcontrolservice "github.com/newstack-cloud/bluelink-provider-aws/services/cloudcontrol/service"
 	lambdaservice "github.com/newstack-cloud/bluelink-provider-aws/services/lambda/service"
-	"github.com/newstack-cloud/bluelink/libs/blueprint/core"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/state"
 	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/plugintestutils"
@@ -38,118 +37,6 @@ func lqGetFunctionOutput(vars map[string]string) *lambda.GetFunctionOutput {
 	}
 }
 
-func (s *FunctionQueueLinkUpdateSuite) Test_update_resource_a_env_vars() {
-	loader := &testutils.MockAWSConfigLoader{}
-
-	testCases := []plugintestutils.LinkUpdateResourceTestCase[
-		*aws.Config, lambdaservice.Service, *aws.Config, cloudcontrolservice.Service,
-	]{
-		lqAddEnvVarTestCase(loader),
-		lqRemoveEnvVarTestCase(loader),
-	}
-
-	plugintestutils.RunLinkUpdateResourceTestCases(
-		testCases, functionQueueLinkFactory(iammock.CreateIamServiceMock()), &s.Suite,
-	)
-}
-
-func lqAddEnvVarTestCase(
-	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.LinkUpdateResourceTestCase[
-	*aws.Config, lambdaservice.Service, *aws.Config, cloudcontrolservice.Service,
-] {
-	lambdaSvc := lambdamock.CreateLambdaServiceMock(
-		lambdamock.WithGetFunctionOutput(lqGetFunctionOutput(map[string]string{"EXISTING": "val"})),
-		lambdamock.WithUpdateFunctionConfigurationOutput(&lambda.UpdateFunctionConfigurationOutput{}),
-	)
-
-	return plugintestutils.LinkUpdateResourceTestCase[
-		*aws.Config, lambdaservice.Service, *aws.Config, cloudcontrolservice.Service,
-	]{
-		Name:                    "populates the queue URL env var on the function",
-		Resource:                plugintestutils.LinkUpdateResourceA,
-		ServiceFactoryA:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
-		ConfigStoreA:            testConfigStore(loader),
-		ServiceFactoryB:         noopCloudControlServiceFactory,
-		ConfigStoreB:            testConfigStore(loader),
-		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeCreate,
-			ResourceInfo:      lqFunctionInfo(nil),
-			OtherResourceInfo: lqQueueInfo(),
-			LinkContext:       testLinkContext(),
-		},
-		ExpectedOutput: &provider.LinkUpdateResourceOutput{
-			LinkData: core.MappingNodeFields(
-				"submitOrderFunction",
-				core.MappingNodeFields(
-					"environmentVariables",
-					core.MappingNodeFields(
-						"SQS_QUEUE_ordersQueue", core.MappingNodeFromString(lqQueueURL),
-					),
-				),
-			),
-			ResourceDataMappings: map[string]string{
-				"submitOrderFunction::spec.environment.variables[\"SQS_QUEUE_ordersQueue\"]": "submitOrderFunction.environmentVariables[\"SQS_QUEUE_ordersQueue\"]",
-			},
-		},
-		UpdateActionsCalled: map[string]any{
-			"UpdateFunctionConfiguration": func(arg any) bool {
-				in, ok := arg.(*lambda.UpdateFunctionConfigurationInput)
-				return ok && in.Environment != nil &&
-					in.Environment.Variables["EXISTING"] == "val" &&
-					in.Environment.Variables["SQS_QUEUE_ordersQueue"] == lqQueueURL
-			},
-		},
-	}
-}
-
-func lqRemoveEnvVarTestCase(
-	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.LinkUpdateResourceTestCase[
-	*aws.Config, lambdaservice.Service, *aws.Config, cloudcontrolservice.Service,
-] {
-	lambdaSvc := lambdamock.CreateLambdaServiceMock(
-		lambdamock.WithGetFunctionOutput(lqGetFunctionOutput(map[string]string{
-			"EXISTING": "val", "SQS_QUEUE_ordersQueue": lqQueueURL,
-		})),
-		lambdamock.WithUpdateFunctionConfigurationOutput(&lambda.UpdateFunctionConfigurationOutput{}),
-	)
-
-	return plugintestutils.LinkUpdateResourceTestCase[
-		*aws.Config, lambdaservice.Service, *aws.Config, cloudcontrolservice.Service,
-	]{
-		Name:                    "removes the queue env var on destroy",
-		Resource:                plugintestutils.LinkUpdateResourceA,
-		ServiceFactoryA:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
-		ConfigStoreA:            testConfigStore(loader),
-		ServiceFactoryB:         noopCloudControlServiceFactory,
-		ConfigStoreB:            testConfigStore(loader),
-		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeDestroy,
-			ResourceInfo:      lqFunctionInfo(nil),
-			OtherResourceInfo: lqQueueInfo(),
-			LinkContext:       testLinkContext(),
-		},
-		ExpectedOutput: &provider.LinkUpdateResourceOutput{
-			LinkData:             core.MappingNodeFields("submitOrderFunction", core.MappingNodeFields()),
-			ResourceDataMappings: map[string]string{},
-		},
-		UpdateActionsCalled: map[string]any{
-			"UpdateFunctionConfiguration": func(arg any) bool {
-				in, ok := arg.(*lambda.UpdateFunctionConfigurationInput)
-				if !ok || in.Environment == nil {
-					return false
-				}
-				_, hasQueue := in.Environment.Variables["SQS_QUEUE_ordersQueue"]
-				return in.Environment.Variables["EXISTING"] == "val" && !hasQueue
-			},
-		},
-	}
-}
-
-// The default access level grants sqs:SendMessage.
 func (s *FunctionQueueLinkUpdateSuite) Test_update_intermediary_resources_grants_send() {
 	loader := &testutils.MockAWSConfigLoader{}
 

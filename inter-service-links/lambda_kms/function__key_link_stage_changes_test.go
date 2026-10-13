@@ -122,6 +122,12 @@ func stageFunctionKeyEnvVarChangeTestCase() plugintestutils.LinkChangeStagingTes
 					},
 				},
 				FieldChangesKnownOnDeploy: []string{"encryptFunctionExecutionRole"},
+
+				// What the link will contribute to the function, declared before it
+				// runs so the framework knows the function is waiting on it.
+				ResourceDataMappings: map[string]string{
+					"encryptFunction::spec.environment.variables[\"" + fkStageEnvVarName + "\"]": "encryptFunction.environmentVariables[\"" + fkStageEnvVarName + "\"]",
+				},
 			},
 		},
 	}
@@ -158,6 +164,12 @@ func stageFunctionKeyNoChangesTestCase() plugintestutils.LinkChangeStagingTestCa
 			Changes: &provider.LinkChanges{
 				UnchangedFields: []string{
 					"encryptFunction.environmentVariables[\"" + fkStageEnvVarName + "\"]",
+				},
+
+				// What the link will contribute to the function, declared before it
+				// runs so the framework knows the function is waiting on it.
+				ResourceDataMappings: map[string]string{
+					"encryptFunction::spec.environment.variables[\"" + fkStageEnvVarName + "\"]": "encryptFunction.environmentVariables[\"" + fkStageEnvVarName + "\"]",
 				},
 			},
 		},

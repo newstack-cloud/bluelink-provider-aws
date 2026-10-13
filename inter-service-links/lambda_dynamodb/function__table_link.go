@@ -46,21 +46,27 @@ func FunctionDynamoDBTableLink(
 		return &providerv1.LinkDefinition{
 			ResourceTypeA: "aws/lambda/function",
 			ResourceTypeB: "aws/dynamodb/table",
+			// Neither resource is written by this link. The function's environment
+			// variable is contributed rather than written, and the framework applies
+			// what every link contributing to the function needs it to say as one
+			// update, so no exclusive lock on the function is taken here and links
+			// that contribute to it are not serialised against one another.
+			Modifies: provider.LinkModifiesNeither,
 			// ReconcileLinkNetworking reads the function's live VPC attachment, so the
 			// placement link that establishes it has to run first.
 			Requires: linkutils.NetworkAttachedRequired(provider.LinkPriorityResourceA),
 			// It doesn't matter which resource is created first,
 			// the lambda function will be configured to access the DynamoDB table
 			// once both have been created.
-			Kind:                            provider.LinkKindSoft,
-			PriorityResource:                provider.LinkPriorityResourceNone,
-			PlainTextSummary:                "A link that grants a Lambda function read/write access to a DynamoDB table.",
-			FormattedDescription:            string(description),
-			AnnotationDefinitions:           lambdaFunctionDynamoDBTableLinkAnnotations(),
-			StageChangesFunc:                actions.StageChanges,
-			UpdateResourceAFunc:             actions.UpdateResourceA,
-			UpdateResourceBFunc:             actions.UpdateResourceB,
-			UpdateIntermediaryResourcesFunc: actions.UpdateIntermediaryResources,
+			Kind:                             provider.LinkKindSoft,
+			PriorityResource:                 provider.LinkPriorityResourceNone,
+			PlainTextSummary:                 "A link that grants a Lambda function read/write access to a DynamoDB table.",
+			FormattedDescription:             string(description),
+			AnnotationDefinitions:            lambdaFunctionDynamoDBTableLinkAnnotations(),
+			StageChangesFunc:                 actions.StageChanges,
+			ProduceResourceContributionsFunc: actions.ProduceResourceContributions,
+			UpdateLinkedResourcesFunc:        actions.UpdateLinkedResources,
+			UpdateIntermediaryResourcesFunc:  actions.UpdateIntermediaryResources,
 		}
 	}
 }
@@ -97,22 +103,6 @@ func (l *lambdaFunctionDynamoDBTableLinkActions) getLambdaServiceWithRegion(
 	}
 
 	return l.lambdaServiceFactory(awsConfig, providerContext), awsConfig.Region, nil
-}
-
-func (l *lambdaFunctionDynamoDBTableLinkActions) getLambdaService(
-	ctx context.Context,
-	providerContext provider.Context,
-) (lambdaservice.Service, error) {
-	awsConfig, err := l.awsConfigStore.FromProviderContext(
-		ctx,
-		providerContext,
-		nil,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return l.lambdaServiceFactory(awsConfig, providerContext), nil
 }
 
 func (l *lambdaFunctionDynamoDBTableLinkActions) getIamService(

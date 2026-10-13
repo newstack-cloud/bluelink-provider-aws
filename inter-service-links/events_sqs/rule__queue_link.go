@@ -15,15 +15,17 @@ func RuleQueueLink() provider.Link {
 	actions := &ruleQueueLinkActions{}
 
 	return &providerv1.LinkDefinition{
-		ResourceTypeA:                   "aws/events/rule",
-		ResourceTypeB:                   "aws/sqs/queue",
+		ResourceTypeA: "aws/events/rule",
+		ResourceTypeB: "aws/sqs/queue",
+		// Neither resource in the relationship is written; the link does its work
+		// through intermediary resources.
+		Modifies:                        provider.LinkModifiesNeither,
 		Kind:                            provider.LinkKindSoft,
 		PriorityResource:                provider.LinkPriorityResourceNone,
 		PlainTextSummary:                "A link that grants an EventBridge rule permission to send messages to an SQS queue.",
 		FormattedDescription:            string(description),
 		StageChangesFunc:                actions.StageChanges,
-		UpdateResourceAFunc:             actions.UpdateResourceA,
-		UpdateResourceBFunc:             actions.UpdateResourceB,
+		UpdateLinkedResourcesFunc:       actions.UpdateLinkedResources,
 		UpdateIntermediaryResourcesFunc: actions.UpdateIntermediaryResources,
 	}
 }

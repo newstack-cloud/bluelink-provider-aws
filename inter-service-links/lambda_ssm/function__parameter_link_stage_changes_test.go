@@ -122,6 +122,12 @@ func stageFunctionParameterEnvVarChangeTestCase() plugintestutils.LinkChangeStag
 					},
 				},
 				FieldChangesKnownOnDeploy: []string{"apiFunctionExecutionRole"},
+
+				// What the link will contribute to the function, declared before it
+				// runs so the framework knows the function is waiting on it.
+				ResourceDataMappings: map[string]string{
+					"apiFunction::spec.environment.variables[\"" + fpStageEnvVarName + "\"]": "apiFunction.environmentVariables[\"" + fpStageEnvVarName + "\"]",
+				},
 			},
 		},
 	}
@@ -157,6 +163,12 @@ func stageFunctionParameterDefaultEnvVarNameTestCase() plugintestutils.LinkChang
 					},
 				},
 				FieldChangesKnownOnDeploy: []string{"apiFunctionExecutionRole"},
+
+				// What the link will contribute to the function, declared before it
+				// runs so the framework knows the function is waiting on it.
+				ResourceDataMappings: map[string]string{
+					"apiFunction::spec.environment.variables[\"SSM_PARAMETER_dbHost\"]": "apiFunction.environmentVariables[\"SSM_PARAMETER_dbHost\"]",
+				},
 			},
 		},
 	}
@@ -193,6 +205,12 @@ func stageFunctionParameterNoChangesTestCase() plugintestutils.LinkChangeStaging
 			Changes: &provider.LinkChanges{
 				UnchangedFields: []string{
 					"apiFunction.environmentVariables[\"" + fpStageEnvVarName + "\"]",
+				},
+
+				// What the link will contribute to the function, declared before it
+				// runs so the framework knows the function is waiting on it.
+				ResourceDataMappings: map[string]string{
+					"apiFunction::spec.environment.variables[\"" + fpStageEnvVarName + "\"]": "apiFunction.environmentVariables[\"" + fpStageEnvVarName + "\"]",
 				},
 			},
 		},

@@ -129,6 +129,12 @@ func stageFunctionFunctionEnvVarChangeTestCase() plugintestutils.LinkChangeStagi
 				// execution-role permission data for this link is only
 				// known at deploy time.
 				FieldChangesKnownOnDeploy: []string{"callerFunctionExecutionRole"},
+
+				// What the link will contribute to the function, declared before it
+				// runs so the framework knows the function is waiting on it.
+				ResourceDataMappings: map[string]string{
+					"callerFunction::spec.environment.variables[\"" + ffEnvVarName + "\"]": "callerFunction.environmentVariables[\"" + ffEnvVarName + "\"]",
+				},
 			},
 		},
 	}
@@ -175,6 +181,12 @@ func stageFunctionFunctionKnownOnDeployTestCase() plugintestutils.LinkChangeStag
 			Changes: &provider.LinkChanges{
 				FieldChangesKnownOnDeploy: []string{
 					"callerFunction.environmentVariables[\"" + ffEnvVarName + "\"]",
+				},
+
+				// What the link declares it will contribute, recorded so the
+				// framework knows the function is waiting on it.
+				ResourceDataMappings: map[string]string{
+					"callerFunction::spec.environment.variables[\"INVOKE_CALLEE\"]": "callerFunction.environmentVariables[\"INVOKE_CALLEE\"]",
 				},
 			},
 		},
@@ -233,6 +245,12 @@ func stageFunctionFunctionNoChangesTestCase() plugintestutils.LinkChangeStagingT
 			Changes: &provider.LinkChanges{
 				UnchangedFields: []string{
 					"callerFunction.environmentVariables[\"" + ffEnvVarName + "\"]",
+				},
+
+				// What the link will contribute to the function, declared before it
+				// runs so the framework knows the function is waiting on it.
+				ResourceDataMappings: map[string]string{
+					"callerFunction::spec.environment.variables[\"" + ffEnvVarName + "\"]": "callerFunction.environmentVariables[\"" + ffEnvVarName + "\"]",
 				},
 			},
 		},

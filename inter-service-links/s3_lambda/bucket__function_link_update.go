@@ -14,25 +14,14 @@ import (
 
 const lambdaAnnotationPrefix = "aws.s3.lambda"
 
-func (l *bucketFunctionLinkActions) UpdateResourceA(
+func (l *bucketFunctionLinkActions) UpdateLinkedResources(
 	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
+	input *provider.LinkUpdateLinkedResourcesInput,
+) (*provider.LinkUpdateLinkedResourcesOutput, error) {
 	// The bucket's notification configuration is written in the intermediary phase, the
 	// only phase with access to the resource service (for the bucket lock and the managed
 	// permission), and after the permission is granted.
-	return &provider.LinkUpdateResourceOutput{
-		LinkData: core.MappingNodeFields(),
-	}, nil
-}
-
-func (l *bucketFunctionLinkActions) UpdateResourceB(
-	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
-	// The function is not modified by this link; the invoke permission is a separate,
-	// link-owned aws/lambda/permission intermediary handled in UpdateIntermediaryResources.
-	return &provider.LinkUpdateResourceOutput{
+	return &provider.LinkUpdateLinkedResourcesOutput{
 		LinkData: core.MappingNodeFields(),
 	}, nil
 }

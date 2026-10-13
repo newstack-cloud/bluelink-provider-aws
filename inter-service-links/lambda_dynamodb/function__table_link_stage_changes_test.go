@@ -130,6 +130,11 @@ func stageFunctionTableEnvVarChangeTestCase() plugintestutils.LinkChangeStagingT
 				// The table is new (it has NewFields), so the execution-role
 				// permission data for this link is only known at deploy time.
 				FieldChangesKnownOnDeploy: []string{"processOrdersFunctionExecutionRole"},
+				// What the link will contribute to the function, declared before it
+				// runs so the framework knows the function is waiting on it.
+				ResourceDataMappings: map[string]string{
+					"processOrdersFunction::spec.environment.variables[\"" + ftEnvVarName + "\"]": "processOrdersFunction.environmentVariables[\"" + ftEnvVarName + "\"]",
+				},
 			},
 		},
 	}
@@ -183,6 +188,11 @@ func stageFunctionTableNoChangesTestCase() plugintestutils.LinkChangeStagingTest
 			Changes: &provider.LinkChanges{
 				UnchangedFields: []string{
 					"processOrdersFunction.environmentVariables[\"" + ftEnvVarName + "\"]",
+				},
+				// What the link will contribute to the function, declared before it
+				// runs so the framework knows the function is waiting on it.
+				ResourceDataMappings: map[string]string{
+					"processOrdersFunction::spec.environment.variables[\"" + ftEnvVarName + "\"]": "processOrdersFunction.environmentVariables[\"" + ftEnvVarName + "\"]",
 				},
 			},
 		},

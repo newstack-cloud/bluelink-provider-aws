@@ -12,27 +12,13 @@ import (
 	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/pluginutils"
 )
 
-func (l *ruleQueueLinkActions) UpdateResourceA(
+func (l *ruleQueueLinkActions) UpdateLinkedResources(
 	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
+	input *provider.LinkUpdateLinkedResourcesInput,
+) (*provider.LinkUpdateLinkedResourcesOutput, error) {
 	// The rule is not modified by this link; the rule -> queue wiring is modelled
 	// inline in the rule's targets[] and owned by the aws/events/rule resource.
-	return &provider.LinkUpdateResourceOutput{
-		LinkData: &core.MappingNode{
-			Fields: map[string]*core.MappingNode{},
-		},
-	}, nil
-}
-
-func (l *ruleQueueLinkActions) UpdateResourceB(
-	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
-	// The queue is not modified by this link; the send-message permission is a
-	// separate, link-owned aws/sqs/queueInlinePolicy intermediary handled in
-	// UpdateIntermediaryResources.
-	return &provider.LinkUpdateResourceOutput{
+	return &provider.LinkUpdateLinkedResourcesOutput{
 		LinkData: &core.MappingNode{
 			Fields: map[string]*core.MappingNode{},
 		},

@@ -50,21 +50,26 @@ func FunctionKeyLink(
 		return &providerv1.LinkDefinition{
 			ResourceTypeA: "aws/lambda/function",
 			ResourceTypeB: "aws/kms/key",
+			// Neither resource is written by this link. The function's environment
+			// variable is contributed rather than written, and the framework applies
+			// what every link contributing to the function needs it to say as one
+			// update, so no exclusive lock on the function is taken here.
+			Modifies: provider.LinkModifiesNeither,
 			// ReconcileLinkNetworking reads the function's live VPC attachment, so the
 			// placement link that establishes it has to run first.
 			Requires: linkutils.NetworkAttachedRequired(provider.LinkPriorityResourceA),
 			// It doesn't matter which resource is created first; the lambda function will
 			// be configured to use the key once both have been created.
-			Kind:                            provider.LinkKindSoft,
-			PriorityResource:                provider.LinkPriorityResourceNone,
-			PlainTextSummary:                "A link that grants a Lambda function cryptographic use of a KMS key.",
-			FormattedDescription:            string(description),
-			AnnotationDefinitions:           functionKeyLinkAnnotations(),
-			ValidateFunc:                    actions.Validate,
-			StageChangesFunc:                actions.StageChanges,
-			UpdateResourceAFunc:             actions.UpdateResourceA,
-			UpdateResourceBFunc:             actions.UpdateResourceB,
-			UpdateIntermediaryResourcesFunc: actions.UpdateIntermediaryResources,
+			Kind:                             provider.LinkKindSoft,
+			PriorityResource:                 provider.LinkPriorityResourceNone,
+			PlainTextSummary:                 "A link that grants a Lambda function cryptographic use of a KMS key.",
+			FormattedDescription:             string(description),
+			AnnotationDefinitions:            functionKeyLinkAnnotations(),
+			ValidateFunc:                     actions.Validate,
+			StageChangesFunc:                 actions.StageChanges,
+			ProduceResourceContributionsFunc: actions.ProduceResourceContributions,
+			UpdateLinkedResourcesFunc:        actions.UpdateLinkedResources,
+			UpdateIntermediaryResourcesFunc:  actions.UpdateIntermediaryResources,
 		}
 	}
 }

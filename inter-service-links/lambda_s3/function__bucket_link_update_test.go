@@ -73,23 +73,6 @@ func fbGetFunctionOutput(vars map[string]string) *lambda.GetFunctionOutput {
 	}
 }
 
-func (s *FunctionBucketLinkUpdateSuite) Test_update_resource_a_env_vars() {
-	loader := &testutils.MockAWSConfigLoader{}
-
-	testCases := []plugintestutils.LinkUpdateResourceTestCase[
-		*aws.Config, lambdaservice.Service, *aws.Config, cloudcontrolservice.Service,
-	]{
-		functionBucketAddEnvVarTestCase(loader),
-		functionBucketRemoveEnvVarTestCase(loader),
-	}
-
-	plugintestutils.RunLinkUpdateResourceTestCases(
-		testCases,
-		functionBucketLinkFactory(iammock.CreateIamServiceMock()),
-		&s.Suite,
-	)
-}
-
 func functionBucketAddEnvVarTestCase(
 	loader *testutils.MockAWSConfigLoader,
 ) plugintestutils.LinkUpdateResourceTestCase[
@@ -104,19 +87,18 @@ func functionBucketAddEnvVarTestCase(
 		*aws.Config, lambdaservice.Service, *aws.Config, cloudcontrolservice.Service,
 	]{
 		Name:                    "populates the bucket name env var on the function",
-		Resource:                plugintestutils.LinkUpdateResourceA,
 		ServiceFactoryA:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
 		ConfigStoreA:            testConfigStore(loader),
 		ServiceFactoryB:         noopCloudControlServiceFactory,
 		ConfigStoreB:            testConfigStore(loader),
 		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeCreate,
-			ResourceInfo:      fbFunctionInfo(),
-			OtherResourceInfo: fbBucketInfo(),
-			LinkContext:       testLinkContext(),
+		Input: &provider.LinkUpdateLinkedResourcesInput{
+			LinkUpdateType: provider.LinkUpdateTypeCreate,
+			ResourceAInfo:  fbFunctionInfo(),
+			ResourceBInfo:  fbBucketInfo(),
+			LinkContext:    testLinkContext(),
 		},
-		ExpectedOutput: &provider.LinkUpdateResourceOutput{
+		ExpectedOutput: &provider.LinkUpdateLinkedResourcesOutput{
 			LinkData: core.MappingNodeFields(
 				"processUploadsFunction",
 				core.MappingNodeFields(
@@ -165,19 +147,18 @@ func functionBucketRemoveEnvVarTestCase(
 		*aws.Config, lambdaservice.Service, *aws.Config, cloudcontrolservice.Service,
 	]{
 		Name:                    "removes the bucket name env var on destroy",
-		Resource:                plugintestutils.LinkUpdateResourceA,
 		ServiceFactoryA:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
 		ConfigStoreA:            testConfigStore(loader),
 		ServiceFactoryB:         noopCloudControlServiceFactory,
 		ConfigStoreB:            testConfigStore(loader),
 		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeDestroy,
-			ResourceInfo:      fbFunctionInfo(),
-			OtherResourceInfo: fbBucketInfo(),
-			LinkContext:       testLinkContext(),
+		Input: &provider.LinkUpdateLinkedResourcesInput{
+			LinkUpdateType: provider.LinkUpdateTypeDestroy,
+			ResourceAInfo:  fbFunctionInfo(),
+			ResourceBInfo:  fbBucketInfo(),
+			LinkContext:    testLinkContext(),
 		},
-		ExpectedOutput: &provider.LinkUpdateResourceOutput{
+		ExpectedOutput: &provider.LinkUpdateLinkedResourcesOutput{
 			LinkData:             core.MappingNodeFields("processUploadsFunction", core.MappingNodeFields()),
 			ResourceDataMappings: map[string]string{},
 		},

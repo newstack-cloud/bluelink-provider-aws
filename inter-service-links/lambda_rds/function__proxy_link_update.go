@@ -5,141 +5,25 @@ import (
 	"errors"
 	"fmt"
 	"sort"
-	"strconv"
 	"strings"
 
-	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/bluelink-provider-aws/linkutils"
-	lambdaservice "github.com/newstack-cloud/bluelink-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/core"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
 	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/pluginutils"
 )
 
-func (l *functionProxyLinkActions) UpdateResourceA(
+// The proxy endpoint is read from state when the function's environment is built and
+// the connect grant is reconciled, so neither resource is written by this link.
+func (l *functionProxyLinkActions) UpdateLinkedResources(
 	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
-	providerCtx := provider.NewProviderContextFromLinkContext(input.LinkContext, "aws")
-	lambdaService, _, err := l.getLambdaServiceWithRegion(ctx, providerCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	annotations := getProxyLinkAnnotations(input.ResourceInfo, input.OtherResourceInfo)
-	if !annotations.populateEnvVars {
-		return &provider.LinkUpdateResourceOutput{
-			LinkData:             core.MappingNodeFields(),
-			ResourceDataMappings: map[string]string{},
-		}, nil
-	}
-
-	setupCtx, err := linkutils.SetupLinkFromLambdaFunction(
-		ctx,
-		&linkutils.LambdaLinkSetupData{
-			LambdaFuncResourceInfo: input.ResourceInfo,
-			LoadRoleInfo:           false,
-		},
-		lambdaService,
-		nil,
-		providerCtx,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	prefix := proxyEnvVarPrefix(annotations.envVarPrefix, input.OtherResourceInfo)
-	envVarNames := proxyEnvVarNames(prefix)
-
-	if input.LinkUpdateType == provider.LinkUpdateTypeDestroy {
-		return l.removeProxyEnvVars(ctx, input, setupCtx.FunctionARN, envVarNames, setupCtx.LambdaOutput, lambdaService)
-	}
-
-	endpoint, hasEndpoint := extractProxyEndpoint(input.OtherResourceInfo)
-	if !hasEndpoint {
-		return nil, fmt.Errorf(
-			"endpoint could not be retrieved from the linked to %q RDS proxy resource",
-			pluginutils.GetResourceName(input.OtherResourceInfo),
-		)
-	}
-
-	envVars := map[string]string{
-		envVarNames.host: endpoint,
-		envVarNames.port: strconv.Itoa(int(annotations.port)),
-	}
-	if annotations.databaseName != "" {
-		envVars[envVarNames.database] = annotations.databaseName
-	}
-
-	return l.addProxyEnvVars(ctx, input, setupCtx.FunctionARN, envVars, setupCtx.LambdaOutput, lambdaService)
-}
-
-func (l *functionProxyLinkActions) addProxyEnvVars(
-	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-	functionARN string,
-	envVars map[string]string,
-	currentFunctionConfig *types.FunctionConfiguration,
-	lambdaService lambdaservice.Service,
-) (*provider.LinkUpdateResourceOutput, error) {
-	if err := linkutils.UpdateLambdaEnvironmentVariables(
-		ctx, lambdaService, functionARN, currentFunctionConfig, envVars,
-	); err != nil {
-		return nil, err
-	}
-
-	functionName := pluginutils.GetResourceName(input.ResourceInfo)
-	envVarNodes := core.MappingNodeFields()
-	mappings := map[string]string{}
-	for _, name := range sortedKeys(envVars) {
-		envVarNodes.Fields[name] = core.MappingNodeFromString(envVars[name])
-		mappings[fmt.Sprintf("%s::spec.environment.variables[%q]", functionName, name)] =
-			fmt.Sprintf("%s.environmentVariables[%q]", functionName, name)
-	}
-
-	return &provider.LinkUpdateResourceOutput{
-		LinkData: core.MappingNodeFields(
-			functionName,
-			core.MappingNodeFields("environmentVariables", envVarNodes),
-		),
-		ResourceDataMappings: mappings,
+	input *provider.LinkUpdateLinkedResourcesInput,
+) (*provider.LinkUpdateLinkedResourcesOutput, error) {
+	return &provider.LinkUpdateLinkedResourcesOutput{
+		LinkData: core.MappingNodeFields(),
 	}, nil
 }
 
-func (l *functionProxyLinkActions) removeProxyEnvVars(
-	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-	functionARN string,
-	envVarNames proxyEnvVarNameSet,
-	currentFunctionConfig *types.FunctionConfiguration,
-	lambdaService lambdaservice.Service,
-) (*provider.LinkUpdateResourceOutput, error) {
-	if err := linkutils.RemoveLambdaEnvironmentVariables(
-		ctx, lambdaService, functionARN, currentFunctionConfig, envVarNames.all(),
-	); err != nil {
-		return nil, err
-	}
-	return &provider.LinkUpdateResourceOutput{
-		LinkData:             core.MappingNodeFields(pluginutils.GetResourceName(input.ResourceInfo), core.MappingNodeFields()),
-		ResourceDataMappings: map[string]string{},
-	}, nil
-}
-
-func (l *functionProxyLinkActions) UpdateResourceB(
-	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
-	// The RDS proxy is not modified by this link; only the Lambda function, its execution role
-	// and the security-group rules are updated so it can reach the database.
-	return &provider.LinkUpdateResourceOutput{
-		LinkData: &core.MappingNode{
-			Fields: map[string]*core.MappingNode{},
-		},
-	}, nil
-}
-
-// UpdateIntermediaryResources opens the security-group rule so the function can reach the proxy
-// on the database port, and (when authMode is 'iam') grants the execution role rds-db:connect.
 func (l *functionProxyLinkActions) UpdateIntermediaryResources(
 	ctx context.Context,
 	input *provider.LinkUpdateIntermediaryResourcesInput,
@@ -214,15 +98,8 @@ func (l *functionProxyLinkActions) reconcileConnectGrant(
 	annotations *proxyLinkAnnotations,
 	region string,
 ) (*provider.LinkUpdateIntermediaryResourcesOutput, error) {
-	if err := input.ResourceService.AcquireResourceLock(ctx, &provider.AcquireResourceLockInput{
-		InstanceID:      pluginutils.GetInstanceID(input.ResourceAInfo),
-		ResourceName:    setupCtx.RoleResourceName,
-		ProviderContext: providerCtx,
-		AcquiredBy:      input.LinkID,
-	}); err != nil {
-		return nil, err
-	}
-
+	// The role is locked around each grant below rather than for this whole
+	// phase, which goes on to do slow work the role has no part in.
 	iamService, err := l.getIamService(ctx, providerCtx)
 	if err != nil {
 		return nil, err
@@ -231,10 +108,20 @@ func (l *functionProxyLinkActions) reconcileConnectGrant(
 	sid := createConnectSID(input.ResourceBInfo)
 
 	if input.LinkUpdateType == provider.LinkUpdateTypeDestroy {
-		if _, err := linkutils.ReconcileRoleAccessPolicy(ctx, iamService, linkutils.RoleAccessGrant{
-			RoleName: setupCtx.RoleName,
-			SID:      sid,
-		}); err != nil {
+		if _, err := linkutils.GrantRoleAccessUnderLock(
+			ctx,
+			linkutils.RoleAccessLockFor(
+				input.ResourceService,
+				input.LinkID,
+				input.ResourceAInfo,
+				setupCtx,
+				providerCtx,
+			),
+			iamService,
+			linkutils.RoleAccessGrant{
+				RoleName: setupCtx.RoleName,
+				SID:      sid,
+			}); err != nil {
 			return nil, err
 		}
 		return &provider.LinkUpdateIntermediaryResourcesOutput{LinkData: core.MappingNodeFields()}, nil
@@ -245,11 +132,21 @@ func (l *functionProxyLinkActions) reconcileConnectGrant(
 		return nil, err
 	}
 
-	result, err := linkutils.ReconcileRoleAccessPolicy(ctx, iamService, linkutils.RoleAccessGrant{
-		RoleName:  setupCtx.RoleName,
-		SID:       sid,
-		Statement: connectStatement(sid, connectResource),
-	})
+	result, err := linkutils.GrantRoleAccessUnderLock(
+		ctx,
+		linkutils.RoleAccessLockFor(
+			input.ResourceService,
+			input.LinkID,
+			input.ResourceAInfo,
+			setupCtx,
+			providerCtx,
+		),
+		iamService,
+		linkutils.RoleAccessGrant{
+			RoleName:  setupCtx.RoleName,
+			SID:       sid,
+			Statement: connectStatement(sid, connectResource),
+		})
 	if err != nil {
 		if errors.Is(err, linkutils.ErrAccessPolicyBudgetExhausted) {
 			return nil, fmt.Errorf(

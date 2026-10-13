@@ -21,10 +21,22 @@ func (l *lambdaFunctionDynamoDBTableLinkActions) StageChanges(
 	)
 
 	currentLinkData := linkhelpers.GetLinkDataFromState(input.CurrentLinkState)
+	functionResourceName := pluginutils.GetResourceName(
+		&input.ResourceAChanges.AppliedResourceInfo,
+	)
+	// The name the variable is actually given, which falls back to one derived from the
+	// table when the annotation is not set. Staging used the annotation as it was given,
+	// so an unset one recorded a path with an empty name in it. That was cosmetic while
+	// the link wrote the function itself; the declaration below is read to decide which
+	// resource waits for this link, so it has to name the field the link will contribute.
+	envVarName := dynamoDBTableEnvVarName(
+		annotations.envVarName,
+		&input.ResourceBChanges.AppliedResourceInfo,
+	)
 	envVarFieldPath := fmt.Sprintf(
 		"%s.environmentVariables[\"%s\"]",
-		pluginutils.GetResourceName(&input.ResourceAChanges.AppliedResourceInfo),
-		annotations.envVarName,
+		functionResourceName,
+		envVarName,
 	)
 	_, linkDataHasEnvVar := pluginutils.GetValueByPath(
 		fmt.Sprintf("$.%s", envVarFieldPath),
@@ -61,6 +73,19 @@ func (l *lambdaFunctionDynamoDBTableLinkActions) StageChanges(
 			changes.FieldChangesKnownOnDeploy,
 			createLinkDataExecutionRoleName(&input.ResourceAChanges.AppliedResourceInfo),
 		)
+	}
+
+	if annotations.populateEnvVars {
+		// What this link will contribute to the function, declared before it runs so the
+		// framework knows the function is waiting on it. The value itself is produced at
+		// deploy time; this says only where it will land.
+		changes.ResourceDataMappings = map[string]string{
+			fmt.Sprintf(
+				"%s::spec.environment.variables[\"%s\"]",
+				functionResourceName,
+				envVarName,
+			): envVarFieldPath,
+		}
 	}
 
 	return &provider.LinkStageChangesOutput{

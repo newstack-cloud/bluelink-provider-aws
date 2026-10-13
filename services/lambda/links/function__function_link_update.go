@@ -6,198 +6,24 @@ import (
 	"fmt"
 
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/bluelink-provider-aws/linkutils"
-	lambdaservice "github.com/newstack-cloud/bluelink-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/bluelink-provider-aws/utils"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/core"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
 	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/pluginutils"
 )
 
-func (l *lambdaFunctionFunctionLinkActions) UpdateResourceA(
+// The target function's ARN is contributed to the invoking function's environment rather
+// than written here, so neither resource is written by this link.
+func (l *lambdaFunctionFunctionLinkActions) UpdateLinkedResources(
 	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
-	lambdaService, _, err := l.getLambdaServiceWithRegion(
-		ctx,
-		provider.NewProviderContextFromLinkContext(
-			input.LinkContext,
-			"aws",
-		),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	annotations := getLambdaFunctionLinkAnnotations(
-		input.ResourceInfo,
-		input.OtherResourceInfo,
-	)
-	if !annotations.populateEnvVars {
-		return &provider.LinkUpdateResourceOutput{
-			LinkData:             core.MappingNodeFields(),
-			ResourceDataMappings: map[string]string{},
-		}, nil
-	}
-
-	setupCtx, err := linkutils.SetupLinkFromLambdaFunction(
-		ctx,
-		&linkutils.LambdaLinkSetupData{
-			LambdaFuncResourceInfo: input.ResourceInfo,
-			LoadRoleInfo:           false,
-		},
-		lambdaService,
-		// Resource service is only needed if we need to load the role info.
-		/* resourceService */
-		nil,
-		provider.NewProviderContextFromLinkContext(
-			input.LinkContext,
-			"aws",
-		),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	otherFunctionARN, hasOtherFunctionARN := utils.ExtractARNFromResourceInfo(
-		input.OtherResourceInfo,
-	)
-	if !hasOtherFunctionARN {
-		return nil, fmt.Errorf(
-			"function ARN could not be retrieved from the linked to %q function resource",
-			pluginutils.GetResourceName(input.OtherResourceInfo),
-		)
-	}
-
-	if input.LinkUpdateType == provider.LinkUpdateTypeDestroy {
-		return l.removeCallerFunctionEnvVars(
-			ctx,
-			input,
-			setupCtx.FunctionARN,
-			annotations.envVarName,
-			setupCtx.LambdaOutput,
-			lambdaService,
-		)
-	}
-
-	return l.addCallerFunctionEnvVars(
-		ctx,
-		input,
-		setupCtx.FunctionARN,
-		otherFunctionARN,
-		annotations.envVarName,
-		setupCtx.LambdaOutput,
-		lambdaService,
-	)
-}
-
-func (l *lambdaFunctionFunctionLinkActions) addCallerFunctionEnvVars(
-	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-	functionARN string,
-	otherFunctionARN string,
-	envVarName string,
-	currentFunctionConfig *types.FunctionConfiguration,
-	lambdaService lambdaservice.Service,
-) (*provider.LinkUpdateResourceOutput, error) {
-	finalEnvVarName := invokeLambdaFunctionEnvVarName(
-		envVarName,
-		input.OtherResourceInfo,
-	)
-	dataMappingKey := fmt.Sprintf(
-		"%s::spec.environment.variables[\"%s\"]",
-		input.ResourceInfo.ResourceName,
-		finalEnvVarName,
-	)
-	linkDataFieldPath := fmt.Sprintf(
-		"%s.environmentVariables[\"%s\"]",
-		input.ResourceInfo.ResourceName,
-		finalEnvVarName,
-	)
-
-	err := linkutils.UpdateLambdaEnvironmentVariables(
-		ctx,
-		lambdaService,
-		functionARN,
-		currentFunctionConfig,
-		map[string]string{
-			finalEnvVarName: otherFunctionARN,
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return &provider.LinkUpdateResourceOutput{
-		LinkData: core.MappingNodeFields(
-			pluginutils.GetResourceName(input.ResourceInfo),
-			core.MappingNodeFields(
-				"environmentVariables",
-				core.MappingNodeFields(
-					envVarName,
-					core.MappingNodeFromString(otherFunctionARN),
-				),
-			),
-		),
-		ResourceDataMappings: map[string]string{
-			dataMappingKey: linkDataFieldPath,
-		},
+	input *provider.LinkUpdateLinkedResourcesInput,
+) (*provider.LinkUpdateLinkedResourcesOutput, error) {
+	return &provider.LinkUpdateLinkedResourcesOutput{
+		LinkData: core.MappingNodeFields(),
 	}, nil
 }
 
-func (l *lambdaFunctionFunctionLinkActions) removeCallerFunctionEnvVars(
-	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-	functionARN string,
-	envVarName string,
-	currentFunctionConfig *types.FunctionConfiguration,
-	lambdaService lambdaservice.Service,
-) (*provider.LinkUpdateResourceOutput, error) {
-	finalEnvVarName := invokeLambdaFunctionEnvVarName(
-		envVarName,
-		input.OtherResourceInfo,
-	)
-
-	err := linkutils.RemoveLambdaEnvironmentVariables(
-		ctx,
-		lambdaService,
-		functionARN,
-		currentFunctionConfig,
-		[]string{finalEnvVarName},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return &provider.LinkUpdateResourceOutput{
-		LinkData: core.MappingNodeFields(
-			pluginutils.GetResourceName(input.ResourceInfo),
-			core.MappingNodeFields(),
-		),
-		ResourceDataMappings: map[string]string{},
-	}, nil
-}
-
-func (l *lambdaFunctionFunctionLinkActions) UpdateResourceB(
-	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
-	// The target function is not updated as a part of the link update,
-	// the link only requires updates to the linked from function
-	// and its execution role that will allow it to invoke the target function.
-	return &provider.LinkUpdateResourceOutput{
-		LinkData: &core.MappingNode{
-			Fields: map[string]*core.MappingNode{},
-		},
-	}, nil
-}
-
-// UpdateIntermediaryResources grants (or revokes) the caller function's
-// execution role permission to invoke the target function by packing a single IAM
-// statement into the role's allocator-managed policies. The role is an existing
-// intermediary in the blueprint, so the role lock is held while its shared policy
-// set is read-modified.
 func (l *lambdaFunctionFunctionLinkActions) UpdateIntermediaryResources(
 	ctx context.Context,
 	input *provider.LinkUpdateIntermediaryResourcesInput,

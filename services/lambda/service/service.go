@@ -347,6 +347,13 @@ type Service interface {
 		params *lambda.GetEventSourceMappingInput,
 		optFns ...func(*lambda.Options),
 	) (*lambda.GetEventSourceMappingOutput, error)
+	// Lists event source mappings. Specify an EventSourceArn to show only mappings
+	// that read from that source, and a FunctionName to narrow to one function.
+	ListEventSourceMappings(
+		ctx context.Context,
+		params *lambda.ListEventSourceMappingsInput,
+		optFns ...func(*lambda.Options),
+	) (*lambda.ListEventSourceMappingsOutput, error)
 	// Updates an event source mapping. You can change the function that AWS Lambda invokes, or pause invocation and resume later from the same location.
 	UpdateEventSourceMapping(
 		ctx context.Context,

@@ -41,16 +41,18 @@ func APIFunctionLink(
 		}
 
 		return &providerv1.LinkDefinition{
-			ResourceTypeA:                   "aws/apigatewayv2/api",
-			ResourceTypeB:                   "aws/lambda/function",
+			ResourceTypeA: "aws/apigatewayv2/api",
+			ResourceTypeB: "aws/lambda/function",
+			// Neither resource in the relationship is written; the link does its work
+			// through intermediary resources.
+			Modifies:                        provider.LinkModifiesNeither,
 			Kind:                            provider.LinkKindSoft,
-			PriorityResource:                provider.LinkPriorityResourceA,
+			PriorityResource:                provider.LinkPriorityResourceNone,
 			PlainTextSummary:                "A link that routes API Gateway v2 requests to a Lambda function via a managed integration and route.",
 			FormattedDescription:            string(description),
 			AnnotationDefinitions:           apiFunctionLinkAnnotations(),
 			StageChangesFunc:                actions.StageChanges,
-			UpdateResourceAFunc:             actions.UpdateResourceA,
-			UpdateResourceBFunc:             actions.UpdateResourceB,
+			UpdateLinkedResourcesFunc:       actions.UpdateLinkedResources,
 			UpdateIntermediaryResourcesFunc: actions.UpdateIntermediaryResources,
 		}
 	}

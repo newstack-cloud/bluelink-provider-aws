@@ -10,7 +10,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
-	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	lambdatypes "github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/bluelink-provider-aws/flex"
 	"github.com/newstack-cloud/bluelink-provider-aws/internal/testutils"
@@ -39,130 +38,6 @@ func lcEnvVarAnnotations() map[string]*core.MappingNode {
 	}
 }
 
-func (s *FunctionCacheLinkUpdateSuite) Test_update_resource_a_env_vars() {
-	loader := &testutils.MockAWSConfigLoader{}
-
-	testCases := []plugintestutils.LinkUpdateResourceTestCase[
-		*aws.Config, lambdaservice.Service, *aws.Config, cloudcontrolservice.Service,
-	]{
-		lcAddEnvVarsTestCase(loader),
-		lcRemoveEnvVarsTestCase(loader),
-	}
-
-	plugintestutils.RunLinkUpdateResourceTestCases(
-		testCases,
-		functionCacheLinkFactory(iammock.CreateIamServiceMock(), noopEC2ServiceFactory()),
-		&s.Suite,
-	)
-}
-
-func lcAddEnvVarsTestCase(
-	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.LinkUpdateResourceTestCase[
-	*aws.Config, lambdaservice.Service, *aws.Config, cloudcontrolservice.Service,
-] {
-	lambdaSvc := lambdamock.CreateLambdaServiceMock(
-		lambdamock.WithGetFunctionOutput(lcGetFunctionOutput(map[string]string{"EXISTING": "val"}, nil)),
-		lambdamock.WithUpdateFunctionConfigurationOutput(&lambda.UpdateFunctionConfigurationOutput{}),
-	)
-
-	return plugintestutils.LinkUpdateResourceTestCase[
-		*aws.Config, lambdaservice.Service, *aws.Config, cloudcontrolservice.Service,
-	]{
-		Name:                    "populates connection env vars from the cache endpoint",
-		Resource:                plugintestutils.LinkUpdateResourceA,
-		ServiceFactoryA:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
-		ConfigStoreA:            testConfigStore(loader),
-		ServiceFactoryB:         noopCloudControlServiceFactory,
-		ConfigStoreB:            testConfigStore(loader),
-		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeCreate,
-			ResourceInfo:      lcFunctionInfo(lcEnvVarAnnotations()),
-			OtherResourceInfo: lcCacheInfo(),
-			LinkContext:       testLinkContext(),
-		},
-		ExpectedOutput: &provider.LinkUpdateResourceOutput{
-			LinkData: core.MappingNodeFields(
-				"apiFunction",
-				core.MappingNodeFields(
-					"environmentVariables",
-					core.MappingNodeFields(
-						lcPrefix+"_HOST", core.MappingNodeFromString(testCacheEndpoint),
-						lcPrefix+"_PORT", core.MappingNodeFromString("6379"),
-					),
-				),
-			),
-			ResourceDataMappings: map[string]string{
-				"apiFunction::spec.environment.variables[\"" + lcPrefix + "_HOST\"]": "apiFunction.environmentVariables[\"" + lcPrefix + "_HOST\"]",
-				"apiFunction::spec.environment.variables[\"" + lcPrefix + "_PORT\"]": "apiFunction.environmentVariables[\"" + lcPrefix + "_PORT\"]",
-			},
-		},
-		UpdateActionsCalled: map[string]any{
-			"UpdateFunctionConfiguration": func(arg any) bool {
-				in, ok := arg.(*lambda.UpdateFunctionConfigurationInput)
-				if !ok || in.Environment == nil {
-					return false
-				}
-				v := in.Environment.Variables
-				return v["EXISTING"] == "val" &&
-					v[lcPrefix+"_HOST"] == testCacheEndpoint &&
-					v[lcPrefix+"_PORT"] == "6379"
-			},
-		},
-	}
-}
-
-func lcRemoveEnvVarsTestCase(
-	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.LinkUpdateResourceTestCase[
-	*aws.Config, lambdaservice.Service, *aws.Config, cloudcontrolservice.Service,
-] {
-	lambdaSvc := lambdamock.CreateLambdaServiceMock(
-		lambdamock.WithGetFunctionOutput(lcGetFunctionOutput(map[string]string{
-			"EXISTING":         "val",
-			lcPrefix + "_HOST": testCacheEndpoint,
-			lcPrefix + "_PORT": "6379",
-		}, nil)),
-		lambdamock.WithUpdateFunctionConfigurationOutput(&lambda.UpdateFunctionConfigurationOutput{}),
-	)
-
-	return plugintestutils.LinkUpdateResourceTestCase[
-		*aws.Config, lambdaservice.Service, *aws.Config, cloudcontrolservice.Service,
-	]{
-		Name:                    "removes connection env vars on destroy",
-		Resource:                plugintestutils.LinkUpdateResourceA,
-		ServiceFactoryA:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
-		ConfigStoreA:            testConfigStore(loader),
-		ServiceFactoryB:         noopCloudControlServiceFactory,
-		ConfigStoreB:            testConfigStore(loader),
-		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeDestroy,
-			ResourceInfo:      lcFunctionInfo(lcEnvVarAnnotations()),
-			OtherResourceInfo: lcCacheInfo(),
-			LinkContext:       testLinkContext(),
-		},
-		ExpectedOutput: &provider.LinkUpdateResourceOutput{
-			LinkData:             core.MappingNodeFields("apiFunction", core.MappingNodeFields()),
-			ResourceDataMappings: map[string]string{},
-		},
-		UpdateActionsCalled: map[string]any{
-			"UpdateFunctionConfiguration": func(arg any) bool {
-				in, ok := arg.(*lambda.UpdateFunctionConfigurationInput)
-				if !ok || in.Environment == nil {
-					return false
-				}
-				v := in.Environment.Variables
-				_, hasHost := v[lcPrefix+"_HOST"]
-				return v["EXISTING"] == "val" && !hasHost
-			},
-		},
-	}
-}
-
-// Test_update_intermediary_resources_sg_pair: a VPC-attached function opens the SG-pair rule to the
-// cache. The cache's SG comes from the resolved spec (securityGroupIds is write-only).
 func (s *FunctionCacheLinkUpdateSuite) Test_update_intermediary_resources_sg_pair() {
 	loader := &testutils.MockAWSConfigLoader{}
 

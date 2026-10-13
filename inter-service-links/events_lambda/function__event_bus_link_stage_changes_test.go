@@ -103,6 +103,12 @@ func stageEventBusEnvVarChangeTestCase() plugintestutils.LinkChangeStagingTestCa
 				// The event bus is new (it has NewFields), so the execution-role
 				// permission data for this link is only known at deploy time.
 				FieldChangesKnownOnDeploy: []string{"publishOrderFunctionExecutionRole"},
+
+				// What the link will contribute to the function, declared before it
+				// runs so the framework knows the function is waiting on it.
+				ResourceDataMappings: map[string]string{
+					"publishOrderFunction::spec.environment.variables[\"EVENT_BUS_orderEventBus\"]": "publishOrderFunction.environmentVariables[\"EVENT_BUS_orderEventBus\"]",
+				},
 			},
 		},
 	}
@@ -158,6 +164,12 @@ func stageEventBusNoChangesTestCase() plugintestutils.LinkChangeStagingTestCase[
 			Changes: &provider.LinkChanges{
 				UnchangedFields: []string{
 					"publishOrderFunction.environmentVariables[\"EVENT_BUS_orderEventBus\"]",
+				},
+
+				// What the link will contribute to the function, declared before it
+				// runs so the framework knows the function is waiting on it.
+				ResourceDataMappings: map[string]string{
+					"publishOrderFunction::spec.environment.variables[\"EVENT_BUS_orderEventBus\"]": "publishOrderFunction.environmentVariables[\"EVENT_BUS_orderEventBus\"]",
 				},
 			},
 		},

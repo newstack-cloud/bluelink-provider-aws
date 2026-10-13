@@ -226,16 +226,16 @@ func TestPlacementAuthorisesTheResolvedEgressOnTheWorkloadGroup(t *testing.T) {
 
 	// A private subnet behind a NAT gateway, which is the topology that resolves to
 	// full egress.
-	input := &provider.LinkUpdateResourceInput{
-		LinkUpdateType:    provider.LinkUpdateTypeCreate,
-		ResourceInfo:      functionResourceInfoB(),
-		OtherResourceInfo: flexVPCResourceInfoAWithGateways("igw-1", "nat-1"),
-		LinkContext:       testLinkContext(),
-		LinkID:            vfLinkID,
-		ResourceService:   vfRoleService(),
+	input := &provider.LinkUpdateLinkedResourcesInput{
+		LinkUpdateType:  provider.LinkUpdateTypeCreate,
+		ResourceBInfo:   functionResourceInfoB(),
+		ResourceAInfo:   flexVPCResourceInfoAWithGateways("igw-1", "nat-1"),
+		LinkContext:     testLinkContext(),
+		LinkID:          vfLinkID,
+		ResourceService: vfRoleService(),
 	}
 
-	_, err := link.UpdateResourceB(context.Background(), input)
+	_, err := link.UpdateLinkedResources(context.Background(), input)
 	require.NoError(t, err)
 
 	ec2Svc.AssertCalledWith(

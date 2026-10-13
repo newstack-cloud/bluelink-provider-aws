@@ -35,16 +35,18 @@ func BucketTopicLink() func(BucketToTopicLinkDeps) provider.Link {
 		}
 
 		return &providerv1.LinkDefinition{
-			ResourceTypeA:                   "aws/s3/bucket",
-			ResourceTypeB:                   "aws/sns/topic",
+			ResourceTypeA: "aws/s3/bucket",
+			ResourceTypeB: "aws/sns/topic",
+			// Neither resource in the relationship is written; the link does its work
+			// through intermediary resources.
+			Modifies:                        provider.LinkModifiesNeither,
 			Kind:                            provider.LinkKindSoft,
-			PriorityResource:                provider.LinkPriorityResourceA,
+			PriorityResource:                provider.LinkPriorityResourceNone,
 			PlainTextSummary:                "A link that configures an S3 bucket to publish object event notifications to an SNS topic.",
 			FormattedDescription:            string(description),
 			AnnotationDefinitions:           bucketTopicLinkAnnotations(),
 			StageChangesFunc:                actions.StageChanges,
-			UpdateResourceAFunc:             actions.UpdateResourceA,
-			UpdateResourceBFunc:             actions.UpdateResourceB,
+			UpdateLinkedResourcesFunc:       actions.UpdateLinkedResources,
 			UpdateIntermediaryResourcesFunc: actions.UpdateIntermediaryResources,
 		}
 	}

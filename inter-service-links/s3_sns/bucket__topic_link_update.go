@@ -13,26 +13,14 @@ import (
 
 const snsAnnotationPrefix = "aws.s3.sns"
 
-func (l *bucketTopicLinkActions) UpdateResourceA(
+func (l *bucketTopicLinkActions) UpdateLinkedResources(
 	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
+	input *provider.LinkUpdateLinkedResourcesInput,
+) (*provider.LinkUpdateLinkedResourcesOutput, error) {
 	// The bucket's notification configuration is written in the intermediary phase, the
 	// only phase with access to the resource service (for the bucket lock and the managed
 	// topic policy), and after the topic policy is set.
-	return &provider.LinkUpdateResourceOutput{
-		LinkData: core.MappingNodeFields(),
-	}, nil
-}
-
-func (l *bucketTopicLinkActions) UpdateResourceB(
-	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
-	// The topic is not modified by this link; the publish permission is a separate,
-	// link-owned aws/sns/topicInlinePolicy intermediary handled in
-	// UpdateIntermediaryResources.
-	return &provider.LinkUpdateResourceOutput{
+	return &provider.LinkUpdateLinkedResourcesOutput{
 		LinkData: core.MappingNodeFields(),
 	}, nil
 }

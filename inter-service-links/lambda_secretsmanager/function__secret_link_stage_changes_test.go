@@ -121,6 +121,12 @@ func stageFunctionSecretEnvVarChangeTestCase() plugintestutils.LinkChangeStaging
 					},
 				},
 				FieldChangesKnownOnDeploy: []string{"apiFunctionExecutionRole"},
+
+				// What the link will contribute to the function, declared before it
+				// runs so the framework knows the function is waiting on it.
+				ResourceDataMappings: map[string]string{
+					"apiFunction::spec.environment.variables[\"" + fsStageEnvVarName + "\"]": "apiFunction.environmentVariables[\"" + fsStageEnvVarName + "\"]",
+				},
 			},
 		},
 	}
@@ -156,6 +162,12 @@ func stageFunctionSecretDefaultEnvVarNameTestCase() plugintestutils.LinkChangeSt
 					},
 				},
 				FieldChangesKnownOnDeploy: []string{"apiFunctionExecutionRole"},
+
+				// What the link will contribute to the function, declared before it
+				// runs so the framework knows the function is waiting on it.
+				ResourceDataMappings: map[string]string{
+					"apiFunction::spec.environment.variables[\"SECRET_dbCredentials\"]": "apiFunction.environmentVariables[\"SECRET_dbCredentials\"]",
+				},
 			},
 		},
 	}
@@ -192,6 +204,12 @@ func stageFunctionSecretNoChangesTestCase() plugintestutils.LinkChangeStagingTes
 			Changes: &provider.LinkChanges{
 				UnchangedFields: []string{
 					"apiFunction.environmentVariables[\"" + fsStageEnvVarName + "\"]",
+				},
+
+				// What the link will contribute to the function, declared before it
+				// runs so the framework knows the function is waiting on it.
+				ResourceDataMappings: map[string]string{
+					"apiFunction::spec.environment.variables[\"" + fsStageEnvVarName + "\"]": "apiFunction.environmentVariables[\"" + fsStageEnvVarName + "\"]",
 				},
 			},
 		},

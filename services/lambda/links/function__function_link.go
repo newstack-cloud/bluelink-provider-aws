@@ -44,18 +44,23 @@ func FunctionFunctionLink(
 		return &providerv1.LinkDefinition{
 			ResourceTypeA: "aws/lambda/function",
 			ResourceTypeB: "aws/lambda/function",
+			// Neither resource is written by this link. The calling function's
+			// environment variable is contributed rather than written, and the framework
+			// applies what every link contributing to it needs it to say as one update,
+			// so no exclusive lock on the function is taken here.
+			Modifies: provider.LinkModifiesNeither,
 			// It doesn't matter which lambda function is created first,
 			// the caller function will be configured to be able to invoke
 			// the callee function once both have been created.
-			Kind:                            provider.LinkKindSoft,
-			PriorityResource:                provider.LinkPriorityResourceNone,
-			PlainTextSummary:                "A link that configures a lambda function to be able to invoke another lambda function.",
-			FormattedDescription:            string(description),
-			AnnotationDefinitions:           lambdaFunctionFunctionLinkAnnotations(),
-			StageChangesFunc:                actions.StageChanges,
-			UpdateResourceAFunc:             actions.UpdateResourceA,
-			UpdateResourceBFunc:             actions.UpdateResourceB,
-			UpdateIntermediaryResourcesFunc: actions.UpdateIntermediaryResources,
+			Kind:                             provider.LinkKindSoft,
+			PriorityResource:                 provider.LinkPriorityResourceNone,
+			PlainTextSummary:                 "A link that configures a lambda function to be able to invoke another lambda function.",
+			FormattedDescription:             string(description),
+			AnnotationDefinitions:            lambdaFunctionFunctionLinkAnnotations(),
+			StageChangesFunc:                 actions.StageChanges,
+			ProduceResourceContributionsFunc: actions.ProduceResourceContributions,
+			UpdateLinkedResourcesFunc:        actions.UpdateLinkedResources,
+			UpdateIntermediaryResourcesFunc:  actions.UpdateIntermediaryResources,
 		}
 	}
 }

@@ -108,6 +108,12 @@ func createQueueQueueLinkChangesTestCase(
 						NewValue:  core.MappingNodeFromInt(10),
 					},
 				},
+
+				// What the link declares it will contribute, recorded so the
+				// framework knows the resource is waiting on it.
+				ResourceDataMappings: map[string]string{
+					"source-queue::spec.redrivePolicy": "contributions[0]",
+				},
 			},
 		},
 	}
@@ -163,6 +169,12 @@ func createQueueQueueLinkChangesKnownOnDeployTestCase(
 				},
 				FieldChangesKnownOnDeploy: []string{
 					"[\"source-queue\"].redrivePolicy.deadLetterTargetArn",
+				},
+
+				// What the link declares it will contribute, recorded so the
+				// framework knows the resource is waiting on it.
+				ResourceDataMappings: map[string]string{
+					"source-queue::spec.redrivePolicy": "contributions[0]",
 				},
 			},
 		},
@@ -226,6 +238,12 @@ func createQueueQueueLinkChangesNoChangesTestCase(
 				UnchangedFields: []string{
 					"[\"source-queue\"].redrivePolicy.deadLetterTargetArn",
 					"[\"source-queue\"].redrivePolicy.maxReceiveCount",
+				},
+
+				// What the link declares it will contribute, recorded so the
+				// framework knows the resource is waiting on it.
+				ResourceDataMappings: map[string]string{
+					"source-queue::spec.redrivePolicy": "contributions[0]",
 				},
 			},
 		},

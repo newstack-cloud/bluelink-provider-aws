@@ -220,7 +220,7 @@ func (s *TableFunctionLinkUpdateSuite) Test_report_batch_item_failures_annotatio
 	)
 }
 
-// When the stream was enabled by this link's own UpdateResourceA (table deployed
+// When the stream was enabled by this link's own contribution (table deployed
 // without streams), the table's state snapshot has no streamArn, the
 // intermediary update must resolve it live via DescribeTable instead of failing.
 func (s *TableFunctionLinkUpdateSuite) Test_intermediary_update_resolves_stream_arn_via_describe_table_when_state_has_none() {
@@ -636,29 +636,6 @@ func (s *TableFunctionLinkUpdateSuite) Test_indexed_filter_annotations_build_esm
 	)
 }
 
-func (s *TableFunctionLinkUpdateSuite) Test_link_update_resources() {
-	loader := &testutils.MockAWSConfigLoader{}
-
-	testCases := []plugintestutils.LinkUpdateResourceTestCase[
-		*aws.Config,
-		dynamodbservice.Service,
-		*aws.Config,
-		lambdaservice.Service,
-	]{
-		tableFunctionEnableStreamsTestCase(loader),
-		tableFunctionStreamsAlreadyEnabledTestCase(loader),
-		tableFunctionDestroyNoOpTestCase(loader),
-		tableFunctionEnableStreamsErrorTestCase(loader),
-		tableFunctionUpdateResourceBNoOpTestCase(loader),
-	}
-
-	plugintestutils.RunLinkUpdateResourceTestCases(
-		testCases,
-		tableFunctionLinkFactory(iammock.CreateIamServiceMock()),
-		&s.Suite,
-	)
-}
-
 func tableFunctionEnableStreamsTestCase(
 	loader *testutils.MockAWSConfigLoader,
 ) plugintestutils.LinkUpdateResourceTestCase[
@@ -678,19 +655,18 @@ func tableFunctionEnableStreamsTestCase(
 		lambdaservice.Service,
 	]{
 		Name:                    "enables DynamoDB streams on the table",
-		Resource:                plugintestutils.LinkUpdateResourceA,
 		ServiceFactoryA:         func(c *aws.Config, pc provider.Context) dynamodbservice.Service { return dynamodbSvc },
 		ConfigStoreA:            testConfigStore(loader),
 		ServiceFactoryB:         lambdamock.CreateLambdaServiceMockFactory(),
 		ConfigStoreB:            testConfigStore(loader),
 		CurrentServiceMockCalls: &dynamodbSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeCreate,
-			ResourceInfo:      tableResourceInfoStreamsDisabled(),
-			OtherResourceInfo: streamFunctionResourceInfo(),
-			LinkContext:       testLinkContext(),
+		Input: &provider.LinkUpdateLinkedResourcesInput{
+			LinkUpdateType: provider.LinkUpdateTypeCreate,
+			ResourceAInfo:  tableResourceInfoStreamsDisabled(),
+			ResourceBInfo:  streamFunctionResourceInfo(),
+			LinkContext:    testLinkContext(),
 		},
-		ExpectedOutput: &provider.LinkUpdateResourceOutput{
+		ExpectedOutput: &provider.LinkUpdateLinkedResourcesOutput{
 			LinkData: core.MappingNodeFields(
 				"streamSpecification",
 				core.MappingNodeFields(
@@ -728,19 +704,18 @@ func tableFunctionStreamsAlreadyEnabledTestCase(
 		lambdaservice.Service,
 	]{
 		Name:                    "is a no-op when streams are already enabled",
-		Resource:                plugintestutils.LinkUpdateResourceA,
 		ServiceFactoryA:         func(c *aws.Config, pc provider.Context) dynamodbservice.Service { return dynamodbSvc },
 		ConfigStoreA:            testConfigStore(loader),
 		ServiceFactoryB:         lambdamock.CreateLambdaServiceMockFactory(),
 		ConfigStoreB:            testConfigStore(loader),
 		CurrentServiceMockCalls: &dynamodbSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeCreate,
-			ResourceInfo:      tableResourceInfoStreamsEnabled(),
-			OtherResourceInfo: streamFunctionResourceInfo(),
-			LinkContext:       testLinkContext(),
+		Input: &provider.LinkUpdateLinkedResourcesInput{
+			LinkUpdateType: provider.LinkUpdateTypeCreate,
+			ResourceAInfo:  tableResourceInfoStreamsEnabled(),
+			ResourceBInfo:  streamFunctionResourceInfo(),
+			LinkContext:    testLinkContext(),
 		},
-		ExpectedOutput: &provider.LinkUpdateResourceOutput{
+		ExpectedOutput: &provider.LinkUpdateLinkedResourcesOutput{
 			LinkData: core.MappingNodeFields(),
 		},
 	}
@@ -763,19 +738,18 @@ func tableFunctionDestroyNoOpTestCase(
 		lambdaservice.Service,
 	]{
 		Name:                    "does not disable streams on destroy",
-		Resource:                plugintestutils.LinkUpdateResourceA,
 		ServiceFactoryA:         func(c *aws.Config, pc provider.Context) dynamodbservice.Service { return dynamodbSvc },
 		ConfigStoreA:            testConfigStore(loader),
 		ServiceFactoryB:         lambdamock.CreateLambdaServiceMockFactory(),
 		ConfigStoreB:            testConfigStore(loader),
 		CurrentServiceMockCalls: &dynamodbSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeDestroy,
-			ResourceInfo:      tableResourceInfoStreamsDisabled(),
-			OtherResourceInfo: streamFunctionResourceInfo(),
-			LinkContext:       testLinkContext(),
+		Input: &provider.LinkUpdateLinkedResourcesInput{
+			LinkUpdateType: provider.LinkUpdateTypeDestroy,
+			ResourceAInfo:  tableResourceInfoStreamsDisabled(),
+			ResourceBInfo:  streamFunctionResourceInfo(),
+			LinkContext:    testLinkContext(),
 		},
-		ExpectedOutput: &provider.LinkUpdateResourceOutput{
+		ExpectedOutput: &provider.LinkUpdateLinkedResourcesOutput{
 			LinkData: core.MappingNodeFields(),
 		},
 	}
@@ -800,57 +774,18 @@ func tableFunctionEnableStreamsErrorTestCase(
 		lambdaservice.Service,
 	]{
 		Name:                    "returns error when enabling streams fails",
-		Resource:                plugintestutils.LinkUpdateResourceA,
 		ServiceFactoryA:         func(c *aws.Config, pc provider.Context) dynamodbservice.Service { return dynamodbSvc },
 		ConfigStoreA:            testConfigStore(loader),
 		ServiceFactoryB:         lambdamock.CreateLambdaServiceMockFactory(),
 		ConfigStoreB:            testConfigStore(loader),
 		CurrentServiceMockCalls: &dynamodbSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeCreate,
-			ResourceInfo:      tableResourceInfoStreamsDisabled(),
-			OtherResourceInfo: streamFunctionResourceInfo(),
-			LinkContext:       testLinkContext(),
+		Input: &provider.LinkUpdateLinkedResourcesInput{
+			LinkUpdateType: provider.LinkUpdateTypeCreate,
+			ResourceAInfo:  tableResourceInfoStreamsDisabled(),
+			ResourceBInfo:  streamFunctionResourceInfo(),
+			LinkContext:    testLinkContext(),
 		},
 		ExpectError: true,
-	}
-}
-
-func tableFunctionUpdateResourceBNoOpTestCase(
-	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.LinkUpdateResourceTestCase[
-	*aws.Config,
-	dynamodbservice.Service,
-	*aws.Config,
-	lambdaservice.Service,
-] {
-	dynamodbSvc := dynamodbmock.CreateDynamoDBServiceMock()
-	lambdaSvc := lambdamock.CreateLambdaServiceMock()
-
-	return plugintestutils.LinkUpdateResourceTestCase[
-		*aws.Config,
-		dynamodbservice.Service,
-		*aws.Config,
-		lambdaservice.Service,
-	]{
-		Name:                    "does not modify the lambda function (resourceB is a no-op)",
-		Resource:                plugintestutils.LinkUpdateResourceB,
-		ServiceFactoryA:         func(c *aws.Config, pc provider.Context) dynamodbservice.Service { return dynamodbSvc },
-		ConfigStoreA:            testConfigStore(loader),
-		ServiceFactoryB:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
-		ConfigStoreB:            testConfigStore(loader),
-		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeCreate,
-			ResourceInfo:      streamFunctionResourceInfo(),
-			OtherResourceInfo: tableResourceInfoStreamsEnabled(),
-			LinkContext:       testLinkContext(),
-		},
-		ExpectedOutput: &provider.LinkUpdateResourceOutput{
-			LinkData: &core.MappingNode{
-				Fields: map[string]*core.MappingNode{},
-			},
-		},
 	}
 }
 

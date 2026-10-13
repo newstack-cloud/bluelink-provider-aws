@@ -17,15 +17,17 @@ func SubscriptionQueueLink() provider.Link {
 	actions := &subscriptionQueueLinkActions{}
 
 	return &providerv1.LinkDefinition{
-		ResourceTypeA:                   "aws/sns/subscription",
-		ResourceTypeB:                   "aws/sqs/queue",
+		ResourceTypeA: "aws/sns/subscription",
+		ResourceTypeB: "aws/sqs/queue",
+		// Neither resource in the relationship is written; the link does its work
+		// through intermediary resources.
+		Modifies:                        provider.LinkModifiesNeither,
 		Kind:                            provider.LinkKindSoft,
 		PriorityResource:                provider.LinkPriorityResourceNone,
 		PlainTextSummary:                "A link that grants SNS permission to deliver a subscription's messages to an SQS queue.",
 		FormattedDescription:            string(description),
 		StageChangesFunc:                actions.StageChanges,
-		UpdateResourceAFunc:             actions.UpdateResourceA,
-		UpdateResourceBFunc:             actions.UpdateResourceB,
+		UpdateLinkedResourcesFunc:       actions.UpdateLinkedResources,
 		UpdateIntermediaryResourcesFunc: actions.UpdateIntermediaryResources,
 	}
 }

@@ -57,14 +57,14 @@ func (s *VPCFunctionENIGrantSuite) linkActions(
 	})
 }
 
-func (s *VPCFunctionENIGrantSuite) placeInput() *provider.LinkUpdateResourceInput {
-	return &provider.LinkUpdateResourceInput{
-		LinkUpdateType:    provider.LinkUpdateTypeCreate,
-		ResourceInfo:      functionResourceInfoB(),
-		OtherResourceInfo: flexVPCResourceInfoA(),
-		LinkContext:       testLinkContext(),
-		LinkID:            vfLinkID,
-		ResourceService:   vfRoleService(),
+func (s *VPCFunctionENIGrantSuite) placeInput() *provider.LinkUpdateLinkedResourcesInput {
+	return &provider.LinkUpdateLinkedResourcesInput{
+		LinkUpdateType:  provider.LinkUpdateTypeCreate,
+		ResourceBInfo:   functionResourceInfoB(),
+		ResourceAInfo:   flexVPCResourceInfoA(),
+		LinkContext:     testLinkContext(),
+		LinkID:          vfLinkID,
+		ResourceService: vfRoleService(),
 	}
 }
 
@@ -121,7 +121,7 @@ func (s *VPCFunctionENIGrantSuite) Test_does_not_attach_the_function_when_the_gr
 	)
 
 	actions := s.linkActions(iamSvc, lambdaSvc)
-	_, err := actions.UpdateResourceB(context.Background(), s.placeInput())
+	_, err := actions.UpdateLinkedResources(context.Background(), s.placeInput())
 
 	s.Require().Error(err)
 	s.Assert().Contains(err.Error(), "network interface permissions")
@@ -142,7 +142,7 @@ func (s *VPCFunctionENIGrantSuite) Test_grants_the_network_interface_actions_lam
 	)
 
 	actions := s.linkActions(iamSvc, lambdaSvc)
-	_, err := actions.UpdateResourceB(context.Background(), s.placeInput())
+	_, err := actions.UpdateLinkedResources(context.Background(), s.placeInput())
 	s.Require().NoError(err)
 
 	iamSvc.AssertCalledWith(
@@ -170,7 +170,7 @@ func (s *VPCFunctionENIGrantSuite) Test_does_not_revoke_the_grant_when_the_detac
 	input.LinkUpdateType = provider.LinkUpdateTypeDestroy
 
 	actions := s.linkActions(iamSvc, lambdaSvc)
-	_, err := actions.UpdateResourceB(context.Background(), input)
+	_, err := actions.UpdateLinkedResources(context.Background(), input)
 
 	// The permissions have to outlive an attachment that is still in place.
 	s.Require().Error(err)
@@ -189,7 +189,7 @@ func (s *VPCFunctionENIGrantSuite) Test_revokes_the_grant_once_the_function_is_d
 	input.LinkUpdateType = provider.LinkUpdateTypeDestroy
 
 	actions := s.linkActions(iamSvc, lambdaSvc)
-	_, err := actions.UpdateResourceB(context.Background(), input)
+	_, err := actions.UpdateLinkedResources(context.Background(), input)
 	s.Require().NoError(err)
 
 	// The statement was the policy's only one, so removing it removes the policy.
@@ -210,7 +210,7 @@ func (s *VPCFunctionENIGrantSuite) Test_places_the_function_without_a_grant_when
 	input.ResourceService = resourceservicemock.Create()
 
 	actions := s.linkActions(iamSvc, lambdaSvc)
-	output, err := actions.UpdateResourceB(context.Background(), input)
+	output, err := actions.UpdateLinkedResources(context.Background(), input)
 	s.Require().NoError(err)
 
 	iamSvc.AssertNotCalled(&s.Suite, "PutRolePolicy")

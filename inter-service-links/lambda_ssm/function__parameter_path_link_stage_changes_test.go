@@ -116,6 +116,12 @@ func stageParameterPathEnvVarChangeTestCase() plugintestutils.LinkChangeStagingT
 					},
 				},
 				FieldChangesKnownOnDeploy: []string{"apiFunctionExecutionRole"},
+
+				// What the link will contribute to the function, declared before it
+				// runs so the framework knows the function is waiting on it.
+				ResourceDataMappings: map[string]string{
+					"apiFunction::spec.environment.variables[\"" + fppCustomEnvVarName + "\"]": "apiFunction.environmentVariables[\"" + fppCustomEnvVarName + "\"]",
+				},
 			},
 		},
 	}
@@ -149,6 +155,12 @@ func stageParameterPathDefaultEnvVarNameTestCase() plugintestutils.LinkChangeSta
 					},
 				},
 				FieldChangesKnownOnDeploy: []string{"apiFunctionExecutionRole"},
+
+				// What the link will contribute to the function, declared before it
+				// runs so the framework knows the function is waiting on it.
+				ResourceDataMappings: map[string]string{
+					"apiFunction::spec.environment.variables[\"" + fppDefaultEnvVarName + "\"]": "apiFunction.environmentVariables[\"" + fppDefaultEnvVarName + "\"]",
+				},
 			},
 		},
 	}

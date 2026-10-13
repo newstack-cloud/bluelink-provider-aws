@@ -46,17 +46,23 @@ func DynamoDBTableLambdaFunctionLink(
 		return &providerv1.LinkDefinition{
 			ResourceTypeA: "aws/dynamodb/table",
 			ResourceTypeB: "aws/lambda/function",
-			// The DynamoDB table must be created first with streams enabled
-			// before the Event Source Mapping can be created.
-			Kind:                            provider.LinkKindSoft,
-			PriorityResource:                provider.LinkPriorityResourceA,
-			PlainTextSummary:                "A link that configures a DynamoDB table to trigger a Lambda function via DynamoDB Streams.",
-			FormattedDescription:            string(description),
-			AnnotationDefinitions:           dynamoDBTableLambdaFunctionLinkAnnotations(),
-			StageChangesFunc:                actions.StageChanges,
-			UpdateResourceAFunc:             actions.UpdateResourceA,
-			UpdateResourceBFunc:             actions.UpdateResourceB,
-			UpdateIntermediaryResourcesFunc: actions.UpdateIntermediaryResources,
+			// Neither resource is written by this link. The table's stream specification
+			// is contributed rather than enabled through the DynamoDB API, and the
+			// framework applies what every link contributing to the table needs it to say
+			// as one update, so no exclusive lock on the table is taken here.
+			Modifies: provider.LinkModifiesNeither,
+			// Streams are enabled on the table and the Event Source Mapping created by
+			// this link, once both resources have been deployed, so neither has to exist
+			// before the other.
+			Kind:                             provider.LinkKindSoft,
+			PriorityResource:                 provider.LinkPriorityResourceNone,
+			PlainTextSummary:                 "A link that configures a DynamoDB table to trigger a Lambda function via DynamoDB Streams.",
+			FormattedDescription:             string(description),
+			AnnotationDefinitions:            dynamoDBTableLambdaFunctionLinkAnnotations(),
+			StageChangesFunc:                 actions.StageChanges,
+			ProduceResourceContributionsFunc: actions.ProduceResourceContributions,
+			UpdateLinkedResourcesFunc:        actions.UpdateLinkedResources,
+			UpdateIntermediaryResourcesFunc:  actions.UpdateIntermediaryResources,
 		}
 	}
 }

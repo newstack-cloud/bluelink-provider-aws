@@ -57,6 +57,19 @@ func (l *functionEventBusLinkActions) StageChanges(
 		)
 	}
 
+	if annotations.populateEnvVars {
+		// What this link will contribute to the function, declared before it runs so the
+		// framework knows the function is waiting on it. The value itself is produced at
+		// deploy time; this says only where it will land.
+		changes.ResourceDataMappings = map[string]string{
+			fmt.Sprintf(
+				"%s::spec.environment.variables[\"%s\"]",
+				pluginutils.GetResourceName(&input.ResourceAChanges.AppliedResourceInfo),
+				envVarName,
+			): envVarFieldPath,
+		}
+	}
+
 	return &provider.LinkStageChangesOutput{
 		Changes: changes,
 	}, nil

@@ -180,9 +180,8 @@ func (s *StreamFunctionLinkUpdateSuite) Test_link_update_resources() {
 		*aws.Config,
 		lambdaservice.Service,
 	]{
-		streamFunctionUpdateResourceANoOpTestCase(loader),
+		streamFunctionUpdateLinkedResourcesNoOpTestCase(loader),
 		streamFunctionDestroyNoOpTestCase(loader),
-		streamFunctionUpdateResourceBNoOpTestCase(loader),
 	}
 
 	plugintestutils.RunLinkUpdateResourceTestCases(
@@ -192,7 +191,7 @@ func (s *StreamFunctionLinkUpdateSuite) Test_link_update_resources() {
 	)
 }
 
-func streamFunctionUpdateResourceANoOpTestCase(
+func streamFunctionUpdateLinkedResourcesNoOpTestCase(
 	loader *testutils.MockAWSConfigLoader,
 ) plugintestutils.LinkUpdateResourceTestCase[
 	*aws.Config,
@@ -209,19 +208,18 @@ func streamFunctionUpdateResourceANoOpTestCase(
 		lambdaservice.Service,
 	]{
 		Name:                    "does not modify the Kinesis stream (resourceA is a no-op)",
-		Resource:                plugintestutils.LinkUpdateResourceA,
 		ServiceFactoryA:         noopCloudControlServiceFactory,
 		ConfigStoreA:            testConfigStore(loader),
 		ServiceFactoryB:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
 		ConfigStoreB:            testConfigStore(loader),
 		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeCreate,
-			ResourceInfo:      streamResourceInfo(),
-			OtherResourceInfo: streamFunctionResourceInfo(),
-			LinkContext:       testLinkContext(),
+		Input: &provider.LinkUpdateLinkedResourcesInput{
+			LinkUpdateType: provider.LinkUpdateTypeCreate,
+			ResourceAInfo:  streamResourceInfo(),
+			ResourceBInfo:  streamFunctionResourceInfo(),
+			LinkContext:    testLinkContext(),
 		},
-		ExpectedOutput: &provider.LinkUpdateResourceOutput{
+		ExpectedOutput: &provider.LinkUpdateLinkedResourcesOutput{
 			LinkData: core.MappingNodeFields(),
 		},
 	}
@@ -244,57 +242,19 @@ func streamFunctionDestroyNoOpTestCase(
 		lambdaservice.Service,
 	]{
 		Name:                    "is a no-op on destroy for the Kinesis stream",
-		Resource:                plugintestutils.LinkUpdateResourceA,
 		ServiceFactoryA:         noopCloudControlServiceFactory,
 		ConfigStoreA:            testConfigStore(loader),
 		ServiceFactoryB:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
 		ConfigStoreB:            testConfigStore(loader),
 		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeDestroy,
-			ResourceInfo:      streamResourceInfo(),
-			OtherResourceInfo: streamFunctionResourceInfo(),
-			LinkContext:       testLinkContext(),
+		Input: &provider.LinkUpdateLinkedResourcesInput{
+			LinkUpdateType: provider.LinkUpdateTypeDestroy,
+			ResourceAInfo:  streamResourceInfo(),
+			ResourceBInfo:  streamFunctionResourceInfo(),
+			LinkContext:    testLinkContext(),
 		},
-		ExpectedOutput: &provider.LinkUpdateResourceOutput{
+		ExpectedOutput: &provider.LinkUpdateLinkedResourcesOutput{
 			LinkData: core.MappingNodeFields(),
-		},
-	}
-}
-
-func streamFunctionUpdateResourceBNoOpTestCase(
-	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.LinkUpdateResourceTestCase[
-	*aws.Config,
-	cloudcontrolservice.Service,
-	*aws.Config,
-	lambdaservice.Service,
-] {
-	lambdaSvc := lambdamock.CreateLambdaServiceMock()
-
-	return plugintestutils.LinkUpdateResourceTestCase[
-		*aws.Config,
-		cloudcontrolservice.Service,
-		*aws.Config,
-		lambdaservice.Service,
-	]{
-		Name:                    "does not modify the lambda function (resourceB is a no-op)",
-		Resource:                plugintestutils.LinkUpdateResourceB,
-		ServiceFactoryA:         noopCloudControlServiceFactory,
-		ConfigStoreA:            testConfigStore(loader),
-		ServiceFactoryB:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
-		ConfigStoreB:            testConfigStore(loader),
-		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeCreate,
-			ResourceInfo:      streamFunctionResourceInfo(),
-			OtherResourceInfo: streamResourceInfo(),
-			LinkContext:       testLinkContext(),
-		},
-		ExpectedOutput: &provider.LinkUpdateResourceOutput{
-			LinkData: &core.MappingNode{
-				Fields: map[string]*core.MappingNode{},
-			},
 		},
 	}
 }

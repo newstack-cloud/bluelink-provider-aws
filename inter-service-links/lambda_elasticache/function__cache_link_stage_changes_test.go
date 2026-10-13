@@ -3,6 +3,7 @@
 package lambdaelasticache
 
 import (
+	"fmt"
 	"maps"
 	"testing"
 
@@ -104,6 +105,9 @@ func (s *FunctionCacheLinkStageChangesSuite) Test_stage_changes() {
 					NewFields: []*provider.FieldChange{
 						{FieldPath: lcStageHostPath, NewValue: core.MappingNodeFromString(testCacheEndpoint)},
 					},
+
+					// The variables this link declares it will contribute.
+					ResourceDataMappings: lcDeclaredContributions(),
 				},
 			},
 		},
@@ -119,6 +123,9 @@ func (s *FunctionCacheLinkStageChangesSuite) Test_stage_changes() {
 					NewFields: []*provider.FieldChange{
 						{FieldPath: lcStageHostPath, NewValue: core.MappingNodeFromString(testCacheConfigEndpoint)},
 					},
+
+					// The variables this link declares it will contribute.
+					ResourceDataMappings: lcDeclaredContributions(),
 				},
 			},
 		},
@@ -137,6 +144,9 @@ func (s *FunctionCacheLinkStageChangesSuite) Test_stage_changes() {
 						{FieldPath: lcStageHostPath, NewValue: core.MappingNodeFromString(testCacheEndpoint)},
 					},
 					FieldChangesKnownOnDeploy: []string{"apiFunctionExecutionRole"},
+
+					// The variables this link declares it will contribute.
+					ResourceDataMappings: lcDeclaredContributions(),
 				},
 			},
 		},
@@ -153,6 +163,9 @@ func (s *FunctionCacheLinkStageChangesSuite) Test_stage_changes() {
 						{FieldPath: lcStageHostPath, NewValue: core.MappingNodeFromString(testCacheEndpoint)},
 					},
 					FieldChangesKnownOnDeploy: []string{"apiFunctionNetworkAccess"},
+
+					// The variables this link declares it will contribute.
+					ResourceDataMappings: lcDeclaredContributions(),
 				},
 			},
 		},
@@ -179,6 +192,9 @@ func (s *FunctionCacheLinkStageChangesSuite) Test_stage_changes() {
 			ExpectedOutput: &provider.LinkStageChangesOutput{
 				Changes: &provider.LinkChanges{
 					UnchangedFields: []string{lcStageHostPath},
+
+					// The variables this link declares it will contribute.
+					ResourceDataMappings: lcDeclaredContributions(),
 				},
 			},
 		},
@@ -193,4 +209,16 @@ func (s *FunctionCacheLinkStageChangesSuite) Test_stage_changes() {
 
 func TestFunctionCacheLinkStageChangesSuite(t *testing.T) {
 	suite.Run(t, new(FunctionCacheLinkStageChangesSuite))
+}
+
+// The variables the cache link declares it will contribute to the function, which staging
+// records so the framework knows the function is waiting on this link.
+func lcDeclaredContributions() map[string]string {
+	declared := map[string]string{}
+	for _, name := range cacheEnvVarNames(lcPrefix).all() {
+		declared[fmt.Sprintf("apiFunction::spec.environment.variables[%q]", name)] =
+			fmt.Sprintf("apiFunction.environmentVariables[%q]", name)
+	}
+
+	return declared
 }

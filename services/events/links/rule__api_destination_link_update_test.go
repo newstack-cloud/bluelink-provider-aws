@@ -138,33 +138,31 @@ func (s *RuleAPIDestinationLinkUpdateSuite) Test_link_update_resources() {
 	]{
 		{
 			Name:            "does not modify the rule resource (A)",
-			Resource:        plugintestutils.LinkUpdateResourceA,
 			ServiceFactoryA: eventsmock.CreateEventsServiceMockFactory(),
 			ConfigStoreA:    testConfigStore(loader),
 			ServiceFactoryB: eventsmock.CreateEventsServiceMockFactory(),
 			ConfigStoreB:    testConfigStore(loader),
-			Input: &provider.LinkUpdateResourceInput{
-				LinkUpdateType:    provider.LinkUpdateTypeCreate,
-				ResourceInfo:      ruleResourceInfoA(),
-				OtherResourceInfo: apiDestinationResourceInfoB(),
-				LinkContext:       testLinkContext(),
+			Input: &provider.LinkUpdateLinkedResourcesInput{
+				LinkUpdateType: provider.LinkUpdateTypeCreate,
+				ResourceAInfo:  ruleResourceInfoA(),
+				ResourceBInfo:  apiDestinationResourceInfoB(),
+				LinkContext:    testLinkContext(),
 			},
-			ExpectedOutput: &provider.LinkUpdateResourceOutput{LinkData: emptyData},
+			ExpectedOutput: &provider.LinkUpdateLinkedResourcesOutput{LinkData: emptyData},
 		},
 		{
 			Name:            "does not modify the API destination resource (B)",
-			Resource:        plugintestutils.LinkUpdateResourceB,
 			ServiceFactoryA: eventsmock.CreateEventsServiceMockFactory(),
 			ConfigStoreA:    testConfigStore(loader),
 			ServiceFactoryB: eventsmock.CreateEventsServiceMockFactory(),
 			ConfigStoreB:    testConfigStore(loader),
-			Input: &provider.LinkUpdateResourceInput{
-				LinkUpdateType:    provider.LinkUpdateTypeCreate,
-				ResourceInfo:      apiDestinationResourceInfoB(),
-				OtherResourceInfo: ruleResourceInfoA(),
-				LinkContext:       testLinkContext(),
+			Input: &provider.LinkUpdateLinkedResourcesInput{
+				LinkUpdateType: provider.LinkUpdateTypeCreate,
+				ResourceAInfo:  apiDestinationResourceInfoB(),
+				ResourceBInfo:  ruleResourceInfoA(),
+				LinkContext:    testLinkContext(),
 			},
-			ExpectedOutput: &provider.LinkUpdateResourceOutput{LinkData: emptyData},
+			ExpectedOutput: &provider.LinkUpdateLinkedResourcesOutput{LinkData: emptyData},
 		},
 	}
 

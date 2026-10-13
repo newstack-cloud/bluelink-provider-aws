@@ -6,131 +6,23 @@ import (
 	"fmt"
 
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/bluelink-provider-aws/linkutils"
-	lambdaservice "github.com/newstack-cloud/bluelink-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/core"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
 	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/pluginutils"
 )
 
-func (l *functionQueueLinkActions) UpdateResourceA(
+// The queue's ARN is read from state when the send grant is reconciled, so neither
+// resource is written by this link.
+func (l *functionQueueLinkActions) UpdateLinkedResources(
 	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
-	providerCtx := provider.NewProviderContextFromLinkContext(input.LinkContext, "aws")
-	lambdaService, _, err := l.getLambdaServiceWithRegion(ctx, providerCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	annotations := getQueueLinkAnnotations(input.ResourceInfo, input.OtherResourceInfo)
-	if !annotations.populateEnvVars {
-		return &provider.LinkUpdateResourceOutput{
-			LinkData:             core.MappingNodeFields(),
-			ResourceDataMappings: map[string]string{},
-		}, nil
-	}
-
-	setupCtx, err := linkutils.SetupLinkFromLambdaFunction(
-		ctx,
-		&linkutils.LambdaLinkSetupData{
-			LambdaFuncResourceInfo: input.ResourceInfo,
-			LoadRoleInfo:           false,
-		},
-		lambdaService,
-		nil,
-		providerCtx,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	if input.LinkUpdateType == provider.LinkUpdateTypeDestroy {
-		return l.removeQueueEnvVars(ctx, input, setupCtx.FunctionARN, annotations.envVarName, setupCtx.LambdaOutput, lambdaService)
-	}
-
-	queueURL, hasQueueURL := extractQueueURL(input.OtherResourceInfo)
-	if !hasQueueURL {
-		return nil, fmt.Errorf(
-			"queue URL could not be retrieved from the linked to %q queue resource",
-			pluginutils.GetResourceName(input.OtherResourceInfo),
-		)
-	}
-
-	return l.addQueueEnvVars(ctx, input, setupCtx.FunctionARN, queueURL, annotations.envVarName, setupCtx.LambdaOutput, lambdaService)
-}
-
-func (l *functionQueueLinkActions) addQueueEnvVars(
-	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-	functionARN, queueURL, envVarName string,
-	currentFunctionConfig *types.FunctionConfiguration,
-	lambdaService lambdaservice.Service,
-) (*provider.LinkUpdateResourceOutput, error) {
-	finalEnvVarName := queueEnvVarName(envVarName, input.OtherResourceInfo)
-	dataMappingKey := fmt.Sprintf(
-		"%s::spec.environment.variables[\"%s\"]",
-		input.ResourceInfo.ResourceName, finalEnvVarName,
-	)
-	linkDataFieldPath := fmt.Sprintf(
-		"%s.environmentVariables[\"%s\"]",
-		input.ResourceInfo.ResourceName, finalEnvVarName,
-	)
-
-	err := linkutils.UpdateLambdaEnvironmentVariables(
-		ctx, lambdaService, functionARN, currentFunctionConfig,
-		map[string]string{finalEnvVarName: queueURL},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return &provider.LinkUpdateResourceOutput{
-		LinkData: core.MappingNodeFields(
-			pluginutils.GetResourceName(input.ResourceInfo),
-			core.MappingNodeFields(
-				"environmentVariables",
-				core.MappingNodeFields(finalEnvVarName, core.MappingNodeFromString(queueURL)),
-			),
-		),
-		ResourceDataMappings: map[string]string{dataMappingKey: linkDataFieldPath},
+	input *provider.LinkUpdateLinkedResourcesInput,
+) (*provider.LinkUpdateLinkedResourcesOutput, error) {
+	return &provider.LinkUpdateLinkedResourcesOutput{
+		LinkData: core.MappingNodeFields(),
 	}, nil
 }
 
-func (l *functionQueueLinkActions) removeQueueEnvVars(
-	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-	functionARN, envVarName string,
-	currentFunctionConfig *types.FunctionConfiguration,
-	lambdaService lambdaservice.Service,
-) (*provider.LinkUpdateResourceOutput, error) {
-	finalEnvVarName := queueEnvVarName(envVarName, input.OtherResourceInfo)
-	err := linkutils.RemoveLambdaEnvironmentVariables(
-		ctx, lambdaService, functionARN, currentFunctionConfig, []string{finalEnvVarName},
-	)
-	if err != nil {
-		return nil, err
-	}
-	return &provider.LinkUpdateResourceOutput{
-		LinkData:             core.MappingNodeFields(pluginutils.GetResourceName(input.ResourceInfo), core.MappingNodeFields()),
-		ResourceDataMappings: map[string]string{},
-	}, nil
-}
-
-func (l *functionQueueLinkActions) UpdateResourceB(
-	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
-	// The queue is not modified by this link; only the Lambda function and its execution role are
-	// updated to allow sending to (and optionally receiving from) the queue.
-	return &provider.LinkUpdateResourceOutput{
-		LinkData: &core.MappingNode{Fields: map[string]*core.MappingNode{}},
-	}, nil
-}
-
-// UpdateIntermediaryResources grants (or revokes) the Lambda execution role permission to access
-// the queue, then activates the SQS VPC endpoint when the function is VPC-isolated.
 func (l *functionQueueLinkActions) UpdateIntermediaryResources(
 	ctx context.Context,
 	input *provider.LinkUpdateIntermediaryResourcesInput,
@@ -152,16 +44,8 @@ func (l *functionQueueLinkActions) UpdateIntermediaryResources(
 		return nil, err
 	}
 
-	err = input.ResourceService.AcquireResourceLock(ctx, &provider.AcquireResourceLockInput{
-		InstanceID:      pluginutils.GetInstanceID(input.ResourceAInfo),
-		ResourceName:    setupCtx.RoleResourceName,
-		ProviderContext: providerCtx,
-		AcquiredBy:      input.LinkID,
-	})
-	if err != nil {
-		return nil, err
-	}
-
+	// The role is locked around each grant below rather than for this whole
+	// phase, which goes on to do slow work the role has no part in.
 	iamService, err := l.getIamService(ctx, providerCtx)
 	if err != nil {
 		return nil, err
@@ -170,10 +54,20 @@ func (l *functionQueueLinkActions) UpdateIntermediaryResources(
 	sid := createAccessSID(input.ResourceBInfo)
 
 	if input.LinkUpdateType == provider.LinkUpdateTypeDestroy {
-		if _, err := linkutils.ReconcileRoleAccessPolicy(ctx, iamService, linkutils.RoleAccessGrant{
-			RoleName: setupCtx.RoleName,
-			SID:      sid,
-		}); err != nil {
+		if _, err := linkutils.GrantRoleAccessUnderLock(
+			ctx,
+			linkutils.RoleAccessLockFor(
+				input.ResourceService,
+				input.LinkID,
+				input.ResourceAInfo,
+				setupCtx,
+				providerCtx,
+			),
+			iamService,
+			linkutils.RoleAccessGrant{
+				RoleName: setupCtx.RoleName,
+				SID:      sid,
+			}); err != nil {
 			return nil, err
 		}
 		// The endpoint this link provisioned is removed here; returning early would
@@ -202,11 +96,21 @@ func (l *functionQueueLinkActions) UpdateIntermediaryResources(
 	annotations := getQueueLinkAnnotations(input.ResourceAInfo, input.ResourceBInfo)
 	actions := sqsActionsForAccessLevel(annotations.accessLevel)
 
-	result, err := linkutils.ReconcileRoleAccessPolicy(ctx, iamService, linkutils.RoleAccessGrant{
-		RoleName:  setupCtx.RoleName,
-		SID:       sid,
-		Statement: sqsAccessStatement(sid, queueARN, actions),
-	})
+	result, err := linkutils.GrantRoleAccessUnderLock(
+		ctx,
+		linkutils.RoleAccessLockFor(
+			input.ResourceService,
+			input.LinkID,
+			input.ResourceAInfo,
+			setupCtx,
+			providerCtx,
+		),
+		iamService,
+		linkutils.RoleAccessGrant{
+			RoleName:  setupCtx.RoleName,
+			SID:       sid,
+			Statement: sqsAccessStatement(sid, queueARN, actions),
+		})
 	if err != nil {
 		if errors.Is(err, linkutils.ErrAccessPolicyBudgetExhausted) {
 			return nil, fmt.Errorf(

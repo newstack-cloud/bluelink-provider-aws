@@ -44,16 +44,19 @@ func SQSQueueLambdaFunctionLink(
 		return &providerv1.LinkDefinition{
 			ResourceTypeA: "aws/sqs/queue",
 			ResourceTypeB: "aws/lambda/function",
-			// The SQS queue must be created first so its ARN is available
-			// before the Event Source Mapping can be created.
+			// Neither resource in the relationship is written; the link does its work
+			// through intermediary resources.
+			Modifies: provider.LinkModifiesNeither,
+			// The queue's ARN is read when the Event Source Mapping is created, which is
+			// this link's own work once both resources have been deployed, so neither has
+			// to exist before the other.
 			Kind:                            provider.LinkKindSoft,
-			PriorityResource:                provider.LinkPriorityResourceA,
+			PriorityResource:                provider.LinkPriorityResourceNone,
 			PlainTextSummary:                "A link that configures an SQS queue to trigger a Lambda function via an event source mapping.",
 			FormattedDescription:            string(description),
 			AnnotationDefinitions:           sqsQueueLambdaFunctionLinkAnnotations(),
 			StageChangesFunc:                actions.StageChanges,
-			UpdateResourceAFunc:             actions.UpdateResourceA,
-			UpdateResourceBFunc:             actions.UpdateResourceB,
+			UpdateLinkedResourcesFunc:       actions.UpdateLinkedResources,
 			UpdateIntermediaryResourcesFunc: actions.UpdateIntermediaryResources,
 		}
 	}

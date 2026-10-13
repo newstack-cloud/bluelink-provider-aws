@@ -45,16 +45,18 @@ func StreamFunctionLink(
 		return &providerv1.LinkDefinition{
 			ResourceTypeA: "aws/kinesis/stream",
 			ResourceTypeB: "aws/lambda/function",
-			// The Kinesis stream must exist before the Event Source Mapping can be
-			// created, so the stream is the priority resource.
+			// Neither resource in the relationship is written; the link does its work
+			// through intermediary resources.
+			Modifies: provider.LinkModifiesNeither,
+			// The Event Source Mapping is this link's own work and is created once both
+			// resources have been deployed, so neither has to exist before the other.
 			Kind:                            provider.LinkKindSoft,
-			PriorityResource:                provider.LinkPriorityResourceA,
+			PriorityResource:                provider.LinkPriorityResourceNone,
 			PlainTextSummary:                "A link that configures a Kinesis data stream to trigger a Lambda function via an event source mapping.",
 			FormattedDescription:            string(description),
 			AnnotationDefinitions:           kinesisStreamLambdaFunctionLinkAnnotations(),
 			StageChangesFunc:                actions.StageChanges,
-			UpdateResourceAFunc:             actions.UpdateResourceA,
-			UpdateResourceBFunc:             actions.UpdateResourceB,
+			UpdateLinkedResourcesFunc:       actions.UpdateLinkedResources,
 			UpdateIntermediaryResourcesFunc: actions.UpdateIntermediaryResources,
 		}
 	}

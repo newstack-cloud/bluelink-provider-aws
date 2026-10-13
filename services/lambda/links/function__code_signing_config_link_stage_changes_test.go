@@ -116,6 +116,12 @@ func createFunctionCSCLinkChangesTestCase(
 						NewValue:  core.MappingNodeFromString(cscARN),
 					},
 				},
+
+				// What the link declares it will contribute, recorded so the
+				// framework knows the resource is waiting on it.
+				ResourceDataMappings: map[string]string{
+					"test-function::spec.codeSigningConfigArn": "contributions[0]",
+				},
 			},
 		},
 	}
@@ -171,6 +177,12 @@ func createFunctionCSCLinkChangesKnownOnDeployTestCase(
 			Changes: &provider.LinkChanges{
 				FieldChangesKnownOnDeploy: []string{
 					"[\"test-function\"].codeSigningConfigArn",
+				},
+
+				// What the link declares it will contribute, recorded so the
+				// framework knows the resource is waiting on it.
+				ResourceDataMappings: map[string]string{
+					"test-function::spec.codeSigningConfigArn": "contributions[0]",
 				},
 			},
 		},
@@ -232,6 +244,12 @@ func createFunctionCSCLinkChangesNoChangesTestCase(
 			Changes: &provider.LinkChanges{
 				UnchangedFields: []string{
 					"[\"test-function\"].codeSigningConfigArn",
+				},
+
+				// What the link declares it will contribute, recorded so the
+				// framework knows the resource is waiting on it.
+				ResourceDataMappings: map[string]string{
+					"test-function::spec.codeSigningConfigArn": "contributions[0]",
 				},
 			},
 		},

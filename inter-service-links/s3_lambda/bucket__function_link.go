@@ -35,16 +35,18 @@ func BucketFunctionLink() func(BucketToFunctionLinkDeps) provider.Link {
 		}
 
 		return &providerv1.LinkDefinition{
-			ResourceTypeA:                   "aws/s3/bucket",
-			ResourceTypeB:                   "aws/lambda/function",
+			ResourceTypeA: "aws/s3/bucket",
+			ResourceTypeB: "aws/lambda/function",
+			// Neither resource in the relationship is written; the link does its work
+			// through intermediary resources.
+			Modifies:                        provider.LinkModifiesNeither,
 			Kind:                            provider.LinkKindSoft,
-			PriorityResource:                provider.LinkPriorityResourceA,
+			PriorityResource:                provider.LinkPriorityResourceNone,
 			PlainTextSummary:                "A link that configures an S3 bucket to invoke a Lambda function on object event notifications.",
 			FormattedDescription:            string(description),
 			AnnotationDefinitions:           bucketFunctionLinkAnnotations(),
 			StageChangesFunc:                actions.StageChanges,
-			UpdateResourceAFunc:             actions.UpdateResourceA,
-			UpdateResourceBFunc:             actions.UpdateResourceB,
+			UpdateLinkedResourcesFunc:       actions.UpdateLinkedResources,
 			UpdateIntermediaryResourcesFunc: actions.UpdateIntermediaryResources,
 		}
 	}

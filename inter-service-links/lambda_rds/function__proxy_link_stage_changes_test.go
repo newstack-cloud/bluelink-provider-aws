@@ -3,6 +3,7 @@
 package lambdards
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -91,6 +92,9 @@ func (s *FunctionProxyLinkStageChangesSuite) Test_stage_changes() {
 					NewFields: []*provider.FieldChange{
 						{FieldPath: fpStageHostPath, NewValue: core.MappingNodeFromString(testProxyEndpoint)},
 					},
+
+					// The variables this link declares it will contribute.
+					ResourceDataMappings: fpDeclaredContributions(),
 				},
 			},
 		},
@@ -107,6 +111,9 @@ func (s *FunctionProxyLinkStageChangesSuite) Test_stage_changes() {
 						{FieldPath: fpStageHostPath, NewValue: core.MappingNodeFromString(testProxyEndpoint)},
 					},
 					FieldChangesKnownOnDeploy: []string{"apiFunctionExecutionRole"},
+
+					// The variables this link declares it will contribute.
+					ResourceDataMappings: fpDeclaredContributions(),
 				},
 			},
 		},
@@ -123,6 +130,9 @@ func (s *FunctionProxyLinkStageChangesSuite) Test_stage_changes() {
 						{FieldPath: fpStageHostPath, NewValue: core.MappingNodeFromString(testProxyEndpoint)},
 					},
 					FieldChangesKnownOnDeploy: []string{"apiFunctionNetworkAccess"},
+
+					// The variables this link declares it will contribute.
+					ResourceDataMappings: fpDeclaredContributions(),
 				},
 			},
 		},
@@ -149,6 +159,9 @@ func (s *FunctionProxyLinkStageChangesSuite) Test_stage_changes() {
 			ExpectedOutput: &provider.LinkStageChangesOutput{
 				Changes: &provider.LinkChanges{
 					UnchangedFields: []string{fpStageHostPath},
+
+					// The variables this link declares it will contribute.
+					ResourceDataMappings: fpDeclaredContributions(),
 				},
 			},
 		},
@@ -163,4 +176,16 @@ func (s *FunctionProxyLinkStageChangesSuite) Test_stage_changes() {
 
 func TestFunctionProxyLinkStageChangesSuite(t *testing.T) {
 	suite.Run(t, new(FunctionProxyLinkStageChangesSuite))
+}
+
+// The variables the proxy link declares it will contribute to the function, which staging
+// records so the framework knows the function is waiting on this link.
+func fpDeclaredContributions() map[string]string {
+	declared := map[string]string{}
+	for _, name := range proxyEnvVarNames(fpPrefix).all() {
+		declared[fmt.Sprintf("apiFunction::spec.environment.variables[%q]", name)] =
+			fmt.Sprintf("apiFunction.environmentVariables[%q]", name)
+	}
+
+	return declared
 }

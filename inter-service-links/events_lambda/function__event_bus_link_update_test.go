@@ -73,144 +73,6 @@ func getFunctionWithEnvOutput() *lambda.GetFunctionOutput {
 	}
 }
 
-func (s *FunctionEventBusLinkUpdateSuite) Test_link_update_resources() {
-	loader := &testutils.MockAWSConfigLoader{}
-
-	testCases := []plugintestutils.LinkUpdateResourceTestCase[
-		*aws.Config,
-		lambdaservice.Service,
-		*aws.Config,
-		eventsservice.Service,
-	]{
-		functionEventBusAddEnvVarTestCase(loader),
-		functionEventBusRemoveEnvVarTestCase(loader),
-		functionEventBusUpdateErrorTestCase(loader),
-	}
-
-	plugintestutils.RunLinkUpdateResourceTestCases(testCases, functionEventBusLinkFactory(), &s.Suite)
-}
-
-func functionEventBusAddEnvVarTestCase(
-	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.LinkUpdateResourceTestCase[
-	*aws.Config,
-	lambdaservice.Service,
-	*aws.Config,
-	eventsservice.Service,
-] {
-	lambdaSvc := lambdamock.CreateLambdaServiceMock(
-		lambdamock.WithGetFunctionOutput(getFunctionWithEnvOutput()),
-		lambdamock.WithUpdateFunctionConfigurationOutput(&lambda.UpdateFunctionConfigurationOutput{}),
-	)
-
-	return plugintestutils.LinkUpdateResourceTestCase[
-		*aws.Config,
-		lambdaservice.Service,
-		*aws.Config,
-		eventsservice.Service,
-	]{
-		Name:                    "populates the event bus env var on the function",
-		Resource:                plugintestutils.LinkUpdateResourceA,
-		ServiceFactoryA:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
-		ConfigStoreA:            testConfigStore(loader),
-		ServiceFactoryB:         eventsmock.CreateEventsServiceMockFactory(),
-		ConfigStoreB:            testConfigStore(loader),
-		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeCreate,
-			ResourceInfo:      functionResourceInfoA(),
-			OtherResourceInfo: eventBusResourceInfoB(),
-			LinkContext:       testLinkContext(),
-		},
-		ExpectedOutput: &provider.LinkUpdateResourceOutput{
-			LinkData: core.MappingNodeFields(
-				"publishOrderFunction",
-				core.MappingNodeFields(
-					"environmentVariables",
-					core.MappingNodeFields(
-						"EVENT_BUS_orderEventBus", core.MappingNodeFromString("order-events"),
-					),
-				),
-			),
-			ResourceDataMappings: map[string]string{
-				"publishOrderFunction::spec.environment.variables[\"EVENT_BUS_orderEventBus\"]": "publishOrderFunction.environmentVariables[\"EVENT_BUS_orderEventBus\"]",
-			},
-		},
-		UpdateActionsCalled: map[string]any{
-			"UpdateFunctionConfiguration": &lambda.UpdateFunctionConfigurationInput{
-				FunctionName: aws.String(febFunctionARN),
-				Environment: &lambdatypes.Environment{
-					Variables: map[string]string{
-						"EXISTING":                "val",
-						"EVENT_BUS_orderEventBus": "order-events",
-					},
-				},
-			},
-		},
-	}
-}
-
-func functionEventBusRemoveEnvVarTestCase(
-	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.LinkUpdateResourceTestCase[
-	*aws.Config,
-	lambdaservice.Service,
-	*aws.Config,
-	eventsservice.Service,
-] {
-	lambdaSvc := lambdamock.CreateLambdaServiceMock(
-		lambdamock.WithGetFunctionOutput(&lambda.GetFunctionOutput{
-			Configuration: &lambdatypes.FunctionConfiguration{
-				FunctionArn: aws.String(febFunctionARN),
-				Role:        aws.String(febRoleARN),
-				Environment: &lambdatypes.EnvironmentResponse{
-					Variables: map[string]string{
-						"EXISTING":                "val",
-						"EVENT_BUS_orderEventBus": "order-events",
-					},
-				},
-			},
-		}),
-		lambdamock.WithUpdateFunctionConfigurationOutput(&lambda.UpdateFunctionConfigurationOutput{}),
-	)
-
-	return plugintestutils.LinkUpdateResourceTestCase[
-		*aws.Config,
-		lambdaservice.Service,
-		*aws.Config,
-		eventsservice.Service,
-	]{
-		Name:                    "removes the event bus env var on destroy",
-		Resource:                plugintestutils.LinkUpdateResourceA,
-		ServiceFactoryA:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
-		ConfigStoreA:            testConfigStore(loader),
-		ServiceFactoryB:         eventsmock.CreateEventsServiceMockFactory(),
-		ConfigStoreB:            testConfigStore(loader),
-		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeDestroy,
-			ResourceInfo:      functionResourceInfoA(),
-			OtherResourceInfo: eventBusResourceInfoB(),
-			LinkContext:       testLinkContext(),
-		},
-		ExpectedOutput: &provider.LinkUpdateResourceOutput{
-			LinkData: core.MappingNodeFields(
-				"publishOrderFunction",
-				core.MappingNodeFields(),
-			),
-			ResourceDataMappings: map[string]string{},
-		},
-		UpdateActionsCalled: map[string]any{
-			"UpdateFunctionConfiguration": &lambda.UpdateFunctionConfigurationInput{
-				FunctionName: aws.String(febFunctionARN),
-				Environment: &lambdatypes.Environment{
-					Variables: map[string]string{"EXISTING": "val"},
-				},
-			},
-		},
-	}
-}
-
 func functionEventBusUpdateErrorTestCase(
 	loader *testutils.MockAWSConfigLoader,
 ) plugintestutils.LinkUpdateResourceTestCase[
@@ -231,17 +93,16 @@ func functionEventBusUpdateErrorTestCase(
 		eventsservice.Service,
 	]{
 		Name:                    "returns error when the function update fails",
-		Resource:                plugintestutils.LinkUpdateResourceA,
 		ServiceFactoryA:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
 		ConfigStoreA:            testConfigStore(loader),
 		ServiceFactoryB:         eventsmock.CreateEventsServiceMockFactory(),
 		ConfigStoreB:            testConfigStore(loader),
 		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeCreate,
-			ResourceInfo:      functionResourceInfoA(),
-			OtherResourceInfo: eventBusResourceInfoB(),
-			LinkContext:       testLinkContext(),
+		Input: &provider.LinkUpdateLinkedResourcesInput{
+			LinkUpdateType: provider.LinkUpdateTypeCreate,
+			ResourceAInfo:  functionResourceInfoA(),
+			ResourceBInfo:  eventBusResourceInfoB(),
+			LinkContext:    testLinkContext(),
 		},
 		ExpectError: true,
 	}

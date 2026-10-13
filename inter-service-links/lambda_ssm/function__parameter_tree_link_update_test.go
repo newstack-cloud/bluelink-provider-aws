@@ -9,12 +9,9 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
-	"github.com/aws/aws-sdk-go-v2/service/lambda"
-	lambdatypes "github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/bluelink-provider-aws/internal/testutils"
 	ec2mock "github.com/newstack-cloud/bluelink-provider-aws/internal/testutils/ec2_mock"
 	iammock "github.com/newstack-cloud/bluelink-provider-aws/internal/testutils/iam_mock"
-	lambdamock "github.com/newstack-cloud/bluelink-provider-aws/internal/testutils/lambda_mock"
 	"github.com/newstack-cloud/bluelink-provider-aws/linkutils"
 	iamservice "github.com/newstack-cloud/bluelink-provider-aws/services/iam/service"
 	lambdaservice "github.com/newstack-cloud/bluelink-provider-aws/services/lambda/service"
@@ -73,155 +70,6 @@ func fptParameterTreeInfo() *provider.ResourceInfo {
 	}
 }
 
-func (s *FunctionParameterTreeLinkUpdateSuite) Test_update_resource_a_env_vars() {
-	loader := &testutils.MockAWSConfigLoader{}
-
-	testCases := []plugintestutils.LinkUpdateResourceTestCase[
-		*aws.Config, lambdaservice.Service, *aws.Config, ssmservice.Service,
-	]{
-		functionParameterTreeAddEnvVarTestCase(loader),
-		functionParameterTreeEnvVarsDisabledTestCase(loader),
-		functionParameterTreeMissingPathTestCase(loader),
-	}
-
-	plugintestutils.RunLinkUpdateResourceTestCases(
-		testCases,
-		functionParameterTreeLinkFactory(iammock.CreateIamServiceMock()),
-		&s.Suite,
-	)
-}
-
-func functionParameterTreeAddEnvVarTestCase(
-	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.LinkUpdateResourceTestCase[
-	*aws.Config, lambdaservice.Service, *aws.Config, ssmservice.Service,
-] {
-	lambdaSvc := lambdamock.CreateLambdaServiceMock(
-		lambdamock.WithGetFunctionOutput(fpGetFunctionOutput(map[string]string{"EXISTING": "val"})),
-		lambdamock.WithUpdateFunctionConfigurationOutput(&lambda.UpdateFunctionConfigurationOutput{}),
-	)
-
-	return plugintestutils.LinkUpdateResourceTestCase[
-		*aws.Config, lambdaservice.Service, *aws.Config, ssmservice.Service,
-	]{
-		Name:                    "populates the tree path prefix env var with a sanitised default name",
-		Resource:                plugintestutils.LinkUpdateResourceA,
-		ServiceFactoryA:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
-		ConfigStoreA:            testConfigStore(loader),
-		ServiceFactoryB:         noopSSMServiceFactory,
-		ConfigStoreB:            testConfigStore(loader),
-		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeCreate,
-			ResourceInfo:      fpFunctionInfo(),
-			OtherResourceInfo: fptParameterTreeInfo(),
-			LinkContext:       testLinkContext(),
-		},
-		ExpectedOutput: &provider.LinkUpdateResourceOutput{
-			LinkData: core.MappingNodeFields(
-				"apiFunction",
-				core.MappingNodeFields(
-					"environmentVariables",
-					core.MappingNodeFields(
-						fptDefaultEnvVarName, core.MappingNodeFromString(fptPath),
-					),
-				),
-			),
-			ResourceDataMappings: map[string]string{
-				fmt.Sprintf(
-					"apiFunction::spec.environment.variables[\"%s\"]", fptDefaultEnvVarName,
-				): fmt.Sprintf(
-					"apiFunction.environmentVariables[\"%s\"]", fptDefaultEnvVarName,
-				),
-			},
-		},
-		UpdateActionsCalled: map[string]any{
-			"UpdateFunctionConfiguration": &lambda.UpdateFunctionConfigurationInput{
-				FunctionName: aws.String(fpFunctionARN),
-				Environment: &lambdatypes.Environment{
-					Variables: map[string]string{
-						"EXISTING":           "val",
-						fptDefaultEnvVarName: fptPath,
-					},
-				},
-			},
-		},
-	}
-}
-
-func functionParameterTreeEnvVarsDisabledTestCase(
-	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.LinkUpdateResourceTestCase[
-	*aws.Config, lambdaservice.Service, *aws.Config, ssmservice.Service,
-] {
-	lambdaSvc := lambdamock.CreateLambdaServiceMock()
-
-	return plugintestutils.LinkUpdateResourceTestCase[
-		*aws.Config, lambdaservice.Service, *aws.Config, ssmservice.Service,
-	]{
-		Name:            "does nothing when env var population is disabled",
-		Resource:        plugintestutils.LinkUpdateResourceA,
-		ServiceFactoryA: func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
-		ConfigStoreA:    testConfigStore(loader),
-		ServiceFactoryB: noopSSMServiceFactory,
-		ConfigStoreB:    testConfigStore(loader),
-
-		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType: provider.LinkUpdateTypeCreate,
-			ResourceInfo: fppFunctionInfoWithAnnotations(map[string]*core.MappingNode{
-				"aws.lambda.ssm.config-store.populateEnvVars": core.MappingNodeFromBool(false),
-			}),
-			OtherResourceInfo: fptParameterTreeInfo(),
-			LinkContext:       testLinkContext(),
-		},
-		ExpectedOutput: &provider.LinkUpdateResourceOutput{
-			LinkData:             core.MappingNodeFields(),
-			ResourceDataMappings: map[string]string{},
-		},
-		UpdateActionsNotCalled: []string{"GetFunction", "UpdateFunctionConfiguration"},
-	}
-}
-
-func functionParameterTreeMissingPathTestCase(
-	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.LinkUpdateResourceTestCase[
-	*aws.Config, lambdaservice.Service, *aws.Config, ssmservice.Service,
-] {
-	lambdaSvc := lambdamock.CreateLambdaServiceMock(
-		lambdamock.WithGetFunctionOutput(fpGetFunctionOutput(map[string]string{})),
-	)
-
-	parameterTreeInfo := &provider.ResourceInfo{
-		ResourceName: "config-store",
-		CurrentResourceState: &state.ResourceState{
-			SpecData: core.MappingNodeFields(),
-		},
-	}
-
-	return plugintestutils.LinkUpdateResourceTestCase[
-		*aws.Config, lambdaservice.Service, *aws.Config, ssmservice.Service,
-	]{
-		Name:                    "returns error when the path is missing from the target resource state",
-		Resource:                plugintestutils.LinkUpdateResourceA,
-		ServiceFactoryA:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
-		ConfigStoreA:            testConfigStore(loader),
-		ServiceFactoryB:         noopSSMServiceFactory,
-		ConfigStoreB:            testConfigStore(loader),
-		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeCreate,
-			ResourceInfo:      fpFunctionInfo(),
-			OtherResourceInfo: parameterTreeInfo,
-			LinkContext:       testLinkContext(),
-		},
-		UpdateActionsNotCalled: []string{"UpdateFunctionConfiguration"},
-		ExpectError:            true,
-	}
-}
-
-// Verifies the inline policy carries the tree link's statement with the three read ssm
-// actions over both the path ARN and its wildcard child ARN.
 func matchTreeAccessPolicy(arg any, expectedActions []string) bool {
 	input, ok := arg.(*iam.PutRolePolicyInput)
 	if !ok {

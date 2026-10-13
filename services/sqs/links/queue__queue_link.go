@@ -1,7 +1,6 @@
 package sqslinks
 
 import (
-	"context"
 	"embed"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -34,6 +33,11 @@ func QueueQueueLink(
 	return &providerv1.LinkDefinition{
 		ResourceTypeA: "aws/sqs/queue",
 		ResourceTypeB: "aws/sqs/queue",
+		// Neither resource is written by this link. The redrive policy is contributed
+		// rather than written, and the framework applies what every link
+		// contributing to the resource needs it to say as one update, so no
+		// exclusive lock is taken here.
+		Modifies: provider.LinkModifiesNeither,
 		CardinalityA: provider.LinkCardinality{
 			// A source queue can only have one dead-letter queue.
 			Max: 1,
@@ -41,35 +45,19 @@ func QueueQueueLink(
 		// It doesn't matter which queue is created first,
 		// the source queue will be configured with a redrive policy
 		// to send failed messages to the dead-letter queue once both have been created.
-		Kind:                            provider.LinkKindSoft,
-		PriorityResource:                provider.LinkPriorityResourceNone,
-		PlainTextSummary:                "A link that configures the linked to queue as the dead-letter queue for the linked from queue.",
-		FormattedDescription:            string(description),
-		AnnotationDefinitions:           sqsQueueQueueLinkAnnotations(),
-		StageChangesFunc:                actions.StageChanges,
-		UpdateResourceAFunc:             actions.UpdateResourceA,
-		UpdateResourceBFunc:             actions.UpdateResourceB,
-		UpdateIntermediaryResourcesFunc: actions.UpdateIntermediaryResources,
+		Kind:                             provider.LinkKindSoft,
+		PriorityResource:                 provider.LinkPriorityResourceNone,
+		PlainTextSummary:                 "A link that configures the linked to queue as the dead-letter queue for the linked from queue.",
+		FormattedDescription:             string(description),
+		AnnotationDefinitions:            sqsQueueQueueLinkAnnotations(),
+		StageChangesFunc:                 actions.StageChanges,
+		ProduceResourceContributionsFunc: actions.ProduceResourceContributions,
+		UpdateLinkedResourcesFunc:        actions.UpdateLinkedResources,
+		UpdateIntermediaryResourcesFunc:  actions.UpdateIntermediaryResources,
 	}
 }
 
 type sqsQueueQueueLinkActions struct {
 	sqsServiceFactory pluginutils.ServiceFactory[*aws.Config, sqsservice.Service]
 	awsConfigStore    pluginutils.ServiceConfigStore[*aws.Config]
-}
-
-func (l *sqsQueueQueueLinkActions) getSQSService(
-	ctx context.Context,
-	providerContext provider.Context,
-) (sqsservice.Service, error) {
-	awsConfig, err := l.awsConfigStore.FromProviderContext(
-		ctx,
-		providerContext,
-		nil,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return l.sqsServiceFactory(awsConfig, providerContext), nil
 }

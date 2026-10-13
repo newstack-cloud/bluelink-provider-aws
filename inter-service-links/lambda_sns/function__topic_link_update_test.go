@@ -59,19 +59,6 @@ func ltGetFunctionOutput() *lambda.GetFunctionOutput {
 	}
 }
 
-func (s *FunctionTopicLinkUpdateSuite) Test_update_resource_a_env_vars() {
-	loader := &testutils.MockAWSConfigLoader{}
-
-	testCases := []plugintestutils.LinkUpdateResourceTestCase[
-		*aws.Config, lambdaservice.Service, *aws.Config, cloudcontrolservice.Service,
-	]{
-		functionTopicAddEnvVarTestCase(loader),
-		functionTopicRemoveEnvVarTestCase(loader),
-	}
-
-	plugintestutils.RunLinkUpdateResourceTestCases(testCases, functionTopicLinkFactory(), &s.Suite)
-}
-
 func functionTopicAddEnvVarTestCase(
 	loader *testutils.MockAWSConfigLoader,
 ) plugintestutils.LinkUpdateResourceTestCase[
@@ -86,19 +73,18 @@ func functionTopicAddEnvVarTestCase(
 		*aws.Config, lambdaservice.Service, *aws.Config, cloudcontrolservice.Service,
 	]{
 		Name:                    "populates the topic ARN env var on the function",
-		Resource:                plugintestutils.LinkUpdateResourceA,
 		ServiceFactoryA:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
 		ConfigStoreA:            testConfigStore(loader),
 		ServiceFactoryB:         noopCloudControlServiceFactory,
 		ConfigStoreB:            testConfigStore(loader),
 		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeCreate,
-			ResourceInfo:      ltFunctionInfo(),
-			OtherResourceInfo: ltTopicInfo(),
-			LinkContext:       testLinkContext(),
+		Input: &provider.LinkUpdateLinkedResourcesInput{
+			LinkUpdateType: provider.LinkUpdateTypeCreate,
+			ResourceAInfo:  ltFunctionInfo(),
+			ResourceBInfo:  ltTopicInfo(),
+			LinkContext:    testLinkContext(),
 		},
-		ExpectedOutput: &provider.LinkUpdateResourceOutput{
+		ExpectedOutput: &provider.LinkUpdateLinkedResourcesOutput{
 			LinkData: core.MappingNodeFields(
 				"publishOrderFunction",
 				core.MappingNodeFields(
@@ -148,19 +134,18 @@ func functionTopicRemoveEnvVarTestCase(
 		*aws.Config, lambdaservice.Service, *aws.Config, cloudcontrolservice.Service,
 	]{
 		Name:                    "removes the topic env var on destroy",
-		Resource:                plugintestutils.LinkUpdateResourceA,
 		ServiceFactoryA:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
 		ConfigStoreA:            testConfigStore(loader),
 		ServiceFactoryB:         noopCloudControlServiceFactory,
 		ConfigStoreB:            testConfigStore(loader),
 		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeDestroy,
-			ResourceInfo:      ltFunctionInfo(),
-			OtherResourceInfo: ltTopicInfo(),
-			LinkContext:       testLinkContext(),
+		Input: &provider.LinkUpdateLinkedResourcesInput{
+			LinkUpdateType: provider.LinkUpdateTypeDestroy,
+			ResourceAInfo:  ltFunctionInfo(),
+			ResourceBInfo:  ltTopicInfo(),
+			LinkContext:    testLinkContext(),
 		},
-		ExpectedOutput: &provider.LinkUpdateResourceOutput{
+		ExpectedOutput: &provider.LinkUpdateLinkedResourcesOutput{
 			LinkData:             core.MappingNodeFields("publishOrderFunction", core.MappingNodeFields()),
 			ResourceDataMappings: map[string]string{},
 		},

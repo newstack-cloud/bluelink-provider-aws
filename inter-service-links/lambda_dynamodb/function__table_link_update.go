@@ -6,193 +6,27 @@ import (
 	"fmt"
 
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/newstack-cloud/bluelink-provider-aws/linkutils"
-	lambdaservice "github.com/newstack-cloud/bluelink-provider-aws/services/lambda/service"
 	"github.com/newstack-cloud/bluelink-provider-aws/utils"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/core"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
 	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/pluginutils"
 )
 
-func (l *lambdaFunctionDynamoDBTableLinkActions) UpdateResourceA(
+// The table's ARN is read from state when the function's access is granted, so neither
+// resource is written by this link.
+func (l *lambdaFunctionDynamoDBTableLinkActions) UpdateLinkedResources(
 	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
-	lambdaService, err := l.getLambdaService(
-		ctx,
-		provider.NewProviderContextFromLinkContext(
-			input.LinkContext,
-			"aws",
-		),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	annotations := getDynamoDBTableLinkAnnotations(
-		input.ResourceInfo,
-		input.OtherResourceInfo,
-	)
-	if !annotations.populateEnvVars {
-		return &provider.LinkUpdateResourceOutput{
-			LinkData:             core.MappingNodeFields(),
-			ResourceDataMappings: map[string]string{},
-		}, nil
-	}
-
-	setupCtx, err := linkutils.SetupLinkFromLambdaFunction(
-		ctx,
-		&linkutils.LambdaLinkSetupData{
-			LambdaFuncResourceInfo: input.ResourceInfo,
-			LoadRoleInfo:           false,
-		},
-		lambdaService,
-		nil,
-		provider.NewProviderContextFromLinkContext(
-			input.LinkContext,
-			"aws",
-		),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	tableName, hasTableName := extractTableNameFromResourceInfo(input.OtherResourceInfo)
-	if !hasTableName {
-		return nil, fmt.Errorf(
-			"table name could not be retrieved from the linked to %q DynamoDB table resource",
-			pluginutils.GetResourceName(input.OtherResourceInfo),
-		)
-	}
-
-	if input.LinkUpdateType == provider.LinkUpdateTypeDestroy {
-		return l.removeFunctionEnvVars(
-			ctx,
-			input,
-			setupCtx.FunctionARN,
-			annotations.envVarName,
-			setupCtx.LambdaOutput,
-			lambdaService,
-		)
-	}
-
-	return l.addFunctionEnvVars(
-		ctx,
-		input,
-		setupCtx.FunctionARN,
-		tableName,
-		annotations.envVarName,
-		setupCtx.LambdaOutput,
-		lambdaService,
-	)
-}
-
-func (l *lambdaFunctionDynamoDBTableLinkActions) addFunctionEnvVars(
-	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-	functionARN string,
-	tableName string,
-	envVarName string,
-	currentFunctionConfig *types.FunctionConfiguration,
-	lambdaService lambdaservice.Service,
-) (*provider.LinkUpdateResourceOutput, error) {
-	finalEnvVarName := dynamoDBTableEnvVarName(
-		envVarName,
-		input.OtherResourceInfo,
-	)
-	dataMappingKey := fmt.Sprintf(
-		"%s::spec.environment.variables[\"%s\"]",
-		input.ResourceInfo.ResourceName,
-		finalEnvVarName,
-	)
-	linkDataFieldPath := fmt.Sprintf(
-		"%s.environmentVariables[\"%s\"]",
-		input.ResourceInfo.ResourceName,
-		finalEnvVarName,
-	)
-
-	err := linkutils.UpdateLambdaEnvironmentVariables(
-		ctx,
-		lambdaService,
-		functionARN,
-		currentFunctionConfig,
-		map[string]string{
-			finalEnvVarName: tableName,
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return &provider.LinkUpdateResourceOutput{
-		LinkData: core.MappingNodeFields(
-			pluginutils.GetResourceName(input.ResourceInfo),
-			core.MappingNodeFields(
-				"environmentVariables",
-				core.MappingNodeFields(
-					finalEnvVarName,
-					core.MappingNodeFromString(tableName),
-				),
-			),
-		),
-		ResourceDataMappings: map[string]string{
-			dataMappingKey: linkDataFieldPath,
-		},
+	input *provider.LinkUpdateLinkedResourcesInput,
+) (*provider.LinkUpdateLinkedResourcesOutput, error) {
+	return &provider.LinkUpdateLinkedResourcesOutput{
+		LinkData: core.MappingNodeFields(),
 	}, nil
 }
 
-func (l *lambdaFunctionDynamoDBTableLinkActions) removeFunctionEnvVars(
-	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-	functionARN string,
-	envVarName string,
-	currentFunctionConfig *types.FunctionConfiguration,
-	lambdaService lambdaservice.Service,
-) (*provider.LinkUpdateResourceOutput, error) {
-	finalEnvVarName := dynamoDBTableEnvVarName(
-		envVarName,
-		input.OtherResourceInfo,
-	)
-
-	err := linkutils.RemoveLambdaEnvironmentVariables(
-		ctx,
-		lambdaService,
-		functionARN,
-		currentFunctionConfig,
-		[]string{finalEnvVarName},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return &provider.LinkUpdateResourceOutput{
-		LinkData: core.MappingNodeFields(
-			pluginutils.GetResourceName(input.ResourceInfo),
-			core.MappingNodeFields(),
-		),
-		ResourceDataMappings: map[string]string{},
-	}, nil
-}
-
-func (l *lambdaFunctionDynamoDBTableLinkActions) UpdateResourceB(
-	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
-	// The DynamoDB table is not updated as a part of the link update,
-	// the link only requires updates to the linked from lambda function
-	// and its execution role that will allow it to access the DynamoDB table.
-	return &provider.LinkUpdateResourceOutput{
-		LinkData: &core.MappingNode{
-			Fields: map[string]*core.MappingNode{},
-		},
-	}, nil
-}
-
-// UpdateIntermediaryResources grants (or revokes) the Lambda execution role access
-// to the DynamoDB table by packing a single IAM statement into the role's
-// allocator-managed policies. The role is an existing intermediary in the
-// blueprint, so the role lock is held while its shared policy set is read-modified.
+// Grants (or revokes) the execution role access to the table by packing a single IAM
+// statement into the role's allocator-managed policies. The role is an existing
+// intermediary in the blueprint.
 func (l *lambdaFunctionDynamoDBTableLinkActions) UpdateIntermediaryResources(
 	ctx context.Context,
 	input *provider.LinkUpdateIntermediaryResourcesInput,
@@ -220,21 +54,8 @@ func (l *lambdaFunctionDynamoDBTableLinkActions) UpdateIntermediaryResources(
 		return nil, err
 	}
 
-	// The execution role is shared by every link that grants it access, so lock it
-	// for the read-modify-write of its policy set.
-	err = input.ResourceService.AcquireResourceLock(
-		ctx,
-		&provider.AcquireResourceLockInput{
-			InstanceID:      pluginutils.GetInstanceID(input.ResourceAInfo),
-			ResourceName:    setupCtx.RoleResourceName,
-			ProviderContext: providerCtx,
-			AcquiredBy:      input.LinkID,
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-
+	// The role is locked around each grant below rather than for this whole
+	// phase, which goes on to do slow work the role has no part in.
 	iamService, err := l.getIamService(ctx, providerCtx)
 	if err != nil {
 		return nil, err
@@ -243,10 +64,20 @@ func (l *lambdaFunctionDynamoDBTableLinkActions) UpdateIntermediaryResources(
 	sid := createDynamoDBAccessSID(input.ResourceBInfo)
 
 	if input.LinkUpdateType == provider.LinkUpdateTypeDestroy {
-		_, err := linkutils.ReconcileRoleAccessPolicy(ctx, iamService, linkutils.RoleAccessGrant{
-			RoleName: setupCtx.RoleName,
-			SID:      sid,
-		})
+		_, err := linkutils.GrantRoleAccessUnderLock(
+			ctx,
+			linkutils.RoleAccessLockFor(
+				input.ResourceService,
+				input.LinkID,
+				input.ResourceAInfo,
+				setupCtx,
+				providerCtx,
+			),
+			iamService,
+			linkutils.RoleAccessGrant{
+				RoleName: setupCtx.RoleName,
+				SID:      sid,
+			})
 		if err != nil {
 			return nil, err
 		}
@@ -276,11 +107,21 @@ func (l *lambdaFunctionDynamoDBTableLinkActions) UpdateIntermediaryResources(
 	}
 
 	annotations := getDynamoDBTableLinkAnnotations(input.ResourceAInfo, input.ResourceBInfo)
-	result, err := linkutils.ReconcileRoleAccessPolicy(ctx, iamService, linkutils.RoleAccessGrant{
-		RoleName:  setupCtx.RoleName,
-		SID:       sid,
-		Statement: dynamoDBAccessStatement(sid, tableARN, annotations.accessLevel),
-	})
+	result, err := linkutils.GrantRoleAccessUnderLock(
+		ctx,
+		linkutils.RoleAccessLockFor(
+			input.ResourceService,
+			input.LinkID,
+			input.ResourceAInfo,
+			setupCtx,
+			providerCtx,
+		),
+		iamService,
+		linkutils.RoleAccessGrant{
+			RoleName:  setupCtx.RoleName,
+			SID:       sid,
+			Statement: dynamoDBAccessStatement(sid, tableARN, annotations.accessLevel),
+		})
 	if err != nil {
 		if errors.Is(err, linkutils.ErrAccessPolicyBudgetExhausted) {
 			return nil, fmt.Errorf(

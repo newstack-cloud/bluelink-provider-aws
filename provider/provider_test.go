@@ -14,6 +14,7 @@ import (
 	iamservice "github.com/newstack-cloud/bluelink-provider-aws/services/iam/service"
 	kmsservice "github.com/newstack-cloud/bluelink-provider-aws/services/kms/service"
 	lambdaservice "github.com/newstack-cloud/bluelink-provider-aws/services/lambda/service"
+	rdsservice "github.com/newstack-cloud/bluelink-provider-aws/services/rds/service"
 	resgrouptagservice "github.com/newstack-cloud/bluelink-provider-aws/services/resgrouptag/service"
 	s3service "github.com/newstack-cloud/bluelink-provider-aws/services/s3/service"
 	secretsmanagerservice "github.com/newstack-cloud/bluelink-provider-aws/services/secretsmanager/service"
@@ -86,6 +87,7 @@ func (s *ProviderSuite) Test_loads_provider_and_applies_duration_validation() {
 		kmsservice.NewService,
 		elasticacheservice.NewService,
 		secretsmanagerservice.NewService,
+		rdsservice.NewService,
 		configStore,
 	)
 	configDef, err := provider.ConfigDefinition(context.Background())
@@ -180,6 +182,7 @@ func (s *ProviderSuite) Test_loads_provider_and_applies_role_arn_validation() {
 		kmsservice.NewService,
 		elasticacheservice.NewService,
 		secretsmanagerservice.NewService,
+		rdsservice.NewService,
 		configStore,
 	)
 	configDef, err := provider.ConfigDefinition(context.Background())

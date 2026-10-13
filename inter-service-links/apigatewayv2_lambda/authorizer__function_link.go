@@ -34,16 +34,18 @@ func AuthorizerFunctionLink() func(AuthorizerToFunctionLinkDeps) provider.Link {
 		}
 
 		return &providerv1.LinkDefinition{
-			ResourceTypeA:                   "aws/apigatewayv2/authorizer",
-			ResourceTypeB:                   "aws/lambda/function",
+			ResourceTypeA: "aws/apigatewayv2/authorizer",
+			ResourceTypeB: "aws/lambda/function",
+			// Neither resource in the relationship is written; the link does its work
+			// through intermediary resources.
+			Modifies:                        provider.LinkModifiesNeither,
 			Kind:                            provider.LinkKindSoft,
-			PriorityResource:                provider.LinkPriorityResourceA,
+			PriorityResource:                provider.LinkPriorityResourceNone,
 			PlainTextSummary:                "A link that grants API Gateway permission to invoke a Lambda authorizer's backing function.",
 			FormattedDescription:            string(description),
 			AnnotationDefinitions:           map[string]*provider.LinkAnnotationDefinition{},
 			StageChangesFunc:                actions.StageChanges,
-			UpdateResourceAFunc:             actions.UpdateResourceA,
-			UpdateResourceBFunc:             actions.UpdateResourceB,
+			UpdateLinkedResourcesFunc:       actions.UpdateLinkedResources,
 			UpdateIntermediaryResourcesFunc: actions.UpdateIntermediaryResources,
 		}
 	}

@@ -12,27 +12,13 @@ import (
 	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/pluginutils"
 )
 
-func (l *ruleFunctionLinkActions) UpdateResourceA(
+func (l *ruleFunctionLinkActions) UpdateLinkedResources(
 	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
+	input *provider.LinkUpdateLinkedResourcesInput,
+) (*provider.LinkUpdateLinkedResourcesOutput, error) {
 	// The rule is not modified by this link; the rule -> function wiring is modelled
 	// inline in the rule's targets array and owned by the aws/events/rule resource.
-	return &provider.LinkUpdateResourceOutput{
-		LinkData: &core.MappingNode{
-			Fields: map[string]*core.MappingNode{},
-		},
-	}, nil
-}
-
-func (l *ruleFunctionLinkActions) UpdateResourceB(
-	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
-	// The function is not modified by this link; the invoke permission is a separate,
-	// link-owned aws/lambda/permission intermediary handled in
-	// UpdateIntermediaryResources.
-	return &provider.LinkUpdateResourceOutput{
+	return &provider.LinkUpdateLinkedResourcesOutput{
 		LinkData: &core.MappingNode{
 			Fields: map[string]*core.MappingNode{},
 		},

@@ -4,7 +4,6 @@ package lambdalinks
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"testing"
 
@@ -143,311 +142,6 @@ func ffLinkLambdaSvc() lambdaservice.Service {
 	)
 }
 
-func (s *FunctionFunctionLinkUpdateSuite) Test_link_update_linked_resources() {
-	loader := &testutils.MockAWSConfigLoader{}
-
-	testCases := []plugintestutils.LinkUpdateResourceTestCase[
-		*aws.Config,
-		lambdaservice.Service,
-		*aws.Config,
-		lambdaservice.Service,
-	]{
-		ffLinkAddEnvVarTestCase(loader),
-		ffLinkDisableEnvVarPopulationTestCase(loader),
-		ffLinkUpdateResourceBNoOpTestCase(loader),
-		ffLinkRemoveEnvVarTestCase(loader),
-		ffLinkMissingCalleeARNErrorTestCase(loader),
-		ffLinkUpdateServiceErrorTestCase(loader),
-	}
-
-	plugintestutils.RunLinkUpdateResourceTestCases(
-		testCases,
-		ffLinkFactory(iammock.CreateIamServiceMock()),
-		&s.Suite,
-	)
-}
-
-func ffLinkAddEnvVarTestCase(
-	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.LinkUpdateResourceTestCase[
-	*aws.Config,
-	lambdaservice.Service,
-	*aws.Config,
-	lambdaservice.Service,
-] {
-	lambdaSvc := lambdamock.CreateLambdaServiceMock(
-		lambdamock.WithGetFunctionOutput(ffLinkFunctionWithEnvOutput(map[string]string{"EXISTING": "val"})),
-		lambdamock.WithUpdateFunctionConfigurationOutput(&lambda.UpdateFunctionConfigurationOutput{}),
-	)
-
-	return plugintestutils.LinkUpdateResourceTestCase[
-		*aws.Config,
-		lambdaservice.Service,
-		*aws.Config,
-		lambdaservice.Service,
-	]{
-		Name:                    "populates the invoke env var on the caller function when enabled",
-		Resource:                plugintestutils.LinkUpdateResourceA,
-		ServiceFactoryA:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
-		ConfigStoreA:            ffLinkConfigStore(loader),
-		ServiceFactoryB:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
-		ConfigStoreB:            ffLinkConfigStore(loader),
-		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeCreate,
-			ResourceInfo:      callerFunctionResourceInfo(),
-			OtherResourceInfo: calleeFunctionResourceInfo(),
-			LinkContext:       ffLinkTestLinkContext(),
-		},
-		ExpectedOutput: &provider.LinkUpdateResourceOutput{
-			LinkData: core.MappingNodeFields(
-				"callerFunction",
-				core.MappingNodeFields(
-					"environmentVariables",
-					core.MappingNodeFields(
-						// The default env var name is the empty string when no
-						// envVarName annotation is provided (the implementation
-						// stores the user-provided name, not the derived one).
-						"", core.MappingNodeFromString(ffLinkCalleeARN),
-					),
-				),
-			),
-			ResourceDataMappings: map[string]string{
-				fmt.Sprintf(
-					"callerFunction::spec.environment.variables[\"%s\"]",
-					ffLinkEnvVarName,
-				): fmt.Sprintf(
-					"callerFunction.environmentVariables[\"%s\"]",
-					ffLinkEnvVarName,
-				),
-			},
-		},
-		UpdateActionsCalled: map[string]any{
-			"UpdateFunctionConfiguration": &lambda.UpdateFunctionConfigurationInput{
-				FunctionName: aws.String(ffLinkCallerARN),
-				Environment: &lambdatypes.Environment{
-					Variables: map[string]string{
-						"EXISTING":       "val",
-						ffLinkEnvVarName: ffLinkCalleeARN,
-					},
-				},
-			},
-		},
-	}
-}
-
-func ffLinkDisableEnvVarPopulationTestCase(
-	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.LinkUpdateResourceTestCase[
-	*aws.Config,
-	lambdaservice.Service,
-	*aws.Config,
-	lambdaservice.Service,
-] {
-	lambdaSvc := lambdamock.CreateLambdaServiceMock()
-
-	resourceInfo := callerFunctionResourceInfo()
-	// Disable env var population for the callee function via the per-target
-	// annotation, which gates UpdateResourceA.
-	resourceInfo.ResourceWithResolvedSubs = &provider.ResolvedResource{
-		Metadata: &provider.ResolvedResourceMetadata{
-			Annotations: &core.MappingNode{
-				Fields: map[string]*core.MappingNode{
-					"aws.lambda.invoke.calleeFunction.populateEnvVars": core.MappingNodeFromBool(false),
-				},
-			},
-		},
-	}
-
-	return plugintestutils.LinkUpdateResourceTestCase[
-		*aws.Config,
-		lambdaservice.Service,
-		*aws.Config,
-		lambdaservice.Service,
-	]{
-		Name:                    "is a no-op on the caller function when populateEnvVars is false",
-		Resource:                plugintestutils.LinkUpdateResourceA,
-		ServiceFactoryA:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
-		ConfigStoreA:            ffLinkConfigStore(loader),
-		ServiceFactoryB:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
-		ConfigStoreB:            ffLinkConfigStore(loader),
-		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeCreate,
-			ResourceInfo:      resourceInfo,
-			OtherResourceInfo: calleeFunctionResourceInfo(),
-			LinkContext:       ffLinkTestLinkContext(),
-		},
-		ExpectedOutput: &provider.LinkUpdateResourceOutput{
-			LinkData:             core.MappingNodeFields(),
-			ResourceDataMappings: map[string]string{},
-		},
-	}
-}
-
-func ffLinkUpdateResourceBNoOpTestCase(
-	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.LinkUpdateResourceTestCase[
-	*aws.Config,
-	lambdaservice.Service,
-	*aws.Config,
-	lambdaservice.Service,
-] {
-	lambdaSvc := lambdamock.CreateLambdaServiceMock()
-
-	return plugintestutils.LinkUpdateResourceTestCase[
-		*aws.Config,
-		lambdaservice.Service,
-		*aws.Config,
-		lambdaservice.Service,
-	]{
-		Name:                    "returns empty link data as the callee function is not updated for the link",
-		Resource:                plugintestutils.LinkUpdateResourceB,
-		ServiceFactoryA:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
-		ConfigStoreA:            ffLinkConfigStore(loader),
-		ServiceFactoryB:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
-		ConfigStoreB:            ffLinkConfigStore(loader),
-		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeCreate,
-			ResourceInfo:      calleeFunctionResourceInfo(),
-			OtherResourceInfo: callerFunctionResourceInfo(),
-			LinkContext:       ffLinkTestLinkContext(),
-		},
-		ExpectedOutput: &provider.LinkUpdateResourceOutput{
-			LinkData: &core.MappingNode{
-				Fields: map[string]*core.MappingNode{},
-			},
-		},
-	}
-}
-
-func ffLinkRemoveEnvVarTestCase(
-	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.LinkUpdateResourceTestCase[
-	*aws.Config,
-	lambdaservice.Service,
-	*aws.Config,
-	lambdaservice.Service,
-] {
-	lambdaSvc := lambdamock.CreateLambdaServiceMock(
-		lambdamock.WithGetFunctionOutput(ffLinkFunctionWithEnvOutput(map[string]string{
-			"EXISTING":       "val",
-			ffLinkEnvVarName: ffLinkCalleeARN,
-		})),
-		lambdamock.WithUpdateFunctionConfigurationOutput(&lambda.UpdateFunctionConfigurationOutput{}),
-	)
-
-	return plugintestutils.LinkUpdateResourceTestCase[
-		*aws.Config,
-		lambdaservice.Service,
-		*aws.Config,
-		lambdaservice.Service,
-	]{
-		Name:                    "removes the invoke env var on destroy",
-		Resource:                plugintestutils.LinkUpdateResourceA,
-		ServiceFactoryA:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
-		ConfigStoreA:            ffLinkConfigStore(loader),
-		ServiceFactoryB:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
-		ConfigStoreB:            ffLinkConfigStore(loader),
-		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeDestroy,
-			ResourceInfo:      callerFunctionResourceInfo(),
-			OtherResourceInfo: calleeFunctionResourceInfo(),
-			LinkContext:       ffLinkTestLinkContext(),
-		},
-		ExpectedOutput: &provider.LinkUpdateResourceOutput{
-			LinkData: core.MappingNodeFields(
-				"callerFunction",
-				core.MappingNodeFields(),
-			),
-			ResourceDataMappings: map[string]string{},
-		},
-		UpdateActionsCalled: map[string]any{
-			"UpdateFunctionConfiguration": &lambda.UpdateFunctionConfigurationInput{
-				FunctionName: aws.String(ffLinkCallerARN),
-				Environment: &lambdatypes.Environment{
-					Variables: map[string]string{"EXISTING": "val"},
-				},
-			},
-		},
-	}
-}
-
-func ffLinkMissingCalleeARNErrorTestCase(
-	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.LinkUpdateResourceTestCase[
-	*aws.Config,
-	lambdaservice.Service,
-	*aws.Config,
-	lambdaservice.Service,
-] {
-	lambdaSvc := lambdamock.CreateLambdaServiceMock(
-		lambdamock.WithGetFunctionOutput(ffLinkFunctionWithEnvOutput(map[string]string{})),
-	)
-
-	return plugintestutils.LinkUpdateResourceTestCase[
-		*aws.Config,
-		lambdaservice.Service,
-		*aws.Config,
-		lambdaservice.Service,
-	]{
-		Name:                    "returns error when the callee function ARN is missing",
-		Resource:                plugintestutils.LinkUpdateResourceA,
-		ServiceFactoryA:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
-		ConfigStoreA:            ffLinkConfigStore(loader),
-		ServiceFactoryB:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
-		ConfigStoreB:            ffLinkConfigStore(loader),
-		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeCreate,
-			ResourceInfo:      callerFunctionResourceInfo(),
-			OtherResourceInfo: calleeFunctionNoARNResourceInfo(),
-			LinkContext:       ffLinkTestLinkContext(),
-		},
-		ExpectError: true,
-	}
-}
-
-func ffLinkUpdateServiceErrorTestCase(
-	loader *testutils.MockAWSConfigLoader,
-) plugintestutils.LinkUpdateResourceTestCase[
-	*aws.Config,
-	lambdaservice.Service,
-	*aws.Config,
-	lambdaservice.Service,
-] {
-	lambdaSvc := lambdamock.CreateLambdaServiceMock(
-		lambdamock.WithGetFunctionOutput(ffLinkFunctionWithEnvOutput(map[string]string{"EXISTING": "val"})),
-		lambdamock.WithUpdateFunctionConfigurationError(errors.New("update failed")),
-	)
-
-	return plugintestutils.LinkUpdateResourceTestCase[
-		*aws.Config,
-		lambdaservice.Service,
-		*aws.Config,
-		lambdaservice.Service,
-	]{
-		Name:                    "returns error when the caller function update fails",
-		Resource:                plugintestutils.LinkUpdateResourceA,
-		ServiceFactoryA:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
-		ConfigStoreA:            ffLinkConfigStore(loader),
-		ServiceFactoryB:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
-		ConfigStoreB:            ffLinkConfigStore(loader),
-		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeCreate,
-			ResourceInfo:      callerFunctionResourceInfo(),
-			OtherResourceInfo: calleeFunctionResourceInfo(),
-			LinkContext:       ffLinkTestLinkContext(),
-		},
-		ExpectError: true,
-	}
-}
-
-// UpdateIntermediaryResources manages the lambda:InvokeFunction permission on
-// the caller function's execution role policy.
 func (s *FunctionFunctionLinkUpdateSuite) Test_link_update_intermediary_resources() {
 	loader := &testutils.MockAWSConfigLoader{}
 
@@ -538,6 +232,10 @@ func ffLinkMatchInvokeAccessOutput(
 
 // ffLinkCreateIntermediaryTestCase exercises the create path: the role has no
 // allocator policy yet, so the statement is packed into a new inline policy.
+func TestFunctionFunctionLinkUpdateSuite(t *testing.T) {
+	suite.Run(t, new(FunctionFunctionLinkUpdateSuite))
+}
+
 func ffLinkCreateIntermediaryTestCase(
 	loader *testutils.MockAWSConfigLoader,
 ) (plugintestutils.LinkUpdateIntermediaryResourcesTestCase[
@@ -581,8 +279,6 @@ func ffLinkCreateIntermediaryTestCase(
 	}, iamSvc
 }
 
-// ffLinkUpdateIntermediaryTestCase exercises the update path: the inline policy
-// already holds the statement, which is replaced in place.
 func ffLinkUpdateIntermediaryTestCase(
 	loader *testutils.MockAWSConfigLoader,
 ) (plugintestutils.LinkUpdateIntermediaryResourcesTestCase[
@@ -629,8 +325,6 @@ func ffLinkUpdateIntermediaryTestCase(
 	}, iamSvc
 }
 
-// ffLinkDestroyIntermediaryTestCase exercises the destroy path: the link's
-// statement is the only one in the inline policy, so the policy is deleted.
 func ffLinkDestroyIntermediaryTestCase(
 	loader *testutils.MockAWSConfigLoader,
 ) (plugintestutils.LinkUpdateIntermediaryResourcesTestCase[
@@ -717,8 +411,4 @@ func ffLinkMissingRoleIntermediaryErrorTestCase(
 		},
 		ExpectError: true,
 	}, iamSvc
-}
-
-func TestFunctionFunctionLinkUpdateSuite(t *testing.T) {
-	suite.Run(t, new(FunctionFunctionLinkUpdateSuite))
 }

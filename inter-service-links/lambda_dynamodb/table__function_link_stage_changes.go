@@ -2,6 +2,7 @@ package lambdadynamodb
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/newstack-cloud/bluelink-provider-aws/linkutils"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/linkhelpers"
@@ -46,6 +47,15 @@ func (l *dynamoDBTableLambdaFunctionLinkActions) StageChanges(
 			changes.FieldChangesKnownOnDeploy,
 			createStreamLinkDataExecutionRoleName(&input.ResourceBChanges.AppliedResourceInfo),
 		)
+	}
+
+	// What this link will contribute to the table, declared before it runs so the
+	// framework knows the table is waiting on it. The stream is what this link consumes,
+	// and stating it in the table's spec is what stops a later deployment of the table
+	// turning it off.
+	tableName := pluginutils.GetResourceName(&input.ResourceAChanges.AppliedResourceInfo)
+	changes.ResourceDataMappings = map[string]string{
+		fmt.Sprintf("%s::spec.streamSpecification.streamViewType", tableName): "contributions[0]",
 	}
 
 	return &provider.LinkStageChangesOutput{

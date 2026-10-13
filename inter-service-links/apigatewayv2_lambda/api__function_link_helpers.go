@@ -154,10 +154,14 @@ func accountFromARN(arn string) (string, error) {
 }
 
 type apiLinkAnnotations struct {
-	routeKey               string
-	payloadFormatVersion   string
-	authorizerID           string
-	authorizationType      string
+	routeKey             string
+	payloadFormatVersion string
+	authorizerID         string
+	authorizationType    string
+	// Whether the function stated an authorization type of its own. The default below
+	// is CUSTOM, so without this a public route with no annotations is indistinguishable
+	// from a guarded route whose authorizer id failed to resolve.
+	authorizationTypeSet   bool
 	websocketTwoWay        bool
 	manageConnections      bool
 	manageConnectionsStage string
@@ -184,7 +188,7 @@ func getAPILinkAnnotations(functionInfo *provider.ResourceInfo) *apiLinkAnnotati
 			Key: fmt.Sprintf("%s.authorizerId", lambdaAnnotationPrefix),
 		},
 	)
-	authorizationType, _ := pluginutils.GetStringAnnotation(
+	authorizationType, authorizationTypeSet := pluginutils.GetStringAnnotation(
 		functionInfo,
 		&pluginutils.AnnotationQuery[string]{
 			Key:     fmt.Sprintf("%s.authorizationType", lambdaAnnotationPrefix),
@@ -217,6 +221,7 @@ func getAPILinkAnnotations(functionInfo *provider.ResourceInfo) *apiLinkAnnotati
 		payloadFormatVersion:   payloadFormatVersion,
 		authorizerID:           authorizerID,
 		authorizationType:      authorizationType,
+		authorizationTypeSet:   authorizationTypeSet,
 		websocketTwoWay:        websocketTwoWay,
 		manageConnections:      manageConnections,
 		manageConnectionsStage: manageConnectionsStage,

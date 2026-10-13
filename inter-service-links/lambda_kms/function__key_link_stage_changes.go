@@ -23,10 +23,19 @@ func (l *functionKeyLinkActions) StageChanges(
 	)
 
 	currentLinkData := linkhelpers.GetLinkDataFromState(input.CurrentLinkState)
+	// The name the variable is actually given, which falls back to a derived one when
+	// the annotation is not set. Staging used the annotation as it was given, so an unset
+	// one recorded a path with an empty name in it. That was cosmetic while the link
+	// wrote the function itself; the declaration below is read to decide which resource
+	// waits for this link, so it has to name the field the link will contribute.
+	envVarName := keyEnvVarName(
+		annotations.envVarName,
+		&input.ResourceBChanges.AppliedResourceInfo,
+	)
 	envVarFieldPath := fmt.Sprintf(
 		"%s.environmentVariables[\"%s\"]",
 		pluginutils.GetResourceName(&input.ResourceAChanges.AppliedResourceInfo),
-		annotations.envVarName,
+		envVarName,
 	)
 	_, linkDataHasEnvVar := pluginutils.GetValueByPath(
 		fmt.Sprintf("$.%s", envVarFieldPath),
@@ -66,6 +75,19 @@ func (l *functionKeyLinkActions) StageChanges(
 	// Networking activation for a VPC-attached caller is configured at deploy; surface it as a
 	// best-effort known-on-deploy signal.
 	linkutils.StageNetworkAccessKnownOnDeploy(input.ResourceAChanges, changes)
+
+	if annotations.populateEnvVars {
+		// What this link will contribute to the function, declared before it runs so the
+		// framework knows the function is waiting on it. The value itself is produced at
+		// deploy time; this says only where it will land.
+		changes.ResourceDataMappings = map[string]string{
+			fmt.Sprintf(
+				"%s::spec.environment.variables[\"%s\"]",
+				pluginutils.GetResourceName(&input.ResourceAChanges.AppliedResourceInfo),
+				envVarName,
+			): envVarFieldPath,
+		}
+	}
 
 	return &provider.LinkStageChangesOutput{
 		Changes: changes,

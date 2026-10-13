@@ -47,20 +47,25 @@ func FunctionCacheLink(
 		return &providerv1.LinkDefinition{
 			ResourceTypeA: "aws/lambda/function",
 			ResourceTypeB: "aws/elasticache/replicationGroup",
+			// Neither resource is written by this link. The function's environment
+			// variables are contributed rather than written, and the framework applies
+			// what every link contributing to the function needs it to say as one
+			// update, so no exclusive lock on the function is taken here.
+			Modifies: provider.LinkModifiesNeither,
 			// ReconcileLinkNetworking reads the function's live VPC attachment, so the
 			// placement link that establishes it has to run first.
 			Requires: linkutils.NetworkAttachedRequired(provider.LinkPriorityResourceA),
 			// It doesn't matter which resource is created first; the function is configured
 			// to reach the cache once both have been created.
-			Kind:                            provider.LinkKindSoft,
-			PriorityResource:                provider.LinkPriorityResourceNone,
-			PlainTextSummary:                "A link that grants a Lambda function network access to an ElastiCache replication group.",
-			FormattedDescription:            string(description),
-			AnnotationDefinitions:           functionCacheLinkAnnotations(),
-			StageChangesFunc:                actions.StageChanges,
-			UpdateResourceAFunc:             actions.UpdateResourceA,
-			UpdateResourceBFunc:             actions.UpdateResourceB,
-			UpdateIntermediaryResourcesFunc: actions.UpdateIntermediaryResources,
+			Kind:                             provider.LinkKindSoft,
+			PriorityResource:                 provider.LinkPriorityResourceNone,
+			PlainTextSummary:                 "A link that grants a Lambda function network access to an ElastiCache replication group.",
+			FormattedDescription:             string(description),
+			AnnotationDefinitions:            functionCacheLinkAnnotations(),
+			StageChangesFunc:                 actions.StageChanges,
+			ProduceResourceContributionsFunc: actions.ProduceResourceContributions,
+			UpdateLinkedResourcesFunc:        actions.UpdateLinkedResources,
+			UpdateIntermediaryResourcesFunc:  actions.UpdateIntermediaryResources,
 		}
 	}
 }

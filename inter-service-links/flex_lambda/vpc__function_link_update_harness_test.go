@@ -124,7 +124,7 @@ func expectVPCConfigOutput(
 	functionName string,
 	subnetIDs, securityGroupIDs []string,
 	ipv6AllowedForDualStack bool,
-) *provider.LinkUpdateResourceOutput {
+) *provider.LinkUpdateLinkedResourcesOutput {
 	subnetItems := make([]*core.MappingNode, len(subnetIDs))
 	for i, id := range subnetIDs {
 		subnetItems[i] = core.MappingNodeFromString(id)
@@ -140,7 +140,7 @@ func expectVPCConfigOutput(
 		`::spec.policies[@.policyName="` + linkutils.InlineAccessPolicyName() +
 		`"].policyDocument.statement[@.sid="` + vfENIStatement + `"]`
 
-	return &provider.LinkUpdateResourceOutput{
+	return &provider.LinkUpdateLinkedResourcesOutput{
 		LinkData: core.MappingNodeFields(
 			functionName,
 			core.MappingNodeFields(
@@ -154,7 +154,16 @@ func expectVPCConfigOutput(
 			vfExecRoleField,
 			core.MappingNodeFields(
 				linkutils.PermissionFieldName,
-				specENIStatementNode(vfENIStatement),
+				// Spelled out rather than built by calling the function that
+				// produces it, so the field casing is actually asserted. The
+				// attribution path selects the statement on "@.sid", so this
+				// has to be the spec's casing and not IAM's.
+				core.MappingNodeFields(
+					"sid", core.MappingNodeFromString(vfENIStatement),
+					"effect", core.MappingNodeFromString("Allow"),
+					"action", stringItems(eniManagementActions),
+					"resource", core.MappingNodeFromString("*"),
+				),
 			),
 		),
 		ResourceDataMappings: map[string]string{
@@ -257,19 +266,18 @@ func vpcFunctionPlaceTestCase(
 		lambdaservice.Service,
 	]{
 		Name:                    "places the function in the VPC's private subnets",
-		Resource:                plugintestutils.LinkUpdateResourceB,
 		ServiceFactoryA:         placementEC2ServiceFactory(),
 		ConfigStoreA:            testConfigStore(loader),
 		ServiceFactoryB:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
 		ConfigStoreB:            testConfigStore(loader),
 		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeCreate,
-			ResourceInfo:      functionResourceInfoB(),
-			OtherResourceInfo: flexVPCResourceInfoA(),
-			LinkContext:       testLinkContext(),
-			LinkID:            vfLinkID,
-			ResourceService:   vfRoleService(),
+		Input: &provider.LinkUpdateLinkedResourcesInput{
+			LinkUpdateType:  provider.LinkUpdateTypeCreate,
+			ResourceBInfo:   functionResourceInfoB(),
+			ResourceAInfo:   flexVPCResourceInfoA(),
+			LinkContext:     testLinkContext(),
+			LinkID:          vfLinkID,
+			ResourceService: vfRoleService(),
 		},
 		ExpectedOutput: expectVPCConfigOutput(
 			"getOrderFunction",
@@ -314,19 +322,18 @@ func vpcFunctionPlaceDualStackTestCase(
 		lambdaservice.Service,
 	]{
 		Name:                    "allows outbound IPv6 when the VPC's subnets are dual-stack",
-		Resource:                plugintestutils.LinkUpdateResourceB,
 		ServiceFactoryA:         placementEC2ServiceFactory(),
 		ConfigStoreA:            testConfigStore(loader),
 		ServiceFactoryB:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
 		ConfigStoreB:            testConfigStore(loader),
 		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeCreate,
-			ResourceInfo:      functionResourceInfoB(),
-			OtherResourceInfo: dualStackFlexVPCResourceInfoA(),
-			LinkContext:       testLinkContext(),
-			LinkID:            vfLinkID,
-			ResourceService:   vfRoleService(),
+		Input: &provider.LinkUpdateLinkedResourcesInput{
+			LinkUpdateType:  provider.LinkUpdateTypeCreate,
+			ResourceBInfo:   functionResourceInfoB(),
+			ResourceAInfo:   dualStackFlexVPCResourceInfoA(),
+			LinkContext:     testLinkContext(),
+			LinkID:          vfLinkID,
+			ResourceService: vfRoleService(),
 		},
 		ExpectedOutput: expectVPCConfigOutput(
 			"getOrderFunction",
@@ -378,19 +385,18 @@ func vpcFunctionPlacePartiallyDualStackTestCase(
 		lambdaservice.Service,
 	]{
 		Name:                    "leaves outbound IPv6 off when only some of the tier's subnets are dual-stack",
-		Resource:                plugintestutils.LinkUpdateResourceB,
 		ServiceFactoryA:         placementEC2ServiceFactory(),
 		ConfigStoreA:            testConfigStore(loader),
 		ServiceFactoryB:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
 		ConfigStoreB:            testConfigStore(loader),
 		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeCreate,
-			ResourceInfo:      functionResourceInfoB(),
-			OtherResourceInfo: vpcInfo,
-			LinkContext:       testLinkContext(),
-			LinkID:            vfLinkID,
-			ResourceService:   vfRoleService(),
+		Input: &provider.LinkUpdateLinkedResourcesInput{
+			LinkUpdateType:  provider.LinkUpdateTypeCreate,
+			ResourceBInfo:   functionResourceInfoB(),
+			ResourceAInfo:   vpcInfo,
+			LinkContext:     testLinkContext(),
+			LinkID:          vfLinkID,
+			ResourceService: vfRoleService(),
 		},
 		ExpectedOutput: expectVPCConfigOutput(
 			"getOrderFunction",
@@ -431,19 +437,18 @@ func vpcFunctionPlacePublicTestCase(
 		lambdaservice.Service,
 	]{
 		Name:                    "places the function in the VPC's public subnets when subnetType is public",
-		Resource:                plugintestutils.LinkUpdateResourceB,
 		ServiceFactoryA:         placementEC2ServiceFactory(),
 		ConfigStoreA:            testConfigStore(loader),
 		ServiceFactoryB:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
 		ConfigStoreB:            testConfigStore(loader),
 		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeCreate,
-			ResourceInfo:      functionResourceInfoBWithSubnetType("public"),
-			OtherResourceInfo: flexVPCResourceInfoA(),
-			LinkContext:       testLinkContext(),
-			LinkID:            vfLinkID,
-			ResourceService:   vfRoleService(),
+		Input: &provider.LinkUpdateLinkedResourcesInput{
+			LinkUpdateType:  provider.LinkUpdateTypeCreate,
+			ResourceBInfo:   functionResourceInfoBWithSubnetType("public"),
+			ResourceAInfo:   flexVPCResourceInfoA(),
+			LinkContext:     testLinkContext(),
+			LinkID:          vfLinkID,
+			ResourceService: vfRoleService(),
 		},
 		ExpectedOutput: expectVPCConfigOutput(
 			"getOrderFunction",
@@ -483,19 +488,18 @@ func vpcFunctionNoMatchingTierTestCase(
 		lambdaservice.Service,
 	]{
 		Name:                    "returns an error when the VPC has no subnets in the requested tier",
-		Resource:                plugintestutils.LinkUpdateResourceB,
 		ServiceFactoryA:         placementEC2ServiceFactory(),
 		ConfigStoreA:            testConfigStore(loader),
 		ServiceFactoryB:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
 		ConfigStoreB:            testConfigStore(loader),
 		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeCreate,
-			ResourceInfo:      functionResourceInfoBWithSubnetType("isolated"),
-			OtherResourceInfo: flexVPCResourceInfoA(),
-			LinkContext:       testLinkContext(),
-			LinkID:            vfLinkID,
-			ResourceService:   vfRoleService(),
+		Input: &provider.LinkUpdateLinkedResourcesInput{
+			LinkUpdateType:  provider.LinkUpdateTypeCreate,
+			ResourceBInfo:   functionResourceInfoBWithSubnetType("isolated"),
+			ResourceAInfo:   flexVPCResourceInfoA(),
+			LinkContext:     testLinkContext(),
+			LinkID:          vfLinkID,
+			ResourceService: vfRoleService(),
 		},
 		ExpectError:            true,
 		ExpectedErrorMessage:   "no \"isolated\" subnets",
@@ -523,21 +527,20 @@ func vpcFunctionDetachTestCase(
 		lambdaservice.Service,
 	]{
 		Name:                    "detaches the function from the VPC on destroy",
-		Resource:                plugintestutils.LinkUpdateResourceB,
 		ServiceFactoryA:         placementEC2ServiceFactory(),
 		ConfigStoreA:            testConfigStore(loader),
 		ServiceFactoryB:         func(c *aws.Config, pc provider.Context) lambdaservice.Service { return lambdaSvc },
 		ConfigStoreB:            testConfigStore(loader),
 		CurrentServiceMockCalls: &lambdaSvc.MockCalls,
-		Input: &provider.LinkUpdateResourceInput{
-			LinkUpdateType:    provider.LinkUpdateTypeDestroy,
-			ResourceInfo:      functionResourceInfoB(),
-			OtherResourceInfo: flexVPCResourceInfoA(),
-			LinkContext:       testLinkContext(),
-			LinkID:            vfLinkID,
-			ResourceService:   vfRoleService(),
+		Input: &provider.LinkUpdateLinkedResourcesInput{
+			LinkUpdateType:  provider.LinkUpdateTypeDestroy,
+			ResourceBInfo:   functionResourceInfoB(),
+			ResourceAInfo:   flexVPCResourceInfoA(),
+			LinkContext:     testLinkContext(),
+			LinkID:          vfLinkID,
+			ResourceService: vfRoleService(),
 		},
-		ExpectedOutput: &provider.LinkUpdateResourceOutput{
+		ExpectedOutput: &provider.LinkUpdateLinkedResourcesOutput{
 			LinkData:             core.MappingNodeFields("getOrderFunction", core.MappingNodeFields()),
 			ResourceDataMappings: map[string]string{},
 		},

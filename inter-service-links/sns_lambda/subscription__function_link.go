@@ -17,15 +17,17 @@ func SubscriptionFunctionLink() provider.Link {
 	actions := &subscriptionFunctionLinkActions{}
 
 	return &providerv1.LinkDefinition{
-		ResourceTypeA:                   "aws/sns/subscription",
-		ResourceTypeB:                   "aws/lambda/function",
+		ResourceTypeA: "aws/sns/subscription",
+		ResourceTypeB: "aws/lambda/function",
+		// Neither resource in the relationship is written; the link does its work
+		// through intermediary resources.
+		Modifies:                        provider.LinkModifiesNeither,
 		Kind:                            provider.LinkKindSoft,
 		PriorityResource:                provider.LinkPriorityResourceNone,
 		PlainTextSummary:                "A link that grants SNS permission to invoke a Lambda function for a subscription delivering to it.",
 		FormattedDescription:            string(description),
 		StageChangesFunc:                actions.StageChanges,
-		UpdateResourceAFunc:             actions.UpdateResourceA,
-		UpdateResourceBFunc:             actions.UpdateResourceB,
+		UpdateLinkedResourcesFunc:       actions.UpdateLinkedResources,
 		UpdateIntermediaryResourcesFunc: actions.UpdateIntermediaryResources,
 	}
 }

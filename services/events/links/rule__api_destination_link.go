@@ -37,16 +37,18 @@ func RuleAPIDestinationLink(
 		}
 
 		return &providerv1.LinkDefinition{
-			ResourceTypeA:    "aws/events/rule",
-			ResourceTypeB:    "aws/events/apiDestination",
+			ResourceTypeA: "aws/events/rule",
+			ResourceTypeB: "aws/events/apiDestination",
+			// Neither resource in the relationship is written; the link does its work
+			// through intermediary resources.
+			Modifies:         provider.LinkModifiesNeither,
 			Kind:             provider.LinkKindSoft,
 			PriorityResource: provider.LinkPriorityResourceNone,
 			PlainTextSummary: "A link that grants an EventBridge rule permission to " +
 				"invoke an API destination by populating the target's IAM role.",
 			FormattedDescription:            string(description),
 			StageChangesFunc:                actions.StageChanges,
-			UpdateResourceAFunc:             actions.UpdateResourceA,
-			UpdateResourceBFunc:             actions.UpdateResourceB,
+			UpdateLinkedResourcesFunc:       actions.UpdateLinkedResources,
 			UpdateIntermediaryResourcesFunc: actions.UpdateIntermediaryResources,
 		}
 	}

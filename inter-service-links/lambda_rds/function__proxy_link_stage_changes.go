@@ -61,6 +61,21 @@ func (l *functionProxyLinkActions) StageChanges(
 	// best-effort known-on-deploy signal.
 	linkutils.StageNetworkAccessKnownOnDeploy(input.ResourceAChanges, changes)
 
+	if annotations.populateEnvVars {
+		// What this link will contribute to the function, declared before it runs so the
+		// framework knows the function is waiting on it. The values are produced at
+		// deploy time; this says only where they can land. A variable the link turns out
+		// not to contribute simply never arrives.
+		changes.ResourceDataMappings = map[string]string{}
+		for _, name := range names.all() {
+			changes.ResourceDataMappings[fmt.Sprintf(
+				"%s::spec.environment.variables[%q]",
+				functionName,
+				name,
+			)] = fmt.Sprintf("%s.environmentVariables[%q]", functionName, name)
+		}
+	}
+
 	return &provider.LinkStageChangesOutput{
 		Changes: changes,
 	}, nil

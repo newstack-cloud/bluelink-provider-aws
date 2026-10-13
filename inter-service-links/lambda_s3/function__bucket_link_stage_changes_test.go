@@ -113,6 +113,12 @@ func stageFunctionBucketEnvVarChangeTestCase() plugintestutils.LinkChangeStaging
 					},
 				},
 				FieldChangesKnownOnDeploy: []string{"processUploadsFunctionExecutionRole"},
+
+				// What the link will contribute to the function, declared before it
+				// runs so the framework knows the function is waiting on it.
+				ResourceDataMappings: map[string]string{
+					"processUploadsFunction::spec.environment.variables[\"" + fbStageEnvVarName + "\"]": "processUploadsFunction.environmentVariables[\"" + fbStageEnvVarName + "\"]",
+				},
 			},
 		},
 	}
@@ -160,6 +166,12 @@ func stageFunctionBucketNoChangesTestCase() plugintestutils.LinkChangeStagingTes
 			Changes: &provider.LinkChanges{
 				UnchangedFields: []string{
 					"processUploadsFunction.environmentVariables[\"" + fbStageEnvVarName + "\"]",
+				},
+
+				// What the link will contribute to the function, declared before it
+				// runs so the framework knows the function is waiting on it.
+				ResourceDataMappings: map[string]string{
+					"processUploadsFunction::spec.environment.variables[\"" + fbStageEnvVarName + "\"]": "processUploadsFunction.environmentVariables[\"" + fbStageEnvVarName + "\"]",
 				},
 			},
 		},

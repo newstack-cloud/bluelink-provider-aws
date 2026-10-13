@@ -12,21 +12,13 @@ import (
 	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/pluginutils"
 )
 
-func (l *authorizerFunctionLinkActions) UpdateResourceA(
+func (l *authorizerFunctionLinkActions) UpdateLinkedResources(
 	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
+	input *provider.LinkUpdateLinkedResourcesInput,
+) (*provider.LinkUpdateLinkedResourcesOutput, error) {
 	// The authorizer is not modified by this link; the invoke permission is a link-owned
 	// aws/lambda/permission intermediary handled in UpdateIntermediaryResources.
-	return &provider.LinkUpdateResourceOutput{LinkData: core.MappingNodeFields()}, nil
-}
-
-func (l *authorizerFunctionLinkActions) UpdateResourceB(
-	ctx context.Context,
-	input *provider.LinkUpdateResourceInput,
-) (*provider.LinkUpdateResourceOutput, error) {
-	// The function is not modified by this link.
-	return &provider.LinkUpdateResourceOutput{LinkData: core.MappingNodeFields()}, nil
+	return &provider.LinkUpdateLinkedResourcesOutput{LinkData: core.MappingNodeFields()}, nil
 }
 
 // UpdateIntermediaryResources grants API Gateway permission to invoke the authorizer's backing
