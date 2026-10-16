@@ -20,6 +20,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/core"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
@@ -70,14 +71,67 @@ func AWSConfigFromProviderContext(
 	opts = append(opts, certOpts...)
 
 	opts = append(opts, HTTPClientOptions(providerContext)...)
-	opts = append(opts, AssumeRoleOptions(providerContext)...)
-	opts = append(opts, AssumeRoleWithWebIdentityOptions(providerContext)...)
 
 	cfg, err := loader.LoadDefaultConfig(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}
+
+	applyAssumeRoleCredentials(&cfg, providerContext)
+
 	return &cfg, nil
+}
+
+// Replaces the loaded config's credentials with a role assumed through STS when
+// provider config names one, and leaves them untouched when it does not.
+//
+// LoadDefaultConfig cannot do this as it assumes a role only when a shared config
+// profile declares one, so a role named in provider config has to be applied
+// here.
+func applyAssumeRoleCredentials(
+	cfg *aws.Config,
+	providerContext provider.Context,
+) {
+	stsClient := newSTSClient(*cfg, providerContext)
+
+	if webIdentity := readWebIdentitySettings(providerContext); webIdentity.isUsable() {
+		cfg.Credentials = aws.NewCredentialsCache(
+			stscreds.NewWebIdentityRoleProvider(
+				stsClient,
+				webIdentity.roleARN,
+				webIdentity.tokenRetriever,
+				webIdentity.apply,
+			),
+		)
+		return
+	}
+
+	if assumeRole := readAssumeRoleSettings(providerContext); assumeRole.isUsable() {
+		cfg.Credentials = aws.NewCredentialsCache(
+			stscreds.NewAssumeRoleProvider(
+				stsClient,
+				assumeRole.roleARN,
+				assumeRole.apply,
+			),
+		)
+	}
+}
+
+// Honours endpoint.sts the way every other service client honours its own
+// override, so role assumption can be pointed at a local STS.
+func newSTSClient(cfg aws.Config, providerContext provider.Context) *sts.Client {
+	endpoint, hasEndpoint := GetEndpointFromProviderConfig(
+		providerContext,
+		"sts",
+		Services["sts"],
+	)
+	if !hasEndpoint || core.IsScalarNil(endpoint) {
+		return sts.NewFromConfig(cfg)
+	}
+
+	return sts.NewFromConfig(cfg, func(o *sts.Options) {
+		o.BaseEndpoint = aws.String(core.StringValueFromScalar(endpoint))
+	})
 }
 
 // RegionOptions returns the region options derived from the given provider context.
@@ -474,176 +528,160 @@ func imdsEndpointModeStateFromString(s string) imds.EndpointModeState {
 	}
 }
 
-// AssumeRoleOptions returns the assume role options derived from the given provider context.
-func AssumeRoleOptions(
-	providerContext provider.Context,
-) []func(*config.LoadOptions) error {
-	opts := []func(*config.LoadOptions) error{}
+// Reads the assumeRole.* provider config fields. A role ARN of "" means no role
+// is configured.
+func readAssumeRoleSettings(providerContext provider.Context) assumeRoleSettings {
+	// Wrapped in plugin config for the prefix helpers that emulate arrays and maps.
+	pluginConfig := core.PluginConfig(providerContext.ProviderConfigVariables())
 
-	assumeRoleARN, hasAssumeRoleARN := providerContext.ProviderConfigVariable(
-		"assumeRole.roleArn",
-	)
-
-	assumeRoleExternalID, hasAssumeRoleExternalID := providerContext.ProviderConfigVariable(
-		"assumeRole.externalId",
-	)
-
-	assumeRoleDuration, hasAssumeRoleDuration := providerContext.ProviderConfigVariable(
-		"assumeRole.duration",
-	)
-
-	assumeRolePolicy, hasAssumeRolePolicy := providerContext.ProviderConfigVariable(
-		"assumeRole.policy",
-	)
-
-	// Wrap in plugin config so we can use convenience helpers to get dynamic keys
-	// based on prefix that emulate complex structures such as arrays.
-	pluginConfig := core.PluginConfig(
-		providerContext.ProviderConfigVariables(),
-	)
-	policyARNConfigValues := pluginConfig.SliceFromPrefix("assumeRole.policyArns")
-
-	sessionName, hasSessionName := providerContext.ProviderConfigVariable(
-		"assumeRole.sessionName",
-	)
-
-	sourceIdentity, hasSourceIdentity := providerContext.ProviderConfigVariable(
-		"assumeRole.sourceIdentity",
-	)
-
-	tagValues := pluginConfig.MapFromPrefix("assumeRole.tags")
-
-	transitiveTagKeys, hasTransitiveTagKeys := providerContext.ProviderConfigVariable(
-		"assumeRole.transitiveTagKeys",
-	)
-
-	if hasAssumeRoleARN && !core.IsScalarNil(assumeRoleARN) {
-		config.WithAssumeRoleCredentialOptions(
-			func(o *stscreds.AssumeRoleOptions) {
-				o.RoleARN = core.StringValueFromScalar(assumeRoleARN)
-
-				if hasAssumeRoleExternalID && !core.IsScalarNil(assumeRoleExternalID) {
-					o.ExternalID = aws.String(core.StringValueFromScalar(assumeRoleExternalID))
-				}
-
-				if hasAssumeRoleDuration && !core.IsScalarNil(assumeRoleDuration) {
-					// Validation in the provider config definition will make sure
-					// that the duration is a valid duration string so it's safe to ignore
-					// the error here.
-					duration, _ := time.ParseDuration(core.StringValueFromScalar(assumeRoleDuration))
-					o.Duration = duration
-				}
-
-				if hasAssumeRolePolicy && !core.IsScalarNil(assumeRolePolicy) {
-					o.Policy = aws.String(core.StringValueFromScalar(assumeRolePolicy))
-				}
-
-				if len(policyARNConfigValues) > 0 {
-					o.PolicyARNs = toSTSPolicyARNs(policyARNConfigValues)
-				}
-
-				if hasSessionName && !core.IsScalarNil(sessionName) {
-					o.RoleSessionName = core.StringValueFromScalar(sessionName)
-				}
-
-				if hasSourceIdentity && !core.IsScalarNil(sourceIdentity) {
-					o.SourceIdentity = aws.String(core.StringValueFromScalar(sourceIdentity))
-				}
-
-				if len(tagValues) > 0 {
-					o.Tags = toSTSTags(tagValues)
-				}
-
-				if hasTransitiveTagKeys && !core.IsScalarNil(transitiveTagKeys) {
-					o.TransitiveTagKeys = strings.Split(
-						core.StringValueFromScalar(transitiveTagKeys),
-						",",
-					)
-				}
-			},
-		)
+	return assumeRoleSettings{
+		roleARN:           readConfigString(providerContext, "assumeRole.roleArn"),
+		externalID:        readConfigString(providerContext, "assumeRole.externalId"),
+		policy:            readConfigString(providerContext, "assumeRole.policy"),
+		sessionName:       readConfigString(providerContext, "assumeRole.sessionName"),
+		sourceIdentity:    readConfigString(providerContext, "assumeRole.sourceIdentity"),
+		duration:          readConfigDuration(providerContext, "assumeRole.duration"),
+		policyARNs:        pluginConfig.SliceFromPrefix("assumeRole.policyArns"),
+		tags:              pluginConfig.MapFromPrefix("assumeRole.tags"),
+		transitiveTagKeys: readConfigString(providerContext, "assumeRole.transitiveTagKeys"),
 	}
-
-	return opts
 }
 
-// AssumeRoleWithWebIdentityOptions returns the assume role with web identity
-// options derived from the given provider context.
-func AssumeRoleWithWebIdentityOptions(
-	providerContext provider.Context,
-) []func(*config.LoadOptions) error {
-	opts := []func(*config.LoadOptions) error{}
+type assumeRoleSettings struct {
+	roleARN           string
+	externalID        string
+	policy            string
+	sessionName       string
+	sourceIdentity    string
+	duration          time.Duration
+	policyARNs        []*core.ScalarValue
+	tags              map[string]*core.ScalarValue
+	transitiveTagKeys string
+}
 
-	assumeRoleWebIdentityARN, hasAssumeRoleWebIdentityARN := providerContext.ProviderConfigVariable(
-		"assumeRoleWithWebIdentity.roleArn",
-	)
+func (s assumeRoleSettings) isUsable() bool {
+	return s.roleARN != ""
+}
 
-	assumeRoleWebIdentityToken, hasAssumeRoleWebIdentityToken := providerContext.ProviderConfigVariable(
-		"assumeRoleWithWebIdentity.webIdentityToken",
-	)
+func (s assumeRoleSettings) apply(o *stscreds.AssumeRoleOptions) {
+	o.RoleARN = s.roleARN
 
-	assumeRoleWebIdentityTokenFile, hasAssumeRoleWebIdentityTokenFile := providerContext.ProviderConfigVariable(
-		"assumeRoleWithWebIdentity.webIdentityTokenFile",
-	)
+	if s.externalID != "" {
+		o.ExternalID = aws.String(s.externalID)
+	}
+	if s.duration > 0 {
+		o.Duration = s.duration
+	}
+	if s.policy != "" {
+		o.Policy = aws.String(s.policy)
+	}
+	if len(s.policyARNs) > 0 {
+		o.PolicyARNs = toSTSPolicyARNs(s.policyARNs)
+	}
+	if s.sessionName != "" {
+		o.RoleSessionName = s.sessionName
+	}
+	if s.sourceIdentity != "" {
+		o.SourceIdentity = aws.String(s.sourceIdentity)
+	}
+	if len(s.tags) > 0 {
+		o.Tags = toSTSTags(s.tags)
+	}
+	if s.transitiveTagKeys != "" {
+		o.TransitiveTagKeys = strings.Split(s.transitiveTagKeys, ",")
+	}
+}
 
-	assumeRoleWebIdentityDuration, hasAssumeRoleWebIdentityDuration := providerContext.ProviderConfigVariable(
-		"assumeRoleWithWebIdentity.duration",
-	)
+// Reads the assumeRoleWithWebIdentity.* provider config fields. The token
+// retriever is held here rather than set through the option function because
+// NewWebIdentityRoleProvider takes it positionally, and because whether one could
+// be built is what decides if web identity is usable at all.
+func readWebIdentitySettings(providerContext provider.Context) webIdentitySettings {
+	pluginConfig := core.PluginConfig(providerContext.ProviderConfigVariables())
 
-	assumeRoleWebIdentityPolicy, hasAssumeRoleWebIdentityPolicy := providerContext.ProviderConfigVariable(
-		"assumeRoleWithWebIdentity.policy",
-	)
+	return webIdentitySettings{
+		roleARN:        readConfigString(providerContext, "assumeRoleWithWebIdentity.roleArn"),
+		policy:         readConfigString(providerContext, "assumeRoleWithWebIdentity.policy"),
+		sessionName:    readConfigString(providerContext, "assumeRoleWithWebIdentity.sessionName"),
+		duration:       readConfigDuration(providerContext, "assumeRoleWithWebIdentity.duration"),
+		policyARNs:     pluginConfig.SliceFromPrefix("assumeRoleWithWebIdentity.policyArns"),
+		tokenRetriever: webIdentityTokenRetriever(providerContext),
+	}
+}
 
-	sessionName, hasSessionName := providerContext.ProviderConfigVariable(
-		"assumeRoleWithWebIdentity.sessionName",
-	)
+type webIdentitySettings struct {
+	roleARN        string
+	policy         string
+	sessionName    string
+	duration       time.Duration
+	policyARNs     []*core.ScalarValue
+	tokenRetriever stscreds.IdentityTokenRetriever
+}
 
-	pluginConfig := core.PluginConfig(
-		providerContext.ProviderConfigVariables(),
-	)
+// stscreds calls GetIdentityToken without a nil check, so a role with no
+// retriever panics inside the SDK rather than erroring.
+func (s webIdentitySettings) isUsable() bool {
+	return s.roleARN != "" && s.tokenRetriever != nil
+}
 
-	policyARNConfigValues := pluginConfig.SliceFromPrefix("assumeRoleWithWebIdentity.policyArns")
+func (s webIdentitySettings) apply(o *stscreds.WebIdentityRoleOptions) {
+	o.RoleARN = s.roleARN
 
-	if hasAssumeRoleWebIdentityARN && !core.IsScalarNil(assumeRoleWebIdentityARN) {
-		config.WithWebIdentityRoleCredentialOptions(
-			func(o *stscreds.WebIdentityRoleOptions) {
-				o.RoleARN = core.StringValueFromScalar(assumeRoleWebIdentityARN)
-
-				if hasAssumeRoleWebIdentityToken && !core.IsScalarNil(assumeRoleWebIdentityToken) {
-					o.TokenRetriever = staticTokenRetriever(
-						core.StringValueFromScalar(assumeRoleWebIdentityToken),
-					)
-				}
-
-				if hasAssumeRoleWebIdentityTokenFile && !core.IsScalarNil(assumeRoleWebIdentityTokenFile) {
-					o.TokenRetriever = stscreds.IdentityTokenFile(
-						core.StringValueFromScalar(assumeRoleWebIdentityTokenFile),
-					)
-				}
-
-				if hasAssumeRoleWebIdentityDuration && !core.IsScalarNil(assumeRoleWebIdentityDuration) {
-					duration, _ := time.ParseDuration(
-						core.StringValueFromScalar(assumeRoleWebIdentityDuration),
-					)
-					o.Duration = duration
-				}
-
-				if hasAssumeRoleWebIdentityPolicy && !core.IsScalarNil(assumeRoleWebIdentityPolicy) {
-					o.Policy = aws.String(core.StringValueFromScalar(assumeRoleWebIdentityPolicy))
-				}
-
-				if len(policyARNConfigValues) > 0 {
-					o.PolicyARNs = toSTSPolicyARNs(policyARNConfigValues)
-				}
-
-				if hasSessionName && !core.IsScalarNil(sessionName) {
-					o.RoleSessionName = core.StringValueFromScalar(sessionName)
-				}
-			},
-		)
+	if s.duration > 0 {
+		o.Duration = s.duration
 	}
 
-	return opts
+	if s.policy != "" {
+		o.Policy = aws.String(s.policy)
+	}
+
+	if len(s.policyARNs) > 0 {
+		o.PolicyARNs = toSTSPolicyARNs(s.policyARNs)
+	}
+
+	if s.sessionName != "" {
+		o.RoleSessionName = s.sessionName
+	}
+}
+
+// An inline token takes precedence over a token file, matching the order the
+// fields are documented in.
+func webIdentityTokenRetriever(
+	providerContext provider.Context,
+) stscreds.IdentityTokenRetriever {
+	if token := readConfigString(providerContext, "assumeRoleWithWebIdentity.webIdentityToken"); token != "" {
+		return staticTokenRetriever(token)
+	}
+
+	if file := readConfigString(providerContext, "assumeRoleWithWebIdentity.webIdentityTokenFile"); file != "" {
+		return stscreds.IdentityTokenFile(file)
+	}
+
+	return nil
+}
+
+func readConfigString(providerContext provider.Context, key string) string {
+	value, has := providerContext.ProviderConfigVariable(key)
+	if !has || core.IsScalarNil(value) {
+		return ""
+	}
+	return core.StringValueFromScalar(value)
+}
+
+// A parse failure resolves to no duration, leaving the SDK default. Validation
+// rejects an unparseable duration on the engine's path, but this is also reached
+// by harnesses that construct a config directly and never validate.
+func readConfigDuration(providerContext provider.Context, key string) time.Duration {
+	raw := readConfigString(providerContext, key)
+	if raw == "" {
+		return 0
+	}
+
+	duration, err := time.ParseDuration(raw)
+	if err != nil {
+		return 0
+	}
+	return duration
 }
 
 func getProviderConfigValueFallbackToEnv(

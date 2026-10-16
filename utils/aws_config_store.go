@@ -84,9 +84,19 @@ func (s *AWSConfigStore) FromProviderContext(
 	}
 
 	awsConf, err := s.createAWSConfig(ctx, providerContext, meta, s.env, s.loader)
+	if err != nil {
+		return nil, err
+	}
 
-	s.setInCache(cacheKey, awsConf)
-	return awsConf, err
+	// Only cache a config that was built successfully, and only under a key that
+	// identifies it. Caching unconditionally served a failed construction to the
+	// next caller, and stored a config built without a session ID under the empty
+	// key, where it was then returned to any other caller that also had none.
+	if hasSessionID {
+		s.setInCache(cacheKey, awsConf)
+	}
+
+	return awsConf, nil
 }
 
 func (s *AWSConfigStore) getFromCache(sessionID string) (*aws.Config, bool) {

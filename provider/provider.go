@@ -819,8 +819,10 @@ func providerConfigDefinition() *core.ConfigDefinition {
 				Type:  core.ScalarTypeString,
 				Label: "Assume Role With Web Identity ARN",
 				Description: "The ARN of the IAM role to assume for API operations " +
-					"when using web identity.",
-				ValidateFunc: validateARN,
+					"when using web identity. Requires one of " +
+					"`assumeRoleWithWebIdentity.webIdentityToken` or " +
+					"`assumeRoleWithWebIdentity.webIdentityTokenFile`.",
+				ValidateFunc: validateWebIdentityRoleARN,
 			},
 			"assumeRoleWithWebIdentity.sessionName": {
 				Type:  core.ScalarTypeString,

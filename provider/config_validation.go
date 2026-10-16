@@ -141,3 +141,59 @@ var validateAssumeRoleSourceIdentity = validation.WrapForPluginConfig(
 		),
 	),
 )
+
+const (
+	webIdentityTokenKey     = "assumeRoleWithWebIdentity.webIdentityToken"
+	webIdentityTokenFileKey = "assumeRoleWithWebIdentity.webIdentityTokenFile"
+)
+
+// A web identity role cannot be assumed without a token, and the token fields are
+// independently optional so nothing else pairs them with the role ARN.
+//
+// This is a warning rather than an error, because the token may come from the
+// environment. AWS_WEB_IDENTITY_TOKEN_FILE is how IRSA and the EKS pod identity
+// webhook supply it, and a ValidateFunc cannot see the environment. The runtime
+// defers to whatever the SDK resolved in that case, so an error here would reject
+// a configuration that works.
+func validateWebIdentityRoleARN(
+	key string,
+	value *core.ScalarValue,
+	pluginConfig core.PluginConfig,
+) []*core.Diagnostic {
+	diagnostics := validateARN(key, value, pluginConfig)
+
+	if hasWebIdentityToken(pluginConfig) {
+		return diagnostics
+	}
+
+	return append(diagnostics, &core.Diagnostic{
+		Level: core.DiagnosticLevelWarning,
+		Message: fmt.Sprintf(
+			"%q is set but neither %q nor %q is. The role is only assumed if a "+
+				"token is supplied, either in configuration or through the "+
+				"AWS_WEB_IDENTITY_TOKEN_FILE environment variable.",
+			key,
+			webIdentityTokenKey,
+			webIdentityTokenFileKey,
+		),
+	})
+}
+
+func hasWebIdentityToken(pluginConfig core.PluginConfig) bool {
+	for _, key := range []string{webIdentityTokenKey, webIdentityTokenFileKey} {
+		if hasNonEmptyString(pluginConfig, key) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func hasNonEmptyString(pluginConfig core.PluginConfig, key string) bool {
+	value, ok := pluginConfig.Get(key)
+	if !ok || core.IsScalarNil(value) {
+		return false
+	}
+
+	return core.StringValueFromScalar(value) != ""
+}

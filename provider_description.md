@@ -62,6 +62,32 @@ $ bluelink stage-changes
 
 Additional environment variables can be used to configure authorization such as `AWS_PROFILE`, `AWS_CONFIG_FILE` and `AWS_SHARED_CREDENTIALS_FILE`.
 
+### Assuming a Role
+
+The provider can assume a role for every API operation it performs, configured
+with `assumeRole.roleArn` or `assumeRoleWithWebIdentity.roleArn`.
+
+The role is assumed **on top of** whatever the credential sources above resolve
+to, rather than in place of it. Those credentials authenticate the `AssumeRole`
+call, and the configured role is the identity the provider then acts as. A shared
+profile that itself declares a `role_arn` therefore chains where the profile's role is
+assumed first, and the provider's role is assumed from it. Each hop is one STS
+call.
+
+`assumeRoleWithWebIdentity` takes precedence when both are configured, matching
+the order the AWS SDK resolves them in. A web identity role needs a token, from
+either `assumeRoleWithWebIdentity.webIdentityToken`,
+`assumeRoleWithWebIdentity.webIdentityTokenFile`, or the
+`AWS_WEB_IDENTITY_TOKEN_FILE` environment variable that IRSA and the EKS pod
+identity webhook set. Configuring the role ARN with no token available anywhere
+leaves the role unassumed, and is reported as a warning at validation.
+
+An inline `webIdentityToken` takes precedence over a `webIdentityTokenFile` when
+both are set.
+
+The `endpoint.sts` config field redirects the role assumption calls, so they can
+be pointed at a local STS alongside the other service endpoint overrides.
+
 ### Shared Credentials and Configuration Files
 
 The AWS provider can be configured to source credentials and configuration from [shared credentials and configuration files](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html). These files are located at `$HOME/.aws/credentials` and `$HOME/.aws/config` by default on Linux and macOS. On Windows, the files are located at `%USERPROFILE%\.aws\credentials` and `%USERPROFILE%\.aws\config`.
