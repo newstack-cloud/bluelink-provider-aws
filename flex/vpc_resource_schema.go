@@ -3,7 +3,6 @@ package flex
 import (
 	"github.com/newstack-cloud/bluelink/libs/blueprint/core"
 	"github.com/newstack-cloud/bluelink/libs/blueprint/provider"
-	"github.com/newstack-cloud/bluelink/libs/plugin-framework/sdk/validation"
 )
 
 func vpcResourceSchema() *provider.ResourceDefinitionsSchema {
@@ -34,12 +33,54 @@ func vpcResourceSchema() *provider.ResourceDefinitionsSchema {
 					"This can be one of the following values: " +
 					"- `create`: The flex VPC will be created in the AWS account. \n" +
 					"- `reference`: The flex VPC definition will be a reference to an existing VPC (and related resources) in the AWS account.\n" +
+					"- `external`: The flex VPC definition points at a VPC that Bluelink did not create and does not own. " +
+					"Its topology is declared through `externalNetwork` rather than discovered from tags, and nothing is provisioned. " +
+					"Only the network identities that placed workloads need are created, and only those are removed on destroy.\n" +
 					"The default value is `create`.",
 				MustRecreate: true,
-				Default:      core.MappingNodeFromString("create"),
+				Default:      core.MappingNodeFromString(ModeCreate),
 				AllowedValues: []*core.MappingNode{
-					core.MappingNodeFromString("create"),
-					core.MappingNodeFromString("reference"),
+					core.MappingNodeFromString(ModeCreate),
+					core.MappingNodeFromString(ModeReference),
+					core.MappingNodeFromString(ModeExternal),
+				},
+				// externalNetwork is what identifies and describes an external VPC, so
+				// it has to be present in that mode. The schema's Required list cannot
+				// say so, since the field is invalid in every other mode.
+				ValidateFunc: requiredInMode(ModeExternal, "$.externalNetwork", "externalNetwork"),
+			},
+			"externalNetwork": {
+				Type:  provider.ResourceDefinitionsSchemaTypeObject,
+				Label: "ExternalNetwork",
+				Description: "The identity and topology of a VPC that Bluelink did not create. " +
+					"Only valid when \"mode\" is \"external\", and required there. " +
+					"Declared rather than discovered because an external VPC carries none of the " +
+					"tags the other modes resolve a topology from, and the two facts that matter " +
+					"cannot be read back from the API with any confidence: which subnets are the " +
+					"private tier, and whether outbound internet actually works.",
+				Nullable:     true,
+				MustRecreate: true,
+				ValidateFunc: conflictsWithModeIn(ModeCreate, ModeReference),
+				Attributes: map[string]*provider.ResourceDefinitionsSchema{
+					"vpcId": {
+						Type: provider.ResourceDefinitionsSchemaTypeString,
+						Description: "The ID of the existing VPC, which is its identity in this mode. " +
+							"The \"name\" field is a label used to tag what Bluelink creates inside it, " +
+							"and is not used to locate it.",
+					},
+					"subnets": {
+						Type:  provider.ResourceDefinitionsSchemaTypeObject,
+						Label: "ExternalSubnetTiers",
+						Description: "The subnets of the external VPC, keyed by tier. Keyed by tier " +
+							"rather than by subnet name, which is how a discovered topology is keyed, " +
+							"because tier is the only thing placement consumes. Either tier may be " +
+							"omitted; a workload that selects a tier which is not declared is an " +
+							"error rather than a fallback to the other.",
+						Attributes: map[string]*provider.ResourceDefinitionsSchema{
+							"private": externalSubnetTierSchema(SubnetTierPrivate),
+							"public":  externalSubnetTierSchema(SubnetTierPublic),
+						},
+					},
 				},
 			},
 			"preset": {
@@ -55,12 +96,7 @@ func vpcResourceSchema() *provider.ResourceDefinitionsSchema {
 					core.MappingNodeFromString("light"),
 					core.MappingNodeFromString("light-public"),
 				},
-				ValidateFunc: validation.ConflictsWithResourceDefinition(
-					"$.mode",
-					&validation.ConflictOptions{
-						ConflictsOnValue: core.ScalarFromString("reference"),
-					},
-				),
+				ValidateFunc: conflictsWithModeIn(existingVPCModes...),
 			},
 			"cidrBlock": {
 				Type: provider.ResourceDefinitionsSchemaTypeString,
@@ -72,12 +108,7 @@ func vpcResourceSchema() *provider.ResourceDefinitionsSchema {
 					"The CIDR block must be large enough to accommodate the number of subnets specified in the preset.",
 				MustRecreate: true,
 				Default:      core.MappingNodeFromString("10.0.0.0/16"),
-				ValidateFunc: validation.ConflictsWithResourceDefinition(
-					"$.mode",
-					&validation.ConflictOptions{
-						ConflictsOnValue: core.ScalarFromString("reference"),
-					},
-				),
+				ValidateFunc: conflictsWithModeIn(existingVPCModes...),
 			},
 			"enableDNSSupport": {
 				Type: provider.ResourceDefinitionsSchemaTypeBoolean,
@@ -91,12 +122,7 @@ func vpcResourceSchema() *provider.ResourceDefinitionsSchema {
 					"public DNS hostnames to IP addresses is not enabled. Enabled by default. For more information, see [DNS attributes in your VPC.](https://docs.aws.amazon.com/vpc/latest/userguide/vpc-dns.html#vpc-dns-support)",
 				MustRecreate: false,
 				Default:      core.MappingNodeFromBool(true),
-				ValidateFunc: validation.ConflictsWithResourceDefinition(
-					"$.mode",
-					&validation.ConflictOptions{
-						ConflictsOnValue: core.ScalarFromString("reference"),
-					},
-				),
+				ValidateFunc: conflictsWithModeIn(existingVPCModes...),
 			},
 			"enableDNSHostnames": {
 				Type: provider.ResourceDefinitionsSchemaTypeBoolean,
@@ -111,12 +137,7 @@ func vpcResourceSchema() *provider.ResourceDefinitionsSchema {
 					"to connect to AWS services using the public host names that SDKs use to connect to the services by default.",
 				MustRecreate: false,
 				Default:      core.MappingNodeFromBool(false),
-				ValidateFunc: validation.ConflictsWithResourceDefinition(
-					"$.mode",
-					&validation.ConflictOptions{
-						ConflictsOnValue: core.ScalarFromString("reference"),
-					},
-				),
+				ValidateFunc: conflictsWithModeIn(existingVPCModes...),
 			},
 			"region": {
 				Type: provider.ResourceDefinitionsSchemaTypeString,
@@ -130,12 +151,7 @@ func vpcResourceSchema() *provider.ResourceDefinitionsSchema {
 					core.MappingNodeFromString("us-east-1"),
 				},
 				MustRecreate: true,
-				ValidateFunc: validation.ConflictsWithResourceDefinition(
-					"$.mode",
-					&validation.ConflictOptions{
-						ConflictsOnValue: core.ScalarFromString("reference"),
-					},
-				),
+				ValidateFunc: conflictsWithModeIn(existingVPCModes...),
 			},
 			"tags": {
 				Type: provider.ResourceDefinitionsSchemaTypeMap,
@@ -149,12 +165,7 @@ func vpcResourceSchema() *provider.ResourceDefinitionsSchema {
 					),
 				},
 				MustRecreate: false,
-				ValidateFunc: validation.ConflictsWithResourceDefinition(
-					"$.mode",
-					&validation.ConflictOptions{
-						ConflictsOnValue: core.ScalarFromString("reference"),
-					},
-				),
+				ValidateFunc: conflictsWithModeIn(existingVPCModes...),
 			},
 
 			// Computed fields.
