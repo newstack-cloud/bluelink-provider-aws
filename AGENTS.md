@@ -45,7 +45,9 @@ How generation works, and how to add a Cloud Control type: `docs/CLOUD_CONTROL_R
 
 - **Tools:** Go 1.26, `golangci-lint` v2, and Node with Yarn 4 for the commit-msg hook (run
   `yarn install` first).
-- **Lint:** `golangci-lint run ./...`: the standard linters plus those `.golangci.yml` enables.
+- **Lint:** `golangci-lint run --build-tags=unit,integration ./...`: the standard linters plus
+  those `.golangci.yml` enables. Without `--build-tags`, as the pre-commit hook and CI run it,
+  lint skips every tagged file, which is nearly all tests.
 - **Build tags:** test files are tagged `unit` or `integration`, except `tools/awsgen`'s. Plain
   `go test ./...` runs only those; pass `-tags=unit`. A focused run:
   `go test -tags=unit -count=1 ./services/sqs/...`.

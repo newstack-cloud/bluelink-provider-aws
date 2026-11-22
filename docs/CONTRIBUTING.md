@@ -233,8 +233,10 @@ There are some exceptions where integration tests are written per resource or li
 Run the linter:
 
 ```bash
-golangci-lint run ./...
+golangci-lint run --build-tags=unit,integration ./...
 ```
+
+Without `--build-tags`, the linter skips every tagged file, which is nearly all tests.
 
 ## Further documentation
 
