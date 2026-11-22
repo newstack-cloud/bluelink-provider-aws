@@ -4,6 +4,13 @@ The Bluelink provider plugin for AWS: resources, data sources, links and functio
 services. bluelink-transformer-celerity builds on it, the Celerity CLI installs it, and the
 Bluelink Registry publishes its docs. The GitHub repo is `newstack-cloud/bluelink-provider-aws`.
 
+## Workspace
+
+This repo is one of NewStack's. NewStack's maintainers develop it alongside the others in a
+shared workspace, using the NewStack Claude Code plugin for how work is planned, reviewed,
+committed and coordinated across repos. The plugin isn't public, and nothing here depends on it:
+this file and the repo's own docs cover what a contribution needs.
+
 ## Layout
 
 | Path | Holds |
